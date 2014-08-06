@@ -117,10 +117,6 @@ function checkVisibilityChange() {
 		// FIXME real answer is to find out why xpath is non-unique. for now though, we accept false-positives by using
 		// a loop. once xpath is guaranteed to give exactly one element, the loop can be removed.
 		$.each(images, function(index, image) {
-			if (typeof ($(image).offset()) == 'undefined') {
-				console.log("odd..." + $(image));
-			}
-			
 			if (imageXPath in visibleImageXPaths) {
 				if (!checkVisible(image)) { // has image gone out of viewport?
 					recordVisibilityChange(image.src, hashCode, false);
