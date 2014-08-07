@@ -18,10 +18,13 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 
 // As of 2014-08-05 it appears to be impossible to make Chrome search for all files in an extension subdir.
 // So we need to name them explicitly (or load them over the web?).
+// NOTE: MUST BE MANUALLY UPDATED (including sizes)
 var refImagePaths = {
 	"/ref_images/07BLOCKS1-mediumSquare149-v2.jpg":"149x149",
 	"/ref_images/STEINFELD-thumbStandard.jpg":"75x75",
-	"/ref_images/CITYHALL1-thumbStandard.jpg":"75x75"
+	"/ref_images/CITYHALL1-thumbStandard.jpg":"75x75",
+	"/ref_images/07oped-thumbStandard.jpg":"75x75",
+	"/ref_images/0727MARIJUANA-thumbStandard.jpg":"75x75"
 };
 
 var refImages = [];
@@ -62,10 +65,8 @@ function hashReferenceImage(index) {
 	var imagePath = refImages[index];
 	
 	var imageUrl = chrome.extension.getURL(imagePath);
-	var size = refImagePaths[imagePath].split("x");
 	
-	chrome.runtime.sendMessage(
-			{type: "ref", index: index, src: imageUrl, width: size[0], height: size[1], tabId: tabId});
+	chrome.runtime.sendMessage({type: "ref", index: index, src: imageUrl});
 }
 
 function onDataUrlCalculated(dataUrl, index, type) {
@@ -111,8 +112,7 @@ function hashImagesInPage() {
 function hashImageInPage(index) {
 	var pageImage = imagesInPage[index];
 	
-	chrome.runtime.sendMessage(
-			{type: "page", index: index, src: pageImage.src, width: pageImage.width, height: pageImage.height});
+	chrome.runtime.sendMessage({type: "page", index: index, src: pageImage.src});
 }
 
 function dataUrl2hashCode(dataUrl) {
