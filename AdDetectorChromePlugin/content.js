@@ -70,8 +70,8 @@ function hashReferenceImage(index) {
 
 function onDataUrlCalculated(dataUrl, index, type) {
 	var hashCode = dataUrl2hashCode(dataUrl);
-	
 	var nextIndex = index + 1;
+	
 	if (type == "ref") {
 		refHashList[hashCode] = true; // add hashcode to set
 		
@@ -84,8 +84,9 @@ function onDataUrlCalculated(dataUrl, index, type) {
 	else if (type == "page") {
 		// only add if this in-page image matches one of our reference images.
 		if (hashCode in refHashList) {
+			var pageImage = imagesInPage[index];
 			var xPath = getXPath(pageImage);
-			pageHashesByXPath[xPath] = hash;
+			pageHashesByXPath[xPath] = hashCode;
 		}
 		var limit = imagesInPage.length;
 		if (nextIndex < limit)
