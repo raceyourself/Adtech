@@ -1,8 +1,7 @@
 $(document).ready(function() {
-	hashReferenceImages(); // TODO make this one-off init on plugin load.
-	
 	initForNewPage();
-	hashImagesInPageAsync();
+	
+	hashReferenceImages();
 });
 $(window).scroll(function() {
 	if (hashesCalculated == true)
@@ -12,14 +11,20 @@ $(window).unload(function() {
 	if (hashesCalculated == true)
 		clearVisible();
 });
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+	onDataUrlCalculated(request.dataUrl, request.index, request.type);
+});
+
 
 // As of 2014-08-05 it appears to be impossible to make Chrome search for all files in an extension subdir.
 // So we need to name them explicitly (or load them over the web?).
 var refImagePaths = {
-	//"/ref_images/nytimes_internal_ad_163x90.jpg":"163x90",
-	"/ref_images/07comet-cnd-mediumFlexible177-v3.jpg":"177x100",
-	"/ref_images/mag-10Economy-t_CA0-mediumSquare149.jpg":"149x149"
+	"/ref_images/07BLOCKS1-mediumSquare149-v2.jpg":"149x149",
+	"/ref_images/STEINFELD-thumbStandard.jpg":"75x75",
+	"/ref_images/CITYHALL1-thumbStandard.jpg":"75x75"
 };
+
+var refImages = [];
 
 // Hashes of reference adverts in ref_adverts/. Set<hash>
 var refHashList = {};
@@ -30,10 +35,14 @@ var pageHashesByXPath = {};
 // Images currently at least partially visible on-screen. Set<xpath>
 var visibleImageXPaths = {};
 
+// Required for callbacks from background script.
+var tabId;
+
+var imagesInPage;
+
 var hashesCalculated;
 
 // TODO is this needed or will everything be wiped on page load anyway?
-// If so, make sure refHashList/refImagePaths remain as-is.
 function initForNewPage() {
 	pageHashesByXPath = {};
 	visibleImageXPaths = {};
@@ -43,61 +52,85 @@ function initForNewPage() {
 // Calc hashes of references images - the images we're looking out for.
 // Populates refHashList:Set<hash>.
 function hashReferenceImages() {
-	$.each(refImagePaths, function(imagePath, sizeStr) {
-		// load sample image
-		var imageUrl = chrome.extension.getURL(imagePath);
-		var img = new Image();
-		img.src = imageUrl;
-		var size = sizeStr.split("x");
-		img.width = size[0];
-		img.height = size[1];
-		var hashCode = img2hashCode(img);
-		refHashList[hashCode] = true;
+	$.each(refImagePaths, function(path, dimensions) {
+		refImages.push(path);
 	});
+	hashReferenceImage(0);
+}
+
+function hashReferenceImage(index) {
+	var imagePath = refImages[index];
+	
+	var imageUrl = chrome.extension.getURL(imagePath);
+	var size = refImagePaths[imagePath].split("x");
+	
+	chrome.runtime.sendMessage(
+			{type: "ref", index: index, src: imageUrl, width: size[0], height: size[1], tabId: tabId});
+}
+
+function onDataUrlCalculated(dataUrl, index, type) {
+	var hashCode = dataUrl2hashCode(dataUrl);
+	var nextIndex = index + 1;
+	
+	if (type == "ref") {
+		refHashList[hashCode] = true; // add hashcode to set
+		
+		var limit = Object.keys(refImagePaths).length;
+		if (nextIndex < limit) // more ref images need hashing
+			hashReferenceImage(nextIndex);
+		else
+			hashImagesInPage(); // start hashing images in page
+	}
+	else if (type == "page") {
+		// only add if this in-page image matches one of our reference images.
+		if (hashCode in refHashList) {
+			var pageImage = imagesInPage[index];
+			var xPath = getXPath(pageImage);
+			pageHashesByXPath[xPath] = hashCode;
+		}
+		var limit = imagesInPage.length;
+		if (nextIndex < limit)
+			hashImageInPage(nextIndex);
+		else {
+			hashesCalculated = true;
+			checkVisibilityChange();
+		}
+	}
+	else {
+		console.log("AdDetector extension error: unexpected data URL type '" + type + "'");
+	}
 }
 
 // Calc hashes of all instances of the reference images on the page. put in Map<img.src,hash>.
 // Populates pageHashesBySrc:Map<img.src,hashCode>.
-function hashImagesInPageAsync() {
-	chrome.runtime.sendMessage({action: "init", refHashList: refHashList}, function(response) {
-		hashImagesInPageAsyncContd();
-	});
+function hashImagesInPage() {
+	imagesInPage = $(document).find("img");
+	hashImageInPage(0);
 }
 
-function hashImagesInPageAsyncContd() {
-	var pageImages = $(document).find("img");
+function hashImageInPage(index) {
+	var pageImage = imagesInPage[index];
 	
-	var imageObjs = [];
-	pageImages.each(function(index, pageImage) {
-		imageObjs.push({
-			imageSrc: pageImage.src,
-			imageWidth: pageImage.width,
-			imageHeight: pageImage.height
-		});
-	});
-	
-	chrome.runtime.sendMessage({action: "getHashes", imageObjs: imageObjs}, function(response) {
-		$.each(response.hashes, function(index, hash) {
-			var pageImage = pageImages[index];
-			
-			if (hash != null) {
-				// FIXME isn't always returning unique xpath.
-				var xPath = getXPath(pageImage);
-				pageHashesByXPath[xPath] = hash;
-			}
-		});
-		
-		hashesCalculated = true;
-		checkVisibilityChange();
-	});
+	chrome.runtime.sendMessage(
+			{type: "page", index: index, src: pageImage.src, width: pageImage.width, height: pageImage.height});
+}
+
+function dataUrl2hashCode(dataUrl) {
+	var base64 = dataUrl.replace(/^data:image\/(png|jpg);base64,/, "");
+	var hashCode = base64.hashCode();
+	return hashCode;
 }
 
 // Record "not_visible" entries for everything currently visible before navigating to next page to clean up.
 function clearVisible() {
 	$.each(visibleImageXPaths, function(imageXPath, dummy) {
-		var image = $(document.body).xpath(imageXPath);
+		var images = $(document.body).xpath(imageXPath);
 		var hashCode = pageHashesByXPath(imageXPath);
-		recordVisibilityChange(visibleImage.src, hashCode, false);
+		
+		// FIXME see checkVisibilityChange() below on why this loop needs removing. 
+		$.each(images, function(index, image) {
+			recordVisibilityChange(image.src, hashCode, false);
+		});
 	});
 }
 

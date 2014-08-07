@@ -15,28 +15,27 @@ String.prototype.hashCode = function() {
 	return hash;
 };
 
-function img2hashCode(img) {
-	var base64 = getBase64Image(img);
-	return base64.hashCode();
-}
-
-function getBase64Image(img) {
+function calcDataUrl(type, index, src, width, height, tabId) {
     // Create an empty canvas element
     var canvas = document.createElement("canvas");
-    canvas.width = img.width;
-    canvas.height = img.height;
+    canvas.width = width;
+    canvas.height = height;
 
-    // Copy the image contents to the canvas
-    var ctx = canvas.getContext("2d");
-    ctx.drawImage(img, 0, 0);
-    
-    // not bomb-proof...
-    var format = img.src.endsWith("jpg") ? "image/jpg" : "image/png";
-    
-    var dataURL = canvas.toDataURL(format);
-
-    // toDataURL gives us the Base64-encoded data, preceded by some metadata - strip this.
-    return dataURL.replace(/^data:image\/(png|jpg);base64,/, "");
+    var image = new Image();
+	image.src = src;
+	image.width = width;
+	image.height = height;
+	image.addEventListener("load", function() {
+		// drawing must happen after the image has been loaded from the src URL, or we get a blank canvas
+		canvas.getContext("2d").drawImage(image, 0, 0);
+		
+		// not bomb-proof...
+	    var format = image.src.endsWith("jpg") ? "image/jpg" : "image/png";
+	    var dataUrl = canvas.toDataURL(format);
+	    
+	    // return data to content script
+	    chrome.tabs.sendMessage(tabId, {dataUrl: dataUrl, index: index, type: type});
+	});
 }
 
 //Stolen from FireBug source.
