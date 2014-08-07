@@ -1,6 +1,4 @@
 $(document).ready(function() {
-	initForNewPage();
-	
 	// TODO ref images should be hashed in background script (page images need hashing in content script, as per current
 	// implementation).
 	hashReferenceImages();
@@ -43,14 +41,7 @@ var tabId;
 
 var imagesInPage;
 
-var hashesCalculated;
-
-// TODO is this needed or will everything be wiped on page load anyway?
-function initForNewPage() {
-	pageHashesByXPath = {};
-	visibleImageXPaths = {};
-	hashesCalculated = false;
-}
+var hashesCalculated = false;
 
 // Calc hashes of references images - the images we're looking out for.
 // Populates refHashList:Set<hash>.
