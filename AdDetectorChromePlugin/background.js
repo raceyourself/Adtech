@@ -33,6 +33,10 @@ function calcDataUrl(type, index, src, tabId) {
 	    var format = image.src.endsWith("jpg") ? "image/jpg" : "image/png";
 	    var dataUrl = canvas.toDataURL(format);
 		
+	    if (image.src.contains("CITYHALL1")) {
+	    	console.log("f00");
+	    }
+	    
 	    // return data to content script
 	    chrome.tabs.sendMessage(tabId, {dataUrl: dataUrl, index: index, type: type});
 	});

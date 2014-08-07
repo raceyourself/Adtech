@@ -19,7 +19,6 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 	onDataUrlCalculated(request.dataUrl, request.index, request.type);
 });
 
-
 // As of 2014-08-05 it appears to be impossible to make Chrome search for all files in an extension subdir.
 // So we need to name them explicitly (or load them over the web?).
 // NOTE: MUST BE MANUALLY UPDATED
@@ -28,7 +27,9 @@ var refImages = new Array(
 	"/ref_images/STEINFELD-thumbStandard.jpg",
 	"/ref_images/CITYHALL1-thumbStandard.jpg",
 	"/ref_images/07oped-thumbStandard.jpg",
-	"/ref_images/GAZA-mediumSquare149-v2.jpg"
+	"/ref_images/GAZA-mediumSquare149-v2.jpg",
+	"/ref_images/0727MARIJUANA-thumbStandard.jpg",
+	"/ref_images/10DYLAN1-mediumSquare149-v2.jpg"
 );
 
 // Hashes of reference adverts in ref_adverts/. Set<hash>
