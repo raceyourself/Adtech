@@ -11,5 +11,5 @@
  */
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-	calcDataUrl(request.index, request.limit, request.src, request.width, request.height, sender.tab.id);
+	calcDataUrl(request.type, request.index, request.src, request.width, request.height, sender.tab.id);
 });

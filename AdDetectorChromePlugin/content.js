@@ -1,8 +1,7 @@
 $(document).ready(function() {
 	hashReferenceImages();
 	
-//		initForNewPage();
-//		hashImagesInPageAsync();
+	initForNewPage();
 });
 $(window).scroll(function() {
 //	if (hashesCalculated == true)
@@ -12,6 +11,10 @@ $(window).unload(function() {
 //	if (hashesCalculated == true)
 //		clearVisible();
 });
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+	onDataUrlCalculated(request.dataUrl, request.index, request.type);
+});
+
 
 // As of 2014-08-05 it appears to be impossible to make Chrome search for all files in an extension subdir.
 // So we need to name them explicitly (or load them over the web?).
@@ -35,6 +38,8 @@ var visibleImageXPaths = {};
 // Required for callbacks from background script.
 var tabId;
 
+var imagesInPage;
+
 //var hashesCalculated;
 
 // TODO is this needed or will everything be wiped on page load anyway?
@@ -51,77 +56,65 @@ function hashReferenceImages() {
 	$.each(refImagePaths, function(path, dimensions) {
 		refImages.push(path);
 	});
-	
-	hashReferenceImage(0, Object.keys(refImagePaths).length);
+	hashReferenceImage(0);
 }
 
-function hashReferenceImage(index, limit) {
+function hashReferenceImage(index) {
 	var imagePath = refImages[index];
 	
 	var imageUrl = chrome.extension.getURL(imagePath);
 	var size = refImagePaths[imagePath].split("x");
 	
 	chrome.runtime.sendMessage(
-			{index: index, limit: limit, src: imageUrl, width: size[0], height: size[1], tabId: tabId});
+			{type: "ref", index: index, src: imageUrl, width: size[0], height: size[1], tabId: tabId});
 }
 
-chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-	var hashCode = dataUrl2hashCode(request.dataUrl);
-	refHashList[hashCode] = true; // add hashcode to set
+function onDataUrlCalculated(dataUrl, index, type) {
+	var hashCode = dataUrl2hashCode(dataUrl);
 	
-	var nextIndex = request.index + 1;
-	var limit = request.limit;
-	if (nextIndex < limit)
-		hashReferenceImage(nextIndex, limit);
-});
+	var nextIndex = index + 1;
+	if (type == "ref") {
+		refHashList[hashCode] = true; // add hashcode to set
+		
+		var limit = Object.keys(refImagePaths).length;
+		if (nextIndex < limit) // more ref images need hashing
+			hashReferenceImage(nextIndex);
+		else
+			hashImagesInPage(); // start hashing images in page
+	}
+	else if (type == "page") {
+		// only add if this in-page image matches one of our reference images.
+		if (hashCode in refHashList) {
+			var xPath = getXPath(pageImage);
+			pageHashesByXPath[xPath] = hash;
+		}
+		var limit = imagesInPage.length;
+		if (nextIndex < limit)
+			hashImageInPage(nextIndex);
+	}
+	else {
+		console.log("AdDetector extension error: unexpected data URL type '" + type + "'");
+	}
+}
+
+// Calc hashes of all instances of the reference images on the page. put in Map<img.src,hash>.
+// Populates pageHashesBySrc:Map<img.src,hashCode>.
+function hashImagesInPage() {
+	imagesInPage = $(document).find("img");
+	hashImageInPage(0);
+}
+
+function hashImageInPage(index) {
+	var pageImage = imagesInPage[index];
+	
+	chrome.runtime.sendMessage(
+			{type: "page", index: index, src: pageImage.src, width: pageImage.width, height: pageImage.height});
+}
 
 function dataUrl2hashCode(dataUrl) {
 	var base64 = dataUrl.replace(/^data:image\/(png|jpg);base64,/, "");
 	var hashCode = base64.hashCode();
 	return hashCode;
-}
-
-// Calc hashes of all instances of the reference images on the page. put in Map<img.src,hash>.
-// Populates pageHashesBySrc:Map<img.src,hashCode>.
-function hashImagesInPageAsync() {
-	chrome.runtime.sendMessage({action: "init", refHashList: refHashList}, function(response) {
-		hashImagesInPageAsyncContd();
-	});
-}
-
-function hashImagesInPageAsyncContd() {
-	var pageImages = $(document).find("img");
-	
-	pageImages.each(function(index, pageImage) {
-		var imageObj = {
-				imageSrc: pageImage.src,
-				imageWidth: pageImage.width,
-				imageHeight: pageImage.height
-			};
-		
-		chrome.runtime.sendMessage({action: "src2dataUrl", imageObj: imageObj}, function(response) {
-			var dataUrl = response.dataUrl;
-			var base64 = dataUrl.replace(/^data:image\/(png|jpg);base64,/, "");
-			var hashCode = base64.hashCode();
-			if (hashCode in refHashList) {
-				// only add if it's one of the images that interests us.
-				var xPath = getXPath(pageImage);
-				pageHashesByXPath[xPath] = hash;
-			}
-		});
-	});
-}
-
-function hashImage(pageImage) {
-	var hashCode = img2hashCode(pageImage);
-	if (hashCode in refHashList) {
-		
-		hashCode = img2hashCode(pageImage);
-		
-		// only add if it's one of the images that interests us.
-		return hashCode;
-	}
-	return null;
 }
 
 // Record "not_visible" entries for everything currently visible before navigating to next page to clean up.

@@ -15,12 +15,7 @@ String.prototype.hashCode = function() {
 	return hash;
 };
 
-function img2hashCode(img) {
-	var base64 = getBase64Image(img);
-	return base64.hashCode();
-}
-
-function calcDataUrl(index, limit, src, width, height, tabId) {
+function calcDataUrl(type, index, src, width, height, tabId) {
     // Create an empty canvas element
     var canvas = document.createElement("canvas");
     canvas.width = width;
@@ -39,7 +34,7 @@ function calcDataUrl(index, limit, src, width, height, tabId) {
 	    var dataUrl = canvas.toDataURL(format);
 	    
 	    // return data to content script
-	    chrome.tabs.sendMessage(tabId, {dataUrl: dataUrl, index: index, limit: limit});
+	    chrome.tabs.sendMessage(tabId, {dataUrl: dataUrl, index: index, type: type});
 	});
 }
 
