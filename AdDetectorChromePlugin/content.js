@@ -203,18 +203,14 @@ function recordVisibilityChange(image, hashCode, isVisible) {
 	var vpLeft = dLeft - vpDocOffsetLeft;
 	var vpRight = dRight - vpDocOffsetLeft;
 	
-//	var sTop = image.screenY;
-//	var sBottom = sTop + (dBottom - dTop);
-//	var sLeft = image.screenX;
-//	var sRight = sLeft + (dRight - dLeft);
-	
 	// Window position (not viewport position :( )
 	var screenY = (window.screenY | window.screenTop);
 	var screenX = (window.screenX | window.screenLeft);
+	// Determine how much of the screen is taken up by tabs, toolbars, scrollbars etc
 	var browserNonViewportY = window.outerHeight - window.innerHeight;
 	var browserNonViewportX = window.outerWidth - window.innerWidth;
 	
-	// Determining screen or navigation position of an element, as opposed to viewport position,
+	// Determining screen or window position of an element, as opposed to viewport position,
 	// appears impossible as of 2014-08-07. Detail:
 	// http://stackoverflow.com/questions/2337795/screen-coordinates-of-a-element-via-javascript
 	

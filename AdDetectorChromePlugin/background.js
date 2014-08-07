@@ -33,8 +33,9 @@ function calcDataUrl(type, index, src, tabId) {
 	    var format = image.src.endsWith("jpg") ? "image/jpg" : "image/png";
 	    var dataUrl = canvas.toDataURL(format);
 		
-	    if (image.src.contains("CITYHALL1")) {
-	    	console.log("f00");
+	    if (image.src.contains("10DYLAN1")) {
+	    	var aaa = 0;
+	    	aaa = aaa + 2; // for breakpoint purposes...
 	    }
 	    
 	    // return data to content script
