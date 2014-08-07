@@ -19,15 +19,13 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 // As of 2014-08-05 it appears to be impossible to make Chrome search for all files in an extension subdir.
 // So we need to name them explicitly (or load them over the web?).
 // NOTE: MUST BE MANUALLY UPDATED (including sizes)
-var refImagePaths = {
-	"/ref_images/07BLOCKS1-mediumSquare149-v2.jpg":"149x149",
-	"/ref_images/STEINFELD-thumbStandard.jpg":"75x75",
-	"/ref_images/CITYHALL1-thumbStandard.jpg":"75x75",
-	"/ref_images/07oped-thumbStandard.jpg":"75x75",
-	"/ref_images/0727MARIJUANA-thumbStandard.jpg":"75x75"
-};
-
-var refImages = [];
+var refImages = new Array(
+	"/ref_images/07BLOCKS1-mediumSquare149-v2.jpg",
+	"/ref_images/STEINFELD-thumbStandard.jpg",
+	"/ref_images/CITYHALL1-thumbStandard.jpg",
+	"/ref_images/07oped-thumbStandard.jpg",
+	"/ref_images/0727MARIJUANA-thumbStandard.jpg"
+);
 
 // Hashes of reference adverts in ref_adverts/. Set<hash>
 var refHashList = {};
@@ -55,9 +53,6 @@ function initForNewPage() {
 // Calc hashes of references images - the images we're looking out for.
 // Populates refHashList:Set<hash>.
 function hashReferenceImages() {
-	$.each(refImagePaths, function(path, dimensions) {
-		refImages.push(path);
-	});
 	hashReferenceImage(0);
 }
 
@@ -76,7 +71,7 @@ function onDataUrlCalculated(dataUrl, index, type) {
 	if (type == "ref") {
 		refHashList[hashCode] = true; // add hashcode to set
 		
-		var limit = Object.keys(refImagePaths).length;
+		var limit = refImages.length;
 		if (nextIndex < limit) // more ref images need hashing
 			hashReferenceImage(nextIndex);
 		else
