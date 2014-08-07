@@ -1,7 +1,7 @@
 $(document).ready(function() {
-	hashReferenceImages();
-	
 	initForNewPage();
+	
+	hashReferenceImages();
 });
 $(window).scroll(function() {
 //	if (hashesCalculated == true)
