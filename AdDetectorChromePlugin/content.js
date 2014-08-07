@@ -162,17 +162,24 @@ function checkVisibilityChange() {
 	});
 };
 
-function checkVisible(element, eval) {
-    eval = eval || "visible";
-    var viewportHeight = $(window).height(),
-        scrollTopY = $(window).scrollTop(),
-        elementTopY = $(element).offset().top,
-        elementHeight = $(element).height();
+function checkVisible(element) {
+    var viewportHeight = $(window).height();
+    var scrollTop = $(window).scrollTop();
+    var elementTop = $(element).offset().top;
+    var elementHeight = $(element).height();
     
-    if (eval == "visible")
-    	return (elementTopY < (viewportHeight + scrollTopY)) && (elementTopY > (scrollTopY - elementHeight));
-    if (eval == "above")
-    	return elementTopY < (viewportHeight + scrollTopY);
+    var withinBottomBound = (elementTop < (viewportHeight + scrollTop));
+    var withinTopBound = (elementTop > (scrollTop - elementHeight));
+    
+    var viewportWidth = $(window).width();
+    var scrollLeft = $(window).scrollLeft();
+    var elementLeft = $(element).offset().left;
+    var elementWidth = $(element).width();
+
+    var withinLeftBound = (elementLeft < (viewportWidth + scrollLeft));
+    var withinRightBound = (elementLeft > (scrollLeft - elementWidth));
+    
+	return withinBottomBound && withinTopBound && withinLeftBound && withinRightBound;
 }
 
 function recordVisibilityChange(image, hashCode, isVisible) {
@@ -235,6 +242,12 @@ function recordVisibilityChange(image, hashCode, isVisible) {
 	var sBottom = vpBottom + screenY + browserNonViewportY;
 	var sLeft = vpLeft + screenX - browserNonViewportX;
 	var sRight = vpRight + screenX - browserNonViewportX;
+	
+	// Because of the hacky approximations above, we need to ensure we've not gone outside screen coordinates.
+	sTop = Math.max(0, sTop);
+	sBottom = Math.min(screen.height - 1, sBottom);
+	sLeft = Math.max(0, sLeft);
+	sRight = Math.min(screen.width - 1, sRight);
 	
 	var out = "[ADVERT] " +
 		"ts=" + timestamp +
