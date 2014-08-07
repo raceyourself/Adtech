@@ -19,39 +19,6 @@ String.prototype.contains = function(needle) {
 	return this.indexOf(needle) > -1;
 };
 
-function calcDataUrl(type, index, src, tabId) {
-	// Create an empty canvas element
-    var canvas = document.createElement("canvas");
-    
-    var image = new Image();
-	image.src = src;
-	image.addEventListener("load", function() {
-		// now that the image has loaded, we can find out its real dimensions ('natural' dimensions. Not dimensions
-		// declared in HTML/CSS.)
-		canvas.width = image.width;
-	    canvas.height = image.height;
-		
-		// drawing must happen after the image has been loaded from the src URL, or we get a blank canvas
-		canvas.getContext("2d").drawImage(image, 0, 0);
-		
-		// not bomb-proof...
-	    var format = image.src.endsWith("jpg") ? "image/jpg" : "image/png";
-	    var dataUrl = canvas.toDataURL(format);
-	    
-	    // DEBUG ONLY
-		if (image.src.contains("0727MARIJUANA")) {
-			console.log("foo");
-		}
-		else if (image.src.contains("07oped")) {
-			console.log("bar");
-		}
-		// END OF DEBUG ONLY
-		
-	    // return data to content script
-	    chrome.tabs.sendMessage(tabId, {dataUrl: dataUrl, index: index, type: type});
-	});
-}
-
 //Stolen from FireBug source.
 function getXPath(element) {
  if (element && element.id)

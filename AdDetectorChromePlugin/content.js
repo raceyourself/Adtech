@@ -1,6 +1,8 @@
 $(document).ready(function() {
 	initForNewPage();
 	
+	// TODO ref images should be hashed in background script (page images need hashing in content script, as per current
+	// implementation).
 	hashReferenceImages();
 });
 $(window).scroll(function() {
@@ -18,13 +20,13 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 
 // As of 2014-08-05 it appears to be impossible to make Chrome search for all files in an extension subdir.
 // So we need to name them explicitly (or load them over the web?).
-// NOTE: MUST BE MANUALLY UPDATED (including sizes)
+// NOTE: MUST BE MANUALLY UPDATED
 var refImages = new Array(
 	"/ref_images/07BLOCKS1-mediumSquare149-v2.jpg",
 	"/ref_images/STEINFELD-thumbStandard.jpg",
 	"/ref_images/CITYHALL1-thumbStandard.jpg",
 	"/ref_images/07oped-thumbStandard.jpg",
-	"/ref_images/0727MARIJUANA-thumbStandard.jpg"
+	"/ref_images/GAZA-mediumSquare149-v2.jpg"
 );
 
 // Hashes of reference adverts in ref_adverts/. Set<hash>
@@ -97,7 +99,7 @@ function onDataUrlCalculated(dataUrl, index, type) {
 	}
 }
 
-// Calc hashes of all instances of the reference images on the page. put in Map<img.src,hash>.
+// Calc hashes of all instances of the reference images on the page.
 // Populates pageHashesBySrc:Map<img.src,hashCode>.
 function hashImagesInPage() {
 	imagesInPage = $(document).find("img");
@@ -124,7 +126,7 @@ function clearVisible() {
 		
 		// FIXME see checkVisibilityChange() below on why this loop needs removing. 
 		$.each(images, function(index, image) {
-			recordVisibilityChange(image.src, hashCode, false);
+			recordVisibilityChange(image, hashCode, false);
 		});
 	});
 }
@@ -139,7 +141,7 @@ function checkVisibilityChange() {
 		var images = $(document.body).xpath(imageXPath);
 		
 		if (images.length > 1) {
-			console.log("xpath non-unique :(");
+//			console.log("xpath non-unique :(");
 		}
 		
 		// FIXME real answer is to find out why xpath is non-unique. for now though, we accept false-positives by using
@@ -147,13 +149,13 @@ function checkVisibilityChange() {
 		$.each(images, function(index, image) {
 			if (imageXPath in visibleImageXPaths) {
 				if (!checkVisible(image)) { // has image gone out of viewport?
-					recordVisibilityChange(image.src, hashCode, false);
+					recordVisibilityChange(image, hashCode, false);
 					delete visibleImageXPaths[imageXPath];
 				}
 			}
 			else { // not previously visible.
 				if (checkVisible(image)) { // has image entered viewport?
-					recordVisibilityChange(image.src, hashCode, true);
+					recordVisibilityChange(image, hashCode, true);
 					visibleImageXPaths[imageXPath] = true;
 				}
 			}
@@ -174,10 +176,47 @@ function checkVisible(element, eval) {
     	return elementTopY < (viewportHeight + scrollTopY);
 }
 
-function recordVisibilityChange(imgSrc, hashCode, isVisible) {
-	var ts = (new Date()).getTime();
-	var visibilityStr = isVisible ? "visible" : "not_visible";
+function recordVisibilityChange(image, hashCode, isVisible) {
+	var timestamp = (new Date()).getTime();
+	var source = image.src;
+
+	var vpDocOffsetTop = $(window).scrollTop();
+	var vpDocOffsetBottom = vpDocOffsetTop + $(window).height();
+	var vpDocOffsetLeft = $(window).scrollLeft();
+	var vpDocOffsetRight = vpDocOffsetLeft + $(window).width();
+	
+	// Position of element within document.
+	var offset = $(image).offset();
+	var dLeft = offset.left;
+	var dRight = dLeft + $(image).width();
+	var dTop = offset.top;
+	var dBottom = dTop + $(image).height();
+	
+	// Account for partial visibility.
+	dLeft = Math.max(dLeft, vpDocOffsetLeft);
+	dRight = Math.min(dRight, vpDocOffsetRight);
+	dTop = Math.max(dTop, vpDocOffsetTop);
+	dBottom = Math.min(dBottom, vpDocOffsetBottom);
+	
+	// Map document positions to viewport positions.
+	var vpTop = dTop - vpDocOffsetTop;
+	var vpBottom = dBottom - vpDocOffsetTop;
+	var vpLeft = dLeft - vpDocOffsetLeft;
+	var vpRight = dRight - vpDocOffsetLeft;
+	
+	var out = "[ADVERT] " +
+		"ts=" + timestamp +
+		",src=" + source +
+		",hash=" + hashCode;
+	
+	if (isVisible)
+		out += ",left=" + vpLeft +
+			",right=" + vpRight +
+			",top=" + vpTop +
+			",bottom=" + vpBottom;
+	
+	out += ",visible=" + isVisible;
 	
 	// TODO replace with message passing.
-	console.log("[ADVERT]" + ts + "," + imgSrc + "," + hashCode + "," + visibilityStr);
+	console.log(out);
 }
