@@ -148,7 +148,10 @@ function checkVisibilityChange() {
 		// a loop. once xpath is guaranteed to give exactly one element, the loop can be removed.
 		$.each(images, function(index, image) {
 			if (imageXPath in visibleImageXPaths) {
-				if (!checkVisible(image)) { // has image gone out of viewport?
+				if (checkVisible(image)) { // image still in viewport
+					recordVisibilityChange(image, hashCode, true);
+				}
+				else { // image has left viewport
 					recordVisibilityChange(image, hashCode, false);
 					delete visibleImageXPaths[imageXPath];
 				}
@@ -204,16 +207,53 @@ function recordVisibilityChange(image, hashCode, isVisible) {
 	var vpLeft = dLeft - vpDocOffsetLeft;
 	var vpRight = dRight - vpDocOffsetLeft;
 	
+//	var sTop = image.screenY;
+//	var sBottom = sTop + (dBottom - dTop);
+//	var sLeft = image.screenX;
+//	var sRight = sLeft + (dRight - dLeft);
+	
+	// Window position (not viewport position :( )
+	var screenY = (window.screenY | window.screenTop);
+	var screenX = (window.screenX | window.screenLeft);
+	var browserNonViewportY = window.outerHeight - window.innerHeight;
+	var browserNonViewportX = window.outerWidth - window.innerWidth;
+	
+	// Determining screen or navigation position of an element, as opposed to viewport position,
+	// appears impossible as of 2014-08-07. Detail:
+	// http://stackoverflow.com/questions/2337795/screen-coordinates-of-a-element-via-javascript
+	
+	// We can get:
+	// 1. Browser window position,
+	// 2. An element's viewport position,
+	// 3. Viewport size, and
+	// 4. Browser size.
+	// What we don't have is viewport POSITION. That is, we don't know whether the difference between the height of (3)
+	// and (4) is due to browser UI components above or below the viewport. This isn't so obvious, as the following go
+	// on the bottom:
+	//   a. Firefox's search bar.
+	//   b. Chrome's inspector.
+	//   c. Chrome's downloads.
+	// IE and Opera will put the scrollbar on the left in right-to-left locales (Arabic, Hebrew, ...).
+	
+	// We approximate screen positions by:
+	// 1. Adding screen position of browser to element position.
+	// 2. Assuming any difference between 'outer' (window) and 'inner' (viewport) size of browser is on the top and
+	// right.
+	var sTop = vpTop + screenY + browserNonViewportY;
+	var sBottom = vpBottom + screenY + browserNonViewportY;
+	var sLeft = vpLeft + screenX - browserNonViewportX;
+	var sRight = vpRight + screenX - browserNonViewportX;
+	
 	var out = "[ADVERT] " +
 		"ts=" + timestamp +
 		",src=" + source +
 		",hash=" + hashCode;
 	
 	if (isVisible)
-		out += ",left=" + vpLeft +
-			",right=" + vpRight +
-			",top=" + vpTop +
-			",bottom=" + vpBottom;
+		out += ",left=" + sLeft +
+			",right=" + sRight +
+			",top=" + sTop +
+			",bottom=" + sBottom;
 	
 	out += ",visible=" + isVisible;
 	
