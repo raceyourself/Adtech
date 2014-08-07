@@ -4,12 +4,12 @@ $(document).ready(function() {
 	hashReferenceImages();
 });
 $(window).scroll(function() {
-//	if (hashesCalculated == true)
-//		checkVisibilityChange();
+	if (hashesCalculated == true)
+		checkVisibilityChange();
 });
 $(window).unload(function() {
-//	if (hashesCalculated == true)
-//		clearVisible();
+	if (hashesCalculated == true)
+		clearVisible();
 });
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 	onDataUrlCalculated(request.dataUrl, request.index, request.type);
@@ -19,9 +19,9 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 // As of 2014-08-05 it appears to be impossible to make Chrome search for all files in an extension subdir.
 // So we need to name them explicitly (or load them over the web?).
 var refImagePaths = {
-	//"/ref_images/nytimes_internal_ad_163x90.jpg":"163x90",
-	"/ref_images/07comet-cnd-mediumFlexible177-v3.jpg":"177x100",
-	"/ref_images/mag-10Economy-t_CA0-mediumSquare149.jpg":"149x149"
+	"/ref_images/07BLOCKS1-mediumSquare149-v2.jpg":"149x149",
+	"/ref_images/STEINFELD-thumbStandard.jpg":"75x75",
+	"/ref_images/CITYHALL1-thumbStandard.jpg":"75x75"
 };
 
 var refImages = [];
@@ -40,14 +40,13 @@ var tabId;
 
 var imagesInPage;
 
-//var hashesCalculated;
+var hashesCalculated;
 
 // TODO is this needed or will everything be wiped on page load anyway?
-// If so, make sure refHashList/refImagePaths remain as-is.
 function initForNewPage() {
 	pageHashesByXPath = {};
 	visibleImageXPaths = {};
-//	hashesCalculated = false;
+	hashesCalculated = false;
 }
 
 // Calc hashes of references images - the images we're looking out for.
@@ -91,6 +90,10 @@ function onDataUrlCalculated(dataUrl, index, type) {
 		var limit = imagesInPage.length;
 		if (nextIndex < limit)
 			hashImageInPage(nextIndex);
+		else {
+			hashesCalculated = true;
+			checkVisibilityChange();
+		}
 	}
 	else {
 		console.log("AdDetector extension error: unexpected data URL type '" + type + "'");
