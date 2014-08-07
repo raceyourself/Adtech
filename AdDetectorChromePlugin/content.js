@@ -122,7 +122,7 @@ function clearVisible() {
 		
 		// FIXME see checkVisibilityChange() below on why this loop needs removing. 
 		$.each(images, function(index, image) {
-			recordVisibilityChange(image, hashCode, false);
+			recordVisibilityInfo(image, hashCode, false);
 		});
 	});
 }
@@ -145,16 +145,16 @@ function checkVisibilityChange() {
 		$.each(images, function(index, image) {
 			if (imageXPath in visibleImageXPaths) {
 				if (checkVisible(image)) { // image still in viewport
-					recordVisibilityChange(image, hashCode, true);
+					recordVisibilityInfo(image, hashCode, true);
 				}
 				else { // image has left viewport
-					recordVisibilityChange(image, hashCode, false);
+					recordVisibilityInfo(image, hashCode, false);
 					delete visibleImageXPaths[imageXPath];
 				}
 			}
 			else { // not previously visible.
 				if (checkVisible(image)) { // has image entered viewport?
-					recordVisibilityChange(image, hashCode, true);
+					recordVisibilityInfo(image, hashCode, true);
 					visibleImageXPaths[imageXPath] = true;
 				}
 			}
@@ -162,6 +162,7 @@ function checkVisibilityChange() {
 	});
 };
 
+// Determines whether an element is within the browser viewport.
 function checkVisible(element) {
     var viewportHeight = $(window).height();
     var scrollTop = $(window).scrollTop();
@@ -182,7 +183,8 @@ function checkVisible(element) {
 	return withinBottomBound && withinTopBound && withinLeftBound && withinRightBound;
 }
 
-function recordVisibilityChange(image, hashCode, isVisible) {
+// Produce the output - visibility information.
+function recordVisibilityInfo(image, hashCode, isVisible) {
 	var timestamp = (new Date()).getTime();
 	var source = image.src;
 
@@ -211,7 +213,7 @@ function recordVisibilityChange(image, hashCode, isVisible) {
 	var vpRight = dRight - vpDocOffsetLeft;
 	
 	// Window position (not viewport position :( )
-	var screenY = (window.screenY | window.screenTop);
+	var screenY = (window.screenY | window.screenTop); // screenTop/Left are for MSIE
 	var screenX = (window.screenX | window.screenLeft);
 	// Determine how much of the screen is taken up by tabs, toolbars, scrollbars etc
 	var browserNonViewportY = window.outerHeight - window.innerHeight;
