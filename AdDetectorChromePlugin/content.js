@@ -7,6 +7,10 @@ $(window).scroll(function() {
 	if (hashesCalculated == true)
 		checkVisibilityChange();
 });
+$(window).resize(function() {
+	if (hashesCalculated == true)
+		checkVisibilityChange();
+});
 $(window).unload(function() {
 	if (hashesCalculated == true)
 		clearVisible();
