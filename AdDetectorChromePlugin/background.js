@@ -10,9 +10,44 @@
  * https://code.google.com/p/chromium/issues/detail?id=161471
  */
 
+var nativePort;
+
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-	calcDataUrl(request.type, request.index, request.src, sender.tab.id);
+	if (request.action == "dataUrl")
+		calcDataUrl(request.type, request.index, request.src, sender.tab.id);
+	else if (request.action == "sendToNative")
+		sendVisibilityInfoToNative(request.timestamp, request.url, request.hashCode, request.absPosLeft,
+				request.absPosRight, request.absPosTop, request.absPosBottom, request.visible);
 });
+
+function sendVisibilityInfoToNative(
+		timestamp, url, hashCode, absPosLeft, absPosRight, absPosTop, absPosBottom, visible) {
+	if (nativePort == null) {
+		nativePort = chrome.runtime.connectNative('com.glassinsight.addetector');
+		nativePort.onDisconnect.addListener(onNativeDisconnect);
+		nativePort.onMessage.addListener(onNativeMessage);
+	}
+	
+	nativePort.postMessage({
+		timestamp: timestamp,
+		url: url,
+		hashCode: hashCode,
+		absPosLeft: absPosLeft,
+		absPosRight: absPosRight,
+		absPosTop: absPosTop,
+		absPosBottom: absPosBottom,
+		visible: visible
+	});
+}
+
+function onNativeDisconnect() {
+	console.log("Native app has disconnected");
+	nativePort = null;
+}
+
+function onNativeMessage(msg) { // debug only
+	console.log("[FROM NATIVE] Received echoed message back from native app: " + JSON.stringify(msg));
+}
 
 function calcDataUrl(type, index, src, tabId) {
 	// Create an empty canvas element

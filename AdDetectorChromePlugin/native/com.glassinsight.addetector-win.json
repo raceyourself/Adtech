@@ -1,0 +1,9 @@
+{
+  "name": "com.glassinsight.addetector",
+  "description": "Detects screen positions of predefined adverts in browser.",
+  "path": "native_messaging_host.bat",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://bgedcedcpjfebnoapibimcppgflfkffh/"
+  ]
+}

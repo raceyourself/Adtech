@@ -1,0 +1,4 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Google\Chrome\NativeMessagingHosts\com.glassinsight.addetector]
+@ = "C:\\Users\\Duncan\\glassinsight\\com.glassinsight.addetector-win.json"

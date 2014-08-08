@@ -29,7 +29,8 @@ var refImages = new Array(
 	"/ref_images/07oped-thumbStandard.jpg",
 	"/ref_images/GAZA-mediumSquare149-v2.jpg",
 	"/ref_images/0727MARIJUANA-thumbStandard.jpg",
-	"/ref_images/10DYLAN1-mediumSquare149-v2.jpg"
+	"/ref_images/10DYLAN1-mediumSquare149-v2.jpg",
+	"/ref_images/334776_thumb.jpg"
 );
 
 // Hashes of reference adverts in ref_adverts/. Set<hash>
@@ -59,7 +60,7 @@ function hashReferenceImage(index) {
 	
 	var imageUrl = chrome.extension.getURL(imagePath);
 	
-	chrome.runtime.sendMessage({type: "ref", index: index, src: imageUrl});
+	chrome.runtime.sendMessage({action: "dataUrl", type: "ref", index: index, src: imageUrl});
 }
 
 function onDataUrlCalculated(dataUrl, index, type) {
@@ -105,7 +106,7 @@ function hashImagesInPage() {
 function hashImageInPage(index) {
 	var pageImage = imagesInPage[index];
 	
-	chrome.runtime.sendMessage({type: "page", index: index, src: pageImage.src});
+	chrome.runtime.sendMessage({action: "dataUrl", type: "page", index: index, src: pageImage.src});
 }
 
 function dataUrl2hashCode(dataUrl) {
@@ -251,11 +252,16 @@ function recordVisibilityInfo(image, hashCode, isVisible) {
 	sLeft = Math.max(0, sLeft);
 	sRight = Math.min(screen.width - 1, sRight);
 	
+	logVisibilityInfo(timestamp, source, hashCode, sLeft, sRight, sTop, sBottom, isVisible);
+	sendVisibilityInfoToNative(timestamp, source, hashCode, sLeft, sRight, sTop, sBottom, isVisible);
+}
+
+function logVisibilityInfo(timestamp, source, hashCode, sLeft, sRight, sTop, sBottom, isVisible) {
 	var out = "[ADVERT] " +
-		"ts=" + timestamp +
-		",src=" + source +
-		",hash=" + hashCode;
-	
+	"ts=" + timestamp +
+	",src=" + source +
+	",hash=" + hashCode;
+
 	if (isVisible)
 		out += ",left=" + sLeft +
 			",right=" + sRight +
@@ -264,6 +270,20 @@ function recordVisibilityInfo(image, hashCode, isVisible) {
 	
 	out += ",visible=" + isVisible;
 	
-	// TODO replace with message passing.
 	console.log(out);
+}
+
+function sendVisibilityInfoToNative(timestamp, source, hashCode, sLeft, sRight, sTop, sBottom, isVisible) {
+	// Content scripts can't directly send to native - must go via background script.
+	chrome.runtime.sendMessage({
+		action: "sendToNative",
+		timestamp: timestamp,
+		url: source,
+		hashCode: hashCode,
+		absPosLeft: sLeft,
+		absPosRight: sRight,
+		absPosTop: sTop,
+		absPosBottom: sBottom,
+		visible: isVisible
+	});
 }
