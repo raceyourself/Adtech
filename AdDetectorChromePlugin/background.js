@@ -23,10 +23,9 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 function sendVisibilityInfoToNative(
 		timestamp, url, hashCode, absPosLeft, absPosRight, absPosTop, absPosBottom, visible) {
 	if (nativePort == null) {
-		nativePort = chrome.runtime.connectNative('com.glassfit.addetector');
-		nativePort.onDisconnect.addListener(new function() {
-			nativePort = null;
-		});
+		nativePort = chrome.runtime.connectNative('com.glassinsight.addetector');
+		nativePort.onDisconnect.addListener(onNativeDisconnect);
+		nativePort.onMessage.addListener(onNativeMessage);
 	}
 	
 	nativePort.postMessage({
@@ -39,6 +38,15 @@ function sendVisibilityInfoToNative(
 		absPosBottom: absPosBottom,
 		visible: visible
 	});
+}
+
+function onNativeDisconnect() {
+	console.log("Native app has disconnected");
+	nativePort = null;
+}
+
+function onNativeMessage(msg) { // debug only
+	console.log("[FROM NATIVE] Received echoed message back from native app: " + JSON.stringify(msg));
 }
 
 function calcDataUrl(type, index, src, tabId) {

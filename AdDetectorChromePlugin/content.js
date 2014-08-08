@@ -29,7 +29,8 @@ var refImages = new Array(
 	"/ref_images/07oped-thumbStandard.jpg",
 	"/ref_images/GAZA-mediumSquare149-v2.jpg",
 	"/ref_images/0727MARIJUANA-thumbStandard.jpg",
-	"/ref_images/10DYLAN1-mediumSquare149-v2.jpg"
+	"/ref_images/10DYLAN1-mediumSquare149-v2.jpg",
+	"/ref_images/334776_thumb.jpg"
 );
 
 // Hashes of reference adverts in ref_adverts/. Set<hash>
@@ -269,7 +270,6 @@ function logVisibilityInfo(timestamp, source, hashCode, sLeft, sRight, sTop, sBo
 	
 	out += ",visible=" + isVisible;
 	
-	// TODO replace with message passing.
 	console.log(out);
 }
 
