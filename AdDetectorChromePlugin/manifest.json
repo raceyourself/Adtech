@@ -5,7 +5,7 @@
   "description": "Determines whether an advert has been scrolled into view.",
   "version": "1.0",
 
-  "permissions": ["tabs", "<all_urls>"],
+  "permissions": ["tabs", "<all_urls>", "nativeMessaging"],
   
   "web_accessible_resources": [
     "ref_images/*"

@@ -251,11 +251,16 @@ function recordVisibilityInfo(image, hashCode, isVisible) {
 	sLeft = Math.max(0, sLeft);
 	sRight = Math.min(screen.width - 1, sRight);
 	
+	logVisibilityInfo(timestamp, source, hashCode, sLeft, sRight, sTop, sBottom, isVisible);
+	sendVisibilityInfoToNative(timestamp, source, hashCode, sLeft, sRight, sTop, sBottom, isVisible);
+}
+
+function logVisibilityInfo(timestamp, source, hashCode, sLeft, sRight, sTop, sBottom, isVisible) {
 	var out = "[ADVERT] " +
-		"ts=" + timestamp +
-		",src=" + source +
-		",hash=" + hashCode;
-	
+	"ts=" + timestamp +
+	",src=" + source +
+	",hash=" + hashCode;
+
 	if (isVisible)
 		out += ",left=" + sLeft +
 			",right=" + sRight +
@@ -266,4 +271,26 @@ function recordVisibilityInfo(image, hashCode, isVisible) {
 	
 	// TODO replace with message passing.
 	console.log(out);
+}
+
+var nativePort;
+
+function sendVisibilityInfoToNative(timestamp, source, hashCode, sLeft, sRight, sTop, sBottom, isVisible) {
+	if (!nativeConnection) {
+		nativePort = chrome.runtime.connectNative('com.glassfit.addetector');
+		nativePort.onDisconnect.addListener(new function() {
+			nativePort = null;
+		});
+	}
+	
+	nativePort.postMessage({
+		timestamp: timestamp,
+		url: source,
+		hashCode: hashCode,
+		absPosLeft: sLeft,
+		absPosRight: sRight,
+		absPosTop: sTop,
+		absPosBottom: sBottom,
+		visible: isVisible
+	});
 }
