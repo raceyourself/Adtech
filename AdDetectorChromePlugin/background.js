@@ -10,9 +10,36 @@
  * https://code.google.com/p/chromium/issues/detail?id=161471
  */
 
+var nativePort;
+
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-	calcDataUrl(request.type, request.index, request.src, sender.tab.id);
+	if (request.action == "dataUrl")
+		calcDataUrl(request.type, request.index, request.src, sender.tab.id);
+	else if (request.action == "sendToNative")
+		sendVisibilityInfoToNative(request.timestamp, request.url, request.hashCode, request.absPosLeft,
+				request.absPosRight, request.absPosTop, request.absPosBottom, request.visible);
 });
+
+function sendVisibilityInfoToNative(
+		timestamp, url, hashCode, absPosLeft, absPosRight, absPosTop, absPosBottom, visible) {
+	if (nativePort == null) {
+		nativePort = chrome.runtime.connectNative('com.glassfit.addetector');
+		nativePort.onDisconnect.addListener(new function() {
+			nativePort = null;
+		});
+	}
+	
+	nativePort.postMessage({
+		timestamp: timestamp,
+		url: url,
+		hashCode: hashCode,
+		absPosLeft: absPosLeft,
+		absPosRight: absPosRight,
+		absPosTop: absPosTop,
+		absPosBottom: absPosBottom,
+		visible: visible
+	});
+}
 
 function calcDataUrl(type, index, src, tabId) {
 	// Create an empty canvas element

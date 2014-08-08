@@ -59,7 +59,7 @@ function hashReferenceImage(index) {
 	
 	var imageUrl = chrome.extension.getURL(imagePath);
 	
-	chrome.runtime.sendMessage({type: "ref", index: index, src: imageUrl});
+	chrome.runtime.sendMessage({action: "dataUrl", type: "ref", index: index, src: imageUrl});
 }
 
 function onDataUrlCalculated(dataUrl, index, type) {
@@ -105,7 +105,7 @@ function hashImagesInPage() {
 function hashImageInPage(index) {
 	var pageImage = imagesInPage[index];
 	
-	chrome.runtime.sendMessage({type: "page", index: index, src: pageImage.src});
+	chrome.runtime.sendMessage({action: "dataUrl", type: "page", index: index, src: pageImage.src});
 }
 
 function dataUrl2hashCode(dataUrl) {
@@ -273,17 +273,10 @@ function logVisibilityInfo(timestamp, source, hashCode, sLeft, sRight, sTop, sBo
 	console.log(out);
 }
 
-var nativePort;
-
 function sendVisibilityInfoToNative(timestamp, source, hashCode, sLeft, sRight, sTop, sBottom, isVisible) {
-	if (!nativeConnection) {
-		nativePort = chrome.runtime.connectNative('com.glassfit.addetector');
-		nativePort.onDisconnect.addListener(new function() {
-			nativePort = null;
-		});
-	}
-	
-	nativePort.postMessage({
+	// Content scripts can't directly send to native - must go via background script.
+	chrome.runtime.sendMessage({
+		action: "sendToNative",
 		timestamp: timestamp,
 		url: source,
 		hashCode: hashCode,
