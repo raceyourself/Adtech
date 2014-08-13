@@ -1,8 +1,16 @@
 <?php require_once('cloner.js'); ?>
-function underad(id, width, height, url, link){
-  var d = document.getElementById(id);
+function underad(selector, width, height, url, link){
+  var sel = selector;
+  var index = 0;
+  if (sel[0] === '.') {
+    var pivot = sel.lastIndexOf('#');
+    sel = selector.substr(0, pivot);
+    index = ~~(selector.substr(pivot))
+  }
+  console.log('selector: ' + sel + ' index: ' + index);
+  var d = document.querySelectorAll(sel)[index];
   if (d === null) return; // TODO: Recreate from server-side template
-  if (hidden(d)) recreate(d, function(underad) { 
+  if (hidden(d)) recreate(selector, d, function(underad) { 
     //if (underad.offsetWidth >= parseInt(width) && underad.offsetHeight >= parseInt(height)) {
     if (true) {
       var img = document.createElement('img');

@@ -47,24 +47,35 @@ def get_computed_style(url, selector, parents):
             print "Timed out waiting for ready state: %s" % str(e)
 
         return chrome.execute_script("""
-        var a = [];
-        var parents = %d;
-        // TODO: Class#index selector
-        var el = document.getElementById('%s')
-        for (var i=0; i<parents && el !== null; i++) {
-            var css = window.getComputedStyle(el);
-            var style = {};
-            for (var key in css) {
-                if (!isNaN(key)) continue;
-                if (key === 'cssText') continue;
-                if (key === 'length') continue;
-                if (key.indexOf('webkit') !== -1) continue;
-                if (css[key] !== '') style[key] = css[key];
+            try {
+                var a = [];
+                var parents = %d;
+                var selector = '%s';
+                var sel = selector;
+                var index = 0;
+                if (sel[0] === '.') {
+                    var pivot = sel.lastIndexOf('#');
+                    sel = selector.substr(0, pivot);
+                    index = ~~(selector.substr(pivot));
+                }
+                var el = document.querySelectorAll(sel)[index];
+                for (var i=0; i<parents && el !== null; i++) {
+                    var css = window.getComputedStyle(el);
+                    var style = {};
+                    for (var key in css) {
+                        if (!isNaN(key)) continue;
+                        if (key === 'cssText') continue;
+                        if (key === 'length') continue;
+                        if (key.indexOf('webkit') !== -1) continue;
+                        if (css[key] !== '') style[key] = css[key];
+                    }
+                    a.push(style);
+                    el = el.parentNode;
+                }
+                return JSON.stringify(a);
+            } catch (e) {
+                return "[]";
             }
-            a.push(style);
-            el = el.parentNode;
-        }
-        return JSON.stringify(a);
         """ % (parents, selector))
     finally:
         chrome.quit()

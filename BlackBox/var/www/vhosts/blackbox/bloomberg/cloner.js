@@ -1,6 +1,6 @@
-function recreate(e,created) {
+function recreate(selector, e, created) {
   if (e === null || !hidden(e)) return null;
-  console.log('recreating ' + e.id);
+  console.log('recreating ' + selector);
   var el = recursefindhighestblocked(e);
   var depth = recursefinddepthblocked(e);
   console.log(depth);
@@ -48,9 +48,9 @@ function recreate(e,created) {
   var p = el.parentNode;
   p.insertBefore(c, el.nextElementSibling);
   ce.style.display = 'inline-block';
-  ce.id = 'bob' + ~~(Math.random() * 9999)
-  if (e.id) jQuery.getJSON('http://demo.glassinsight.co.uk/bob_generator?selector=' + btoa(e.id) + '&parents=' + depth, function(data) {
-    console.log('restyling ' + e.id + ' ' + ce.id);
+  ce.id = 'bob' + ~~(Math.random() * 9999);
+  if (e.id) jQuery.getJSON('http://demo.glassinsight.co.uk/bob_generator?selector=' + btoa(selector) + '&parents=' + depth, function(data) {
+    console.log('restyling ' + selector + ' depth: ' + data.length);
     var node = document.getElementById(ce.id); 
     for (var i=0, l = data.length; i < l; i++) {
       node.removeAttribute('style');
