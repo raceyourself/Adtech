@@ -13,11 +13,21 @@ function underad(selector, width, height, url, link){
   if (hidden(d)) recreate(selector, d, function(underad) { 
     //if (underad.offsetWidth >= parseInt(width) && underad.offsetHeight >= parseInt(height)) {
     if (true) {
+      underad.innerHTML = '';
       var img = document.createElement('img');
       img.style.width = width;
       img.style.height = height;
       img.src = url;
       underad.appendChild(img);
+      if (hidden(img)) {
+        var el = img;
+        while (el !== null) {
+          if (el.style.display === 'none') {
+            el.style.display = null;
+          }
+          el = el.parentNode;
+        }
+      }
     }
     /*
     underad.style.width = width;

@@ -18,12 +18,12 @@ def application(environ, start_response):
 
     return [output] 
 
-def get_computed_style(url, selector, parents):
+def get_computed_style(url, selector, parents, width=1920, height=1200):
     print "url: %s" % url
     print "selector: %s" % selector
     print "parents: %d" % parents
 
-    display = Display(visible=0, size=(1920, 1200))
+    display = Display(visible=0, size=(width, height))
     display.start()
 
     chromedriver = "/opt/chromedriver/chromedriver"
@@ -34,6 +34,7 @@ def get_computed_style(url, selector, parents):
     chrome_options.add_argument("--disable-extensions")
     chrome_options.add_argument("--incognito")
     chrome_options.add_argument("--use-mock-keychain")
+    chrome_options.add_argument("--disable-web-security") # Required for getMatchedCSSRules
     chrome_options.add_argument("user-data-dir=/opt/chromedriver/vanilla_profile_%s" % uuid.uuid4())
     chrome = webdriver.Chrome(chromedriver, chrome_options=chrome_options)
     try:
@@ -59,21 +60,28 @@ def get_computed_style(url, selector, parents):
                     index = ~~(selector.substr(pivot));
                 }
                 var el = document.querySelectorAll(sel)[index];
-                for (var i=0; i<parents && el !== null; i++) {
-                    var css = window.getComputedStyle(el);
+                if (el === null) throw {name: 'Custom Exception', message: 'Could not find '+selector};
+                for (var d=0; d<parents && el !== null; d++) {
+                    var rules = window.getMatchedCSSRules(el);
+                    if (rules === null) throw {name: 'Custom Exception', message: 'Could not find rules for '+selector + ' depth ' + d};
                     var style = {};
-                    for (var key in css) {
-                        if (!isNaN(key)) continue;
-                        if (key === 'cssText') continue;
-                        if (key === 'length') continue;
-                        if (key.indexOf('webkit') !== -1) continue;
-                        if (css[key] !== '') style[key] = css[key];
+                    for (var i=0, il=rules.length; i<il; i++) {
+                        var css = rules[i].style;
+                        for (var j=0, jl=css.length; j<jl; j++) {
+                            var key = css[j];
+                            if (!isNaN(key)) continue;
+                            if (key === 'cssText') continue;
+                            if (key === 'length') continue;
+                            if (key.indexOf('webkit') !== -1) continue;
+                            if (css[key] !== '') style[key] = css[key];
+                        }
                     }
                     a.push(style);
                     el = el.parentNode;
                 }
                 return JSON.stringify(a);
             } catch (e) {
+                throw e;
                 return "[]";
             }
         """ % (parents, selector))

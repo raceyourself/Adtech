@@ -61,7 +61,7 @@ function recreate(selector, e, created) {
     }
     created(ce);
   }).error(function() {
-    console.error('could not restyle ' + e.id + ' ' + ce.id);
+    console.error('could not restyle ' + selector);
     created(ce);
   });
   return ce;
