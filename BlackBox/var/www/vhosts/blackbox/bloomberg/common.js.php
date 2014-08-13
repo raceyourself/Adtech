@@ -1,4 +1,4 @@
-<?php require_once('cloner.js'); ?>
+<?php require_once('cloner.js.php'); ?>
 function underad(selector, width, height, url, link){
   var sel = selector;
   var index = 0;
@@ -22,7 +22,7 @@ function underad(selector, width, height, url, link){
       if (hidden(img)) {
         var el = img;
         while (el !== null) {
-          if (el.style.display === 'none') {
+          if (el.style && el.style.display === 'none') {
             el.style.display = null;
           }
           el = el.parentNode;

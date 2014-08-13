@@ -8,7 +8,8 @@ from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 
 def application(environ, start_response):
-    parameters = parse_qs(environ.get('QUERY_STRING', ''))
+    query_string = base64.b64decode(environ.get('QUERY_STRING', ''))
+    parameters = parse_qs(query_string)
     status = '200 OK'
     output = get_computed_style('http://www.bloomberg.com', base64.b64decode(parameters['selector'][0]), int(parameters['parents'][0])).encode("utf-8")
 

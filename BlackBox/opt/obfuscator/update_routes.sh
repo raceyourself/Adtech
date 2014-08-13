@@ -1,6 +1,6 @@
 #!/bin/bash -e
 SECRET=ab3847dcef228a
-TIME_BUCKET=60
+TIME_BUCKET=600
 
 PATH=/etc/apache2/rewrite-maps/dynamic
 NEW_ROUTES=$PATH/new_routes.txt
