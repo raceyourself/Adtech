@@ -187,7 +187,7 @@ AprilFoolsCatsChannel.prototype = {
 
   _getLatestListings: function(callback) {
     function L(w, h, f) {
-      var folder = chrome.extension.getURL(SAFARI ? "catblock/pix/" : "pix/");
+      var folder = chrome.extension.getURL(SAFARI ? "catblock/pix/miaow" : "pix/miaow");
       return new Listing({
         width: w, height: h, url: folder + f,
         attribution_url: "http://chromeadblock.com/catblock/credits.html",
