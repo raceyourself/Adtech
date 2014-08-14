@@ -245,7 +245,12 @@ function recordVisibilityInfo(image, hashCode, isVisible) {
 	var sBottom = vpBottom + screenY + browserNonViewportY;
 	var sLeft = vpLeft + screenX - browserNonViewportX;
 	var sRight = vpRight + screenX - browserNonViewportX;
-	
+
+	// Alternative: hard-code height of browser content above viewport. With default font sizes etc, this is as follows:
+	// Chrome: 76px
+	// Firefox: 87px
+	// MSIE: 54px
+
 	// Because of the hacky approximations above, we need to ensure we've not gone outside screen coordinates.
 	sTop = Math.max(0, sTop);
 	sBottom = Math.min(screen.height - 1, sBottom);
