@@ -399,56 +399,56 @@ translate: function(key) {
     "explanation": {
       en: "AdBlock now shows you cats instead of ads!",
       es: "AdBlock ahora muestra los gatos en lugar de anuncios!",
-      fr: "DorÃ©navant AdBlock affichera des chats Ã  la place des publicitÃ©s!",
+      fr: "Dorénavant AdBlock affichera des chats à la place des publicités!",
       de: "AdBlock ersetzt ab heute Werbung durch Katzen!",
-      ru: "AdBlock Ñ‚ÐµÐ¿ÐµÑ€ÑŒ Ð¾Ñ‚Ð¾Ð±Ñ€Ð°Ð¶Ð°ÐµÑ‚ ÐºÐ¾Ñ‚Ð¾Ð² Ð²Ð¼ÐµÑ�Ñ‚Ð¾ Ñ€ÐµÐºÐ»Ð°Ð¼Ñ‹!",
+      ru: "AdBlock теперь отображает котов вместо рекламы!",
       nl: "AdBlock toont je nu katten in plaats van advertenties!",
-      zh: "çŽ°åœ¨æ˜¾ç¤ºçš„AdBlockçŒ«ï¼Œè€Œä¸�æ˜¯å¹¿å‘Šï¼�",
+      zh: "现在显示的AdBlock猫，而不是广告！",
     },
     "stop_showing": {
       en: "Stop showing me cats!",
       es: "No mostrar los gatos!",
-      fr: "ArrÃªter l'affichage des chats!",
+      fr: "Arrêter l'affichage des chats!",
       de: "Keine Katzen mehr anzeigen!",
-      ru: "Ð�Ðµ Ð¿Ð¾ÐºÐ°Ð·Ñ‹Ð²Ð°Ñ‚ÑŒ ÐºÐ¾ÑˆÐµÐº!",
+      ru: "Не показывать кошек!",
       nl: "Toon geen katten meer!",
-      zh: "ä¸�æ˜¾ç¤ºçŒ«å›¾ç‰‡ï¼�",
+      zh: "不显示猫图片！",
     },
     "ok_no_more": {
       en: "OK, AdBlock will not show you any more cats.\n\nHappy April Fools' Day!",
-      es: "OK, AdBlock no te mostrarÃ¡ los gatos.\n\nFeliz DÃ­a de los Inocentes!",
-      fr: "OK, AdBlock n'affichera plus de chats.\n\nJ'espÃ¨re que mon poisson d'avril vous a plu!",
+      es: "OK, AdBlock no te mostrará los gatos.\n\nFeliz Día de los Inocentes!",
+      fr: "OK, AdBlock n'affichera plus de chats.\n\nJ'espère que mon poisson d'avril vous a plu!",
       de: "AdBlock wird keine Katzen mehr anzeigen.\n\nApril, April!",
-      ru: "Ð¥Ð¾Ñ€Ð¾ÑˆÐ¾, AdBlock Ð½Ðµ Ð±ÑƒÐ´ÐµÑ‚ Ð¾Ñ‚Ð¾Ð±Ñ€Ð°Ð¶Ð°Ñ‚ÑŒÑ�Ñ� ÐºÐ¾ÑˆÐµÐº.\n\nÐ•Ñ�Ñ‚ÑŒ Ñ�Ñ‡Ð°Ñ�Ñ‚Ð»Ð¸Ð²Ñ‹Ð¹ Ð”ÐµÐ½ÑŒ Ð´ÑƒÑ€Ð°ÐºÐ°",
+      ru: "Хорошо, AdBlock не будет отображаться кошек.\n\nЕсть счастливый День дурака",
       nl: "1 April!!\n\nAdBlock zal vanaf nu geen katten meer tonen.",
-      zh: "OKï¼Œçš„AdBlockä¸�ä¼šæ˜¾ç¤ºçŒ«ã€‚\n\nå¹¸ç¦�å››æœˆæ„šäººèŠ‚ï¼�",
+      zh: "OK，的AdBlock不会显示猫。\n\n幸福四月愚人节！",
     },
     "new": {
       en: "New!",
       es: "Nuevo!",
       fr: "Nouveau!",
       de: "Neu!",
-      ru: "Ð½Ð¾Ð²Ð¾Ðµ!",
+      ru: "новое!",
       nl: "Nieuw!",
-      zh: "æ–°ï¼�",
+      zh: "新！",
     },
     "enable_picinjection": {
       en: "Display a pretty picture in place of ads.",
       es: "Mostrar una foto bonita en lugar de anuncios.",
-      fr: "Afficher des belles images Ã  la place des publicitÃ©s.",
-      de: "Werbung durch schÃ¶ne Bilder ersetzen.",
-      ru: "ÐŸÐ¾ÐºÐ°Ð·Ð°Ñ‚ÑŒ ÐºÑ€Ð°Ñ�Ð¸Ð²ÑƒÑŽ ÐºÐ°Ñ€Ñ‚Ð¸Ð½ÐºÑƒ Ð²Ð¼ÐµÑ�Ñ‚Ð¾ Ð¾Ð±ÑŠÑ�Ð²Ð»ÐµÐ½Ð¸Ñ�.",
+      fr: "Afficher des belles images à la place des publicités.",
+      de: "Werbung durch schöne Bilder ersetzen.",
+      ru: "Показать красивую картинку вместо объявления.",
       nl: "Toon een leuke afbeelding op de plaats waar advertenties stonden.",
-      zh: "æ˜¾ç¤ºæ¼‚äº®çš„ç…§ç‰‡ï¼Œè€Œä¸�æ˜¯å¹¿å‘Šã€‚",
+      zh: "显示漂亮的照片，而不是广告。",
     },
     "learn_more": {
       en: "Learn more",
-      es: "MÃ¡s informaciÃ³n",
+      es: "Más información",
       fr: "En savoir plus",
       de: "Mehr Informationen",
-      ru: "ÐŸÐ¾Ð´Ñ€Ð¾Ð±Ð½ÐµÐµ",
+      ru: "Подробнее",
       nl: "Meer informatie",
-      zh: "äº†è§£æ›´å¤šä¿¡æ�¯",
+      zh: "了解更多信息",
     },
     "the_url": {
       // don't translate into other locales
@@ -536,9 +536,7 @@ _picdata: {
 },
 
 enabled: (function() {
-  chrome.extension.sendRequest({command: 'get-license'}, function(theLicense) {
-    picinjection.enabled = (theLicense.state === "enabled");
-  });
+  picinjection.enabled = true;
   return true;
 })(),
 
