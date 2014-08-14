@@ -1,0 +1,10 @@
+{
+   "catblock_description1": {
+      "description": "Extension description in manifest",
+      "message": "CatBlock!"
+   },
+   "catblock_optionstitle": {
+      "description": "Title for the options page",
+      "message": "Options"
+   }
+}
