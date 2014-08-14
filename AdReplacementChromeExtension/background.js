@@ -82,9 +82,4 @@ if (!SAFARI) {
   );
 }
 
-// Yes, you could hack my code to not check the license.  But please don't.
-// Paying for this extension supports my work on AdBlock.  Thanks very much.
-// - Michael Gundlach (adblockforchrome at gmail)
-license.updatePeriodically();
-
 channels = new Channels();
