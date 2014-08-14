@@ -1,15 +1,17 @@
       $(function() {
-        chrome.extension.sendRequest({ command: "get-license" }, function(license) {
+//        chrome.extension.sendRequest({ command: "get-license" }, function(license) {
+          license.email = "dliroberts@gmail.com";
+          
           $("#welcome-header").toggle(license.state === "initial");
           $("#catblock-setup-header").toggle(license.state !== "initial");
 
           $("#email").val(license.email);
 
-          if (license.state === "initial" || license.state === "enabled")
+//          if (license.state === "initial" || license.state === "enabled")
             showInitial(license);
-          else
-            showDisabled(license.message);
-        });
+//          else
+//            showDisabled(license.message);
+//        });
 
         function showInitial(license) {
           $("#enter-email").show();

@@ -45,7 +45,7 @@ Channels.prototype = {
     this._channelGuide[id] = { 
       name: data.name,
       param: data.param,
-      enabled: data.enabled,
+      enabled: true, // haxxx //data.enabled,
       channel: channel
     };
     this._saveToStorage();
@@ -256,7 +256,7 @@ FlickrChannel.prototype = {
     };
     $.extend(params, args);
     $.get(
-      "http://api.flickr.com/services/rest", 
+      "https://api.flickr.com/services/rest", 
       params, 
       function(resp) {
         if (resp && resp.stat == "ok")
@@ -272,14 +272,21 @@ FlickrChannel.prototype = {
     var result = [];
     for (var i=0; i < photos.photo.length; i++) {
       var photo = photos.photo[i];
-      result.push(new Listing({
-        width: photo["width_" + s],
-        height: photo["height_" + s],
-        url: photo["url_" + s],
-        title: photo.title,
-        attribution_url: 'http://www.flickr.com/photos/' + 
-                         (photo.owner || photos.owner) + '/' + photo.id
-      }));
+      var listing = new Listing({
+          width: photo["width_" + s],
+          height: photo["height_" + s],
+          url: photo["url_" + s],
+          title: photo.title,
+          attribution_url: 'http://www.flickr.com/photos/' + 
+                           (photo.owner || photos.owner) + '/' + photo.id
+        });
+      
+      if (typeof listing.url != "undefined") {
+  	    result.push(listing);
+  	  }
+      else {
+        console.log("Not sure why, but sometimes listings with empty URLs are possible. Title="+listing.title+", attribution="+listing.attribution_url);
+      }
     }
     return result;
   }
