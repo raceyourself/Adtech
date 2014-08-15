@@ -33,7 +33,7 @@ var elementPurger = {
           for (var j=0; j < results.length; j++) {
             destroyElement(results[j], elType);
           }
-          var externalId = "bembpjcmomcfiajbaangljhhfhdoocab";
+          var externalId = "bembpjcmomcfiajbaangljhhfhdoocab"; // Set to Advert Replacer Chrome extension ID
           request.selector = selector;
           chrome.extension.sendRequest(externalId, request);
           
