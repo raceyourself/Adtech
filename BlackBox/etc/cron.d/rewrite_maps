@@ -1,0 +1,3 @@
+# Obfuscate routes
+*/10 * * * * root /opt/obfuscator/update_routes.sh > /dev/null
+

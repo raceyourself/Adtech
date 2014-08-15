@@ -1,58 +1,45 @@
 <?php require_once('obfuscator.php'); ?>
-function recreate(selector, e, created) {
-  if (e === null || !hidden(e)) return null;
+
+// Recreate element e matching selector selector
+function recreate(selector, e, callback) {
+  if (e === null || !hidden(e)) return null; 
   console.log('recreating ' + selector);
-  var el = recursefindhighestblocked(e);
-  var depth = recursefinddepthblocked(e);
-  console.log(depth);
+
+  // TODO: figure out a way to find the cloned element that doesn't rely on easy (detectable) identifiers
+  if (!e.id) e.id = 'tmp_'+~~(Math.random() * 99999);
+
+  // Find patient zero
+  var patientZero = recurseFindHighestBlocked(e);
+  var el = patientZero.element;
+  var depth = patientZero.depth;
+
+  // Clone patient zero and all its children
   var c = el.cloneNode(true);
+  // Cloned element (a child of patient zero)
   var ce = null;
-  c.className = '';
+
+  // Remove blockable identifiers from clones
+  c.removeAttribute('class');
+  // Find cloned element
   if (c.id && c.id === e.id) ce = c;
-  c.id = '';
-  //clonestyle(el, c);
-  if (c.style) {
-    c.style.display = 'block';
-    c.style.visibility = 'visible';
-    c.style.textAlign = 'center';
-    if (c.style.height) {
-      c.style.minHeight = c.style.height;
-      c.style.height = '';
-    }
-    if (c.style.width) {
-      c.style.minWidth = c.style.width;
-      c.style.width = '';
-    }
-  }
-  var children = c.getElementsByTagName(e.tagName);
-  var templates = el.getElementsByTagName(e.tagName);
+  c.removeAttribute('id');
+  var children = c.getElementsByTagName('*');
   for (var i=0, l=children.length; i < l; i++) {
     var child = children[i];
-    var template = templates[i];
-    child.className = '';
+    child.removeAttribute('class')
+    // Find cloned element
     if (child.id && child.id === e.id) ce = child;
-    child.id = '';
-    //clonestyle(child, template);
-    if (child.style) {
-      child.style.display = 'inline-block';
-      child.style.visibility = 'visible';
-      if (child.style.height) {
-        child.style.minHeight = child.style.height;
-        child.style.height = '';
-      }
-      if (child.style.width) {
-        child.style.minWidth = child.style.width;
-        child.style.width = '';
-      }
-    }
+    child.removeAttribute('id');
   }
+
+  // Insert clones next to patient zero
   var p = el.parentNode;
   p.insertBefore(c, el.nextElementSibling);
-  ce.style.display = 'inline-block';
-  ce.id = 'bob' + ~~(Math.random() * 9999);
-  if (e.id) jQuery.getJSON('<?php echo obfuscate('blackbox/bob_generator'); ?>?' + btoa('selector=' + btoa(selector) + '&parents=' + depth), function(data) {
-    console.log('restyling ' + selector + ' depth: ' + data.length);
-    var node = document.getElementById(ce.id); 
+
+  // Fetch clean style from server
+  jQuery.getJSON('<?php echo obfuscate('blackbox/bob_generator'); ?>?' + btoa('selector=' + btoa(selector) + '&parents=' + depth), function(data) {
+    console.log('restyling ' + selector + ' depth: ' + (data.length-1));
+    var node = ce;
     for (var i=0, l = data.length; i < l; i++) {
       node.removeAttribute('style');
       for (var key in data[i]) { 
@@ -60,17 +47,21 @@ function recreate(selector, e, created) {
       } 
       node = node.parentNode; 
     }
-    created(ce);
+    callback(ce);
   }).error(function() {
     console.error('could not restyle ' + selector);
-    created(ce);
+    callback(ce);
   });
   return ce;
 }
 
+// Is this element hidden or are all its children hidden?
 function hidden(el) {
   var selfhidden = (el === null || el.offsetParent === null || el.offsetHeight === 0 || el.offsetWidth === 0);
   if (selfhidden) return selfhidden;
+
+  // Adblock may have denied access to an ad resource
+  // TODO: Check for iframes/objects/img tags with error states?
   var children = el.children;
   if (children.length === 0) return selfhidden;
   for (var i=0, l=children.length; i < l; i++) {
@@ -79,61 +70,19 @@ function hidden(el) {
   return true;
 }
 
-function findhighestblocked(id) {
-  var el = document.getElementById(id);
-  return recursefindhighestblocked(el); 
-}
-
-function recursefinddepthblocked(el,depth) {
-  depth = depth || 1;
-  if (el === null) return depth;
+// Recurse through parents until we find an element that isn't hidden
+function recurseFindHighestBlocked(el, d) {
+  if (el === null) throw {name: 'NullReferenceException', message: 'argument el is Null'};
+  d = d || 0;
   if (!hidden(el)) {
-    return depth;
+    return {element: el, depth: d};
   }
   if (el.parentNode === null) {
-    return depth;
+    return {element: el, depth: d};
   }
   var pel = el.parentNode;
   if (!hidden(pel)) {
-    return depth;
+    return {element: el, depth: d};
   }
-  return recursefinddepthblocked(pel,depth+1);
+  return recurseFindHighestBlocked(pel, 1+d);
 }
-
-function recursefindhighestblocked(el) {
-  if (el === null) return null;
-  if (!hidden(el)) {
-    return el;
-  }
-  if (el.parentNode === null) {
-    return el;
-  }
-  var pel = el.parentNode;
-  if (!hidden(pel)) {
-    return el;
-  }
-  return recursefindhighestblocked(pel);
-}
-
-function getChildNumber(node) {
-  return Array.prototype.indexOf.call(node.parentNode.childNodes, node);
-}
-
-function clonestyle(from,to)
-            {
-                var cs = false;
-                if (from.currentStyle)
-                     cs = from.currentStyle;
-                else if (window.getComputedStyle)
-                     cs = document.defaultView.getComputedStyle(from,null);
-                if(!cs)
-                    return null;
-            for(var prop in cs)
-                {
-                        if(cs[prop] != undefined && cs[prop].length > 0 && typeof cs[prop] !== 'object' && typeof cs[prop] !== 'function' && prop != parseInt(prop))
-                        {
-                                to.style[prop] = cs[prop];
-
-                        }   
-                }   
-            }
