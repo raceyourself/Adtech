@@ -181,7 +181,7 @@ function adblock_begin(inputs) {
     if (data && data.settings && data.settings.debug_logging)
       logging(true);
 
-    inputs.handleHiding(data);
+//    inputs.handleHiding(data);
 
     if (!data.running) {
       inputs.stopPurger();
