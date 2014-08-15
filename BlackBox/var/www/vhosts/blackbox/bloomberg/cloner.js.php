@@ -60,14 +60,35 @@ function hidden(el) {
   var selfhidden = (el === null || el.offsetParent === null || el.offsetHeight === 0 || el.offsetWidth === 0);
   if (selfhidden) return selfhidden;
 
+  if (el.tagName.toLowerCase() === 'img' && !isImageOk(el)) return true;   
+
   // Adblock may have denied access to an ad resource
-  // TODO: Check for iframes/objects/img tags with error states?
   var children = el.children;
   if (children.length === 0) return selfhidden;
   for (var i=0, l=children.length; i < l; i++) {
     if (!hidden(children[i])) return false;
   }
   return true;
+}
+
+function isImageOk(img) {
+    // During the onload event, IE correctly identifies any images that
+    // weren’t downloaded as not complete. Others should too. Gecko-based
+    // browsers act like NS4 in that they report this incorrectly.
+    if (!img.complete) {
+        return false;
+    }
+
+    // However, they do have two very useful properties: naturalWidth and
+    // naturalHeight. These give the true size of the image. If it failed
+    // to load, either of these should be zero.
+
+    if (typeof img.naturalWidth !== "undefined" && img.naturalWidth === 0) {
+        return false;
+    }
+
+    // No other way of checking: assume it’s ok.
+    return true;
 }
 
 // Recurse through parents until we find an element that isn't hidden
