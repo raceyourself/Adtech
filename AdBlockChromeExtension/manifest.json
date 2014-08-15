@@ -1,5 +1,5 @@
 {
-  "name": "AdBlock",
+  "name": "AdBlock fork (replaces some ads, ignores others)",
   "version": "2.7.10",
   "background": {
     "scripts": [
