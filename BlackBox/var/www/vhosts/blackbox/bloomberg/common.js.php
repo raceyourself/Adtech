@@ -23,7 +23,7 @@ function underad(selector, width, height, url, link){
         var el = img;
         while (el !== null) {
           if (el.style && el.style.display === 'none') {
-            el.style.display = null;
+            el.style.removeProperty('display');
           }
           el = el.parentNode;
         }
