@@ -50,6 +50,11 @@ function onNativeMessage(msg) { // debug only
 }
 
 function calcDataUrl(type, index, src, tabId) {
+	if (!src) {
+		chrome.tabs.sendMessage(tabId, {dataUrl: null, index: index, type: type});
+		return;
+	}
+	
 	// Create an empty canvas element
     var canvas = document.createElement("canvas");
     
