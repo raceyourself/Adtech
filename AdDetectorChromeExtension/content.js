@@ -23,6 +23,8 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 // So we need to name them explicitly (or load them over the web?).
 // NOTE: MUST BE MANUALLY UPDATED
 var refImages = new Array(
+		"ref_images/california-homepage-mediumSquare149-v2.png",
+		
         "ref_images/200x90_Banner_Ad_Placholder.png",
         "ref_images/300x250_Banner_Ad_Placholder.png",
         "ref_images/300x125_Banner_Ad_Placholder.png",
