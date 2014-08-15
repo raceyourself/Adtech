@@ -43,7 +43,7 @@ function recreate(selector, e, callback) {
     for (var i=0, l = data.length; i < l; i++) {
       node.removeAttribute('style');
       for (var key in data[i]) { 
-        node.style[key] = data[i][key]; 
+        node.style.setProperty(key, data[i][key]); 
       } 
       node = node.parentNode; 
     }
