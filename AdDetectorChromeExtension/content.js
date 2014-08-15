@@ -23,14 +23,18 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 // So we need to name them explicitly (or load them over the web?).
 // NOTE: MUST BE MANUALLY UPDATED
 var refImages = new Array(
-	"/ref_images/07BLOCKS1-mediumSquare149-v2.jpg",
-	"/ref_images/STEINFELD-thumbStandard.jpg",
-	"/ref_images/CITYHALL1-thumbStandard.jpg",
-	"/ref_images/07oped-thumbStandard.jpg",
-	"/ref_images/GAZA-mediumSquare149-v2.jpg",
-	"/ref_images/0727MARIJUANA-thumbStandard.jpg",
-	"/ref_images/10DYLAN1-mediumSquare149-v2.jpg",
-	"/ref_images/334776_thumb.jpg"
+        "ref_images/200x90_Banner_Ad_Placholder.png",
+        "ref_images/300x250_Banner_Ad_Placholder.png",
+        "ref_images/300x125_Banner_Ad_Placholder.png",
+        "ref_images/300x150_Banner_Ad_Placholder.png",
+        "ref_images/300x250B_Banner_Ad_Placholder.png",
+        "ref_images/320x285_Banner_Ad_Placholder.png",
+        "ref_images/700x75_Banner_Ad_Placholder.png",
+        "ref_images/700x90_Banner_Ad_Placholder.png",
+        "ref_images/720x300_Banner_Ad_Placholder.png",
+        "ref_images/728x90_Banner_Ad_Placholder.png",
+        "ref_images/1000x90_Banner_Ad_Placholder.png",
+        "ref_images/9800x250_Banner_Ad_Placholder.png"
 );
 
 // Hashes of reference adverts in ref_adverts/. Set<hash>
@@ -64,7 +68,7 @@ function hashReferenceImage(index) {
 }
 
 function onDataUrlCalculated(dataUrl, index, type) {
-	var hashCode = dataUrl2hashCode(dataUrl);
+	var hashCode = dataUrl == null ? null : dataUrl2hashCode(dataUrl);
 	var nextIndex = index + 1;
 	
 	if (type == "ref") {
@@ -106,7 +110,23 @@ function hashImagesInPage() {
 function hashImageInPage(index) {
 	var pageImage = imagesInPage[index];
 	
-	chrome.runtime.sendMessage({action: "dataUrl", type: "page", index: index, src: pageImage.src});
+	var image = null;
+	if (pageImage.src) {
+		image = pageImage.src;
+	}
+	else {
+		var background = $(pageImage).css("background");
+		var urlRegex = /url\((.*)\)/g;
+		var match = urlRegex.exec(background);
+		if (match && match[1])
+			image = match[1];
+	}
+
+	if ((index % 20) == 0) {
+		console.log("foo - " + index);
+	}
+	
+	chrome.runtime.sendMessage({action: "dataUrl", type: "page", index: index, src: image});
 }
 
 function dataUrl2hashCode(dataUrl) {
