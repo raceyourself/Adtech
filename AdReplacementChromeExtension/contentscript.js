@@ -537,7 +537,6 @@ _picdata: {
 },
 
 enabled: (function() {
-//  picinjection.enabled = true;
   return true;
 })(),
 

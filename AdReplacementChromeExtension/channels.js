@@ -116,19 +116,21 @@ Channels.prototype = {
 
   _loadFromStorage: function() {
     this._channelGuide = {};
-
-    var entries = storage_get("channels");
-    if (!entries || (entries.length > 0 && !entries[0].name)) {
-      // Default set of channels
-      this.add({name: "TheCatsOfCatBlockUsersChannel", param: undefined,
-                enabled: true});
-      this.add({name: "AprilFoolsCatsChannel", param: undefined, enabled: false});
-    }
-    else {
-      for (var i=0; i < entries.length; i++) {
-        this.add(entries[i]);
-      }
-    }
+    
+    this.add({name: "AprilFoolsCatsChannel", param: undefined, enabled: true});
+    
+//    var entries = storage_get("channels");
+//    if (!entries || (entries.length > 0 && !entries[0].name)) {
+//      // Default set of channels
+//      this.add({name: "TheCatsOfCatBlockUsersChannel", param: undefined,
+//                enabled: true});
+//      this.add({name: "AprilFoolsCatsChannel", param: undefined, enabled: false});
+//    }
+//    else {
+//      for (var i=0; i < entries.length; i++) {
+//        this.add(entries[i]);
+//      }
+//    }
   },
 
   _saveToStorage: function() {
@@ -187,7 +189,7 @@ AprilFoolsCatsChannel.prototype = {
 
   _getLatestListings: function(callback) {
     function L(w, h, f) {
-      var folder = chrome.extension.getURL(SAFARI ? "catblock/pix/miaow" : "pix/miaow");
+      var folder = chrome.extension.getURL(SAFARI ? "catblock/pix/underad_placeholders/" : "pix/underad_placeholders/");
       return new Listing({
         width: w, height: h, url: folder + f,
         attribution_url: "http://chromeadblock.com/catblock/credits.html",
@@ -196,32 +198,18 @@ AprilFoolsCatsChannel.prototype = {
     }
     // the listings never change
     callback([
-      L(270, 256, "5.jpg"),
-      L(350, 263, "6.jpg"), 
-      L(228, 249, "big1.jpg"), 
-      L(236, 399, "big2.jpg"), 
-      L(340, 375, "big3.jpg"), 
-      L(170, 240, "big4.jpg"), 
-      L(384, 288, "1.jpg"), 
-      L(132, 91,  "7.jpg"), 
-      L(121, 102, "9.jpg"), 
-      L(115, 125, "small1.jpg"), 
-      L(126, 131, "small2.jpg"), 
-      L(105, 98,  "small3.jpg"), 
-      L(135, 126, "small4.jpg"), 
-      L(133, 108, "small5.jpg"), 
-      L(120, 99,  "small6.jpg"), 
-      L(124, 96,  "small7.jpg"), 
-      L(119, 114, "small8.jpg"), 
-      L(382, 137, "wide1.jpg"), 
-      L(470, 102, "wide2.jpg"), 
-      L(251, 90,  "wide3.jpg"), 
-      L(469, 162, "wide4.jpg"), 
-      L(240, 480, "8.jpg"), 
-      L(103, 272, "tall3.jpg"), 
-      L(139, 401, "tall4.jpg"), 
-      L(129, 320, "tall5.jpg"),
-      L(109, 385, "tall6.jpg"),
+      L(200,  90,  "200x90_Banner_Ad_Placholder.png"),
+      L(300,  250, "300x250_Banner_Ad_Placholder.png"),
+      L(300,  125, "300x125_Banner_Ad_Placholder.png"),
+      L(300,  150, "300x150_Banner_Ad_Placholder.png"), 
+      L(300,  250, "300x250B_Banner_Ad_Placholder.png"), 
+      L(320,  285, "320x285_Banner_Ad_Placholder.png"), 
+      L(700,  75,  "700x75_Banner_Ad_Placholder.png"), 
+      L(700,  90,  "700x90_Banner_Ad_Placholder.png"),  
+      L(720,  300, "720x300_Banner_Ad_Placholder.png"),  
+      L(728,  90,  "728x90_Banner_Ad_Placholder.png"),  
+      L(1000, 90,  "1000x90_Banner_Ad_Placholder.png"), 
+      L(920,  250, "9800x250_Banner_Ad_Placholder.png"), 
     ]);
   }
 };
