@@ -1,7 +1,7 @@
 package underad.blackbox;
 
 import underad.blackbox.health.BlackboxHealthCheck;
-import underad.blackbox.resources.BlackboxResource;
+import underad.blackbox.resources.ReconstructResource;
 import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
@@ -18,7 +18,7 @@ public class BlackboxApplication extends Application<BlackboxConfig> {
 	
 	@Override
 	public void run(BlackboxConfig config, Environment env) throws Exception {
-		final BlackboxResource resource = new BlackboxResource(config.getTemplate(), config.getDefaultName());
+		final ReconstructResource resource = new ReconstructResource(config.getTemplate(), config.getDefaultName());
 		env.jersey().register(resource);
 		
 		final BlackboxHealthCheck healthCheck = new BlackboxHealthCheck(config.getTemplate());
