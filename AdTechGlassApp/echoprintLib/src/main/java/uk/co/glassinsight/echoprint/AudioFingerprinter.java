@@ -27,18 +27,12 @@
 package uk.co.glassinsight.echoprint;
 
 import android.app.Activity;
-import android.media.AudioFormat;
-import android.media.AudioRecord;
-import android.media.MediaRecorder;
 import android.util.Base64;
 import android.util.Log;
 import android.util.Pair;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -50,8 +44,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.InflaterOutputStream;
+
+import edu.gvsu.masl.echoprint.Codegen;
 
 /**
  * Main fingerprinting class<br>
@@ -60,7 +59,7 @@ import java.util.zip.InflaterOutputStream;
  * @author Alex Restrepo (MASL)
  *
  */
-public class AudioFingerprinter implements Runnable
+public class AudioFingerprinter implements Runnable, AudioRecorder.Listener
 {
 	public final static String SCORE_KEY = "score";
 	public final static String TRACK_ID_KEY = "track_id";
@@ -70,18 +69,14 @@ public class AudioFingerprinter implements Runnable
     private final Map<String, List<Pair<Long, Long>>> fingerprints = new HashMap<String, List<Pair<Long, Long>>>();
     private final AtomicInteger idSequence = new AtomicInteger(0);
 	
-	private final int FREQUENCY = 11025;
-	private final int CHANNEL = AudioFormat.CHANNEL_IN_MONO;
-	private final int ENCODING = AudioFormat.ENCODING_PCM_16BIT;	
-	
 	private Thread thread;
 	private volatile boolean isRunning = false;
-	AudioRecord mRecordInstance = null;
-	
-	private short audioData[];
-	private int bufferSize;	
+
 	private int secondsToRecord;
 	private volatile boolean continuous;
+
+    private AudioRecorder recorder = new AudioRecorder(this);
+    private BlockingQueue<Recording> recordings = new LinkedBlockingQueue<Recording>();
 	
 	private AudioFingerprinterListener listener;
 	
@@ -93,16 +88,6 @@ public class AudioFingerprinter implements Runnable
 	public AudioFingerprinter(AudioFingerprinterListener listener)
 	{
 		this.listener = listener;
-	}
-	
-	/**
-	 * Starts the listening / fingerprinting process using the default parameters:<br>
-	 * A single listening pass of 20 seconds 
-	 */
-	public void fingerprint()
-	{
-		// set dafault listening time to 20 seconds
-		this.fingerprint(20);
 	}
 	
 	/**
@@ -128,10 +113,12 @@ public class AudioFingerprinter implements Runnable
 			return;
 				
 		this.continuous = continuous;
-		
-		this.secondsToRecord = Math.max(seconds, 10);
-		
+		this.secondsToRecord = seconds;
+
 		// start the recording thread
+        recorder.start(secondsToRecord);
+
+        // start the fingerprinting thread
 		thread = new Thread(this);
 		thread.start();
 	}
@@ -142,8 +129,7 @@ public class AudioFingerprinter implements Runnable
 	public void stop() 
 	{
 		this.continuous = false;
-		if(mRecordInstance != null)
-			mRecordInstance.stop();
+        recorder.stop();
 	}
 	
 	/**
@@ -155,53 +141,20 @@ public class AudioFingerprinter implements Runnable
 		this.isRunning = true;
 		try 
 		{			
-			// create the audio buffer
-			// get the minimum buffer size
-			int minBufferSize = AudioRecord.getMinBufferSize(FREQUENCY, CHANNEL, ENCODING);
-			
-			// and the actual buffer size for the audio to record
-			// frequency * seconds to record.
-			bufferSize = Math.max(minBufferSize, this.FREQUENCY * this.secondsToRecord);
-						
-			audioData = new short[bufferSize];
-						
-			// start recorder
-			mRecordInstance = new AudioRecord(
-								MediaRecorder.AudioSource.MIC,
-								FREQUENCY, CHANNEL, 
-								ENCODING, minBufferSize);
-						
-			willStartListening();
-			
-			mRecordInstance.startRecording();
-			boolean firstRun = true;
-			do 
+			do
 			{		
 				try
 				{
-					willStartListeningPass();
-
-                    long started = System.currentTimeMillis();
-					long time = System.currentTimeMillis();
-					// fill audio buffer with mic data.
-					int samplesIn = 0;
-					do 
-					{					
-						samplesIn += mRecordInstance.read(audioData, samplesIn, bufferSize - samplesIn);
-						
-						if(mRecordInstance.getRecordingState() == AudioRecord.RECORDSTATE_STOPPED)
-							break;
-					} 
-					while (samplesIn < bufferSize);				
-					Log.d("Fingerprinter", "Audio recorded: " + (System.currentTimeMillis() - time) + " millis");
-
-                    didFinishListeningPass();
+                    Recording recording = recordings.poll(secondsToRecord+10, TimeUnit.SECONDS);
+                    if (recording == null) continue;
+                    long started = recording.started;
+                    short[] audioData = recording.data;
 
 					// create an echoprint codegen wrapper and get the code
-					time = System.currentTimeMillis();
+					long time = System.currentTimeMillis();
 					Codegen codegen = new Codegen();
                     willStartCodegenPass();
-	    			String code = codegen.generate(audioData, samplesIn);
+	    			String code = codegen.generate(audioData, audioData.length);
 	    			Log.d("Fingerprinter", "Codegen created in: " + (System.currentTimeMillis() - time) + " millis");
                     didFinishCodegenPass();
 
@@ -253,16 +206,10 @@ public class AudioFingerprinter implements Runnable
 			
 			didFailWithException(e);
 		}
-		
-		if(mRecordInstance != null)
-		{
-			mRecordInstance.stop();
-			mRecordInstance.release();
-			mRecordInstance = null;
-		}
+
+        recorder.stop();
+
 		this.isRunning = false;
-		
-		didFinishListening();
 	}
 
     private static List<Pair<Long, Long>> decodeFingerprint(String code) throws IOException {
@@ -427,7 +374,7 @@ public class AudioFingerprinter implements Runnable
         return id;
     }
 
-	private void didFinishListening()
+	public void didFinishListening()
 	{
 		if(listener == null)
 			return;
@@ -466,8 +413,9 @@ public class AudioFingerprinter implements Runnable
 		else
 			listener.didFinishListeningPass();
 	}
-	
-	private void willStartListening()
+
+    @Override
+	public void willStartListening()
 	{
 		if(listener == null)
 			return;
@@ -527,7 +475,8 @@ public class AudioFingerprinter implements Runnable
             listener.willStartCodegenPass();
     }
 
-    private void willStartListeningPass()
+    @Override
+    public void willStartListeningPass()
 	{
 		if(listener == null)
 			return;
@@ -546,8 +495,14 @@ public class AudioFingerprinter implements Runnable
 		else
 			listener.willStartListeningPass();
 	}
-	
-	private void didGenerateFingerprintCode(final String code)
+
+    @Override
+    public void didFinishListeningPass(short[] audioData, long started) {
+        recordings.add(new Recording(audioData, started));
+        didFinishListeningPass();
+    }
+
+    private void didGenerateFingerprintCode(final String code)
 	{
 		if(listener == null)
 			return;
@@ -690,4 +645,14 @@ public class AudioFingerprinter implements Runnable
 		 */
 		public void didFailWithException(Exception e);
 	}
+
+    private static class Recording {
+        public short[] data;
+        public long started;
+
+        public Recording(short[] data, long started) {
+            this.data = data;
+            this.started = started;
+        }
+    }
 }

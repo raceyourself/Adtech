@@ -24,7 +24,7 @@
  * SOFTWARE.
  */
 
-package uk.co.glassinsight.echoprint;
+package edu.gvsu.masl.echoprint;
 
 /**
  * Codegen class<br>
