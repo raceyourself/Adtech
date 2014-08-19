@@ -26,7 +26,6 @@ public class BlackboxApplication extends Application<BlackboxConfig> {
 	
 	@Override
 	public void initialize(Bootstrap<BlackboxConfig> bootstrap) {
-		// TODO Auto-generated method stub
 		
 	}
 }
