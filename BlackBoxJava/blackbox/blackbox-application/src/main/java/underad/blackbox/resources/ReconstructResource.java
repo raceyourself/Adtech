@@ -1,11 +1,16 @@
 package underad.blackbox.resources;
 
+import java.io.IOException;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response.Status;
 
+import underad.blackbox.client.HttpConsumer;
 import lombok.AllArgsConstructor;
 
 import com.codahale.metrics.annotation.Timed;
@@ -14,6 +19,8 @@ import com.codahale.metrics.annotation.Timed;
 @Path("/reconstruct")
 @Produces(MediaType.TEXT_HTML)
 public class ReconstructResource {
+	
+	private HttpConsumer httpConsumer;
 	
 	/**
 	 * <ol>
@@ -34,6 +41,13 @@ public class ReconstructResource {
 			@QueryParam("url") String url,
 			@QueryParam("blockedAbsXpath") String blockedAbsXpath,
 			@QueryParam("advertRelXpath") String advertRelXpath) {
+		String page;
+		try {
+			page = httpConsumer.responseAsString(url);
+		} catch (IOException e) {
+			throw new WebApplicationException(e, Status.INTERNAL_SERVER_ERROR);
+		}
+		
 		return null;
 //		return new Saying(counter.incrementAndGet(), value);
 	}
