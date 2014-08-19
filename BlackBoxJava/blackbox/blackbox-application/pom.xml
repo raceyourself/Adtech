@@ -9,15 +9,23 @@
 	<artifactId>blackbox-application</artifactId>
 
     <dependencies>
-        <dependency>
-            <groupId>underad</groupId>
-            <artifactId>blackbox-api</artifactId>
-            <version>${project.version}</version>
-        </dependency>
+        <!-- Database access -->
         <dependency>
             <groupId>io.dropwizard</groupId>
             <artifactId>dropwizard-jdbi</artifactId>
             <version>${dropwizard.version}</version>
+        </dependency>
+        <!-- Database migrations -->
+        <dependency>
+            <groupId>io.dropwizard</groupId>
+            <artifactId>dropwizard-migrations</artifactId>
+            <version>${dropwizard.version}</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>underad</groupId>
+            <artifactId>blackbox-api</artifactId>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>underad</groupId>

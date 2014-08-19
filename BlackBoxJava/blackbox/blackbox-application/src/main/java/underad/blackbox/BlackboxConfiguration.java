@@ -1,6 +1,10 @@
 package underad.blackbox;
 
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
+
 import io.dropwizard.Configuration;
+import io.dropwizard.db.DataSourceFactory;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -10,7 +14,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Getter
 @Setter
-public class BlackboxConfig extends Configuration {
+public class BlackboxConfiguration extends Configuration {
 	@NotEmpty
 	@JsonProperty
 	private String template;
@@ -18,4 +22,8 @@ public class BlackboxConfig extends Configuration {
 	@JsonProperty
 	private String defaultName = "Stranger";
 	
+	@Valid
+	@NotNull
+	@JsonProperty("database")
+	private DataSourceFactory dataSourceFactory = new DataSourceFactory();
 }

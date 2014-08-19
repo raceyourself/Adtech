@@ -1,7 +1,5 @@
 package underad.blackbox.resources;
 
-import java.util.concurrent.atomic.AtomicLong;
-
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -16,9 +14,6 @@ import com.codahale.metrics.annotation.Timed;
 @Path("/reconstruct")
 @Produces(MediaType.TEXT_HTML)
 public class ReconstructResource {
-	private final String template;
-	private final String defaultName;
-	private final AtomicLong counter = new AtomicLong();
 	
 	/**
 	 * <ol>
