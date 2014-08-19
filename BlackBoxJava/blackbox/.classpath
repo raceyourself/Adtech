@@ -6,6 +6,18 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry kind="src" path="blackbox-api/src/main/resources"/>
+	<classpathentry kind="src" path="blackbox-client/src/main/resources"/>
+	<classpathentry kind="src" path="blackbox-api/src/test/resources"/>
+	<classpathentry kind="src" path="blackbox-application/src/main/java"/>
+	<classpathentry kind="src" path="blackbox-client/src/test/java"/>
+	<classpathentry kind="src" path="blackbox-api/src/main/java"/>
+	<classpathentry kind="src" path="blackbox-api/src/test/java"/>
+	<classpathentry kind="src" path="blackbox-application/src/main/resources"/>
+	<classpathentry kind="src" path="blackbox-client/src/test/resources"/>
+	<classpathentry kind="src" path="blackbox-application/src/test/resources"/>
+	<classpathentry kind="src" path="blackbox-application/src/test/java"/>
+	<classpathentry kind="src" path="blackbox-client/src/main/java"/>
 	<classpathentry kind="src" output="target/test-classes" path="src/test/java">
 		<attributes>
 			<attribute name="optional" value="true"/>

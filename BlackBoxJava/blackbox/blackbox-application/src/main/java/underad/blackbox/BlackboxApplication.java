@@ -1,6 +1,7 @@
 package underad.blackbox;
 
 import underad.blackbox.health.BlackboxHealthCheck;
+import underad.blackbox.resources.BlackboxResource;
 import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;

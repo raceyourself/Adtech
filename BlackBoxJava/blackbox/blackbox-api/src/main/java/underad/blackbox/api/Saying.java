@@ -1,4 +1,4 @@
-package underad.blackbox;
+package underad.blackbox.api;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

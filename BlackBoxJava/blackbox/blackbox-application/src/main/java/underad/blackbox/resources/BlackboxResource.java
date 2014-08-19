@@ -1,4 +1,4 @@
-package underad.blackbox;
+package underad.blackbox.resources;
 
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -8,6 +8,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
+import underad.blackbox.api.Saying;
 import lombok.AllArgsConstructor;
 
 import com.codahale.metrics.annotation.Timed;
