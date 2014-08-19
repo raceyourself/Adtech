@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">AdTechGlassApp</string>
+    <string name="title_activity_recognition">Glass Insight AdTech</string>
+    <string name="voice_trigger">Start TV Insight</string>
+
+</resources>
