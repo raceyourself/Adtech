@@ -172,8 +172,7 @@ public class MotionService implements SensorEventListener {
         }
 
         public void write(OutputStream os) throws IOException {
-            // TODO
-//            log.debug("Wrote sample " + new Date(ts));
+            os.write(new String(x + "," + y + "," + z + "\n").getBytes());
         }
     }
 }

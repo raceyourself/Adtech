@@ -50,7 +50,7 @@ public class AudioFingerprintService implements AudioFingerprinter.AudioFingerpr
         }
 
         // Start fingerprinting
-        //fingerprinter.fingerprint(30, true);
+        fingerprinter.fingerprint(30, true);
     }
 
     @Override
@@ -60,7 +60,7 @@ public class AudioFingerprintService implements AudioFingerprinter.AudioFingerpr
 
     @Override
     public void didFinishListeningPass() {
-
+        log.info("didFinishListeningPass");
     }
 
     @Override
@@ -80,7 +80,7 @@ public class AudioFingerprintService implements AudioFingerprinter.AudioFingerpr
 
     @Override
     public void willStartListeningPass() {
-
+        log.info("willStartListeningPass");
     }
 
     @Override

@@ -5,11 +5,11 @@ import java.io.OutputStream;
 
 import lombok.Getter;
 
-public class NamedOS extends BufferedOutputStream {
+public class NamedOutputStream extends BufferedOutputStream {
     @Getter
     private String filename;
 
-    public NamedOS(String filename, OutputStream out) {
+    public NamedOutputStream(String filename, OutputStream out) {
         super(out);
         this.filename = filename;
     }

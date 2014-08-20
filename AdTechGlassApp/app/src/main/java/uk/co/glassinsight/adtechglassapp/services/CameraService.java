@@ -1,39 +1,21 @@
 package uk.co.glassinsight.adtechglassapp.services;
 
-import android.media.MediaCodec;
-import android.media.MediaCodecInfo;
-import android.media.MediaFormat;
 import android.preference.PreferenceManager;
-import android.util.Base64;
-import android.view.Surface;
 import android.view.SurfaceHolder;
 
 import com.coremedia.iso.boxes.Container;
 import com.googlecode.mp4parser.FileDataSourceImpl;
 import com.googlecode.mp4parser.authoring.Movie;
 import com.googlecode.mp4parser.authoring.builder.DefaultMp4Builder;
-import com.googlecode.mp4parser.authoring.tracks.AACTrackImpl;
 import com.googlecode.mp4parser.authoring.tracks.H264TrackImpl;
 
-import net.majorkernelpanic.streaming.Session;
-import net.majorkernelpanic.streaming.SessionBuilder;
-import net.majorkernelpanic.streaming.audio.AudioQuality;
 import net.majorkernelpanic.streaming.gl.SurfaceView;
-import net.majorkernelpanic.streaming.hw.EncoderDebugger;
-import net.majorkernelpanic.streaming.rtp.MediaCodecInputStream;
-import net.majorkernelpanic.streaming.video.VideoQuality;
 
-import org.apache.commons.io.IOUtils;
-
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.reflect.Array;
 import java.nio.channels.FileChannel;
 import java.util.Arrays;
 import java.util.Date;
@@ -43,10 +25,7 @@ import java.util.Map;
 
 import lombok.extern.slf4j.Slf4j;
 import uk.co.glassinsight.adtechglassapp.GIH264Stream;
-import uk.co.glassinsight.adtechglassapp.GIH264TrackImpl;
-import uk.co.glassinsight.adtechglassapp.GIVideoStream;
-import uk.co.glassinsight.adtechglassapp.NamedOS;
-import uk.co.glassinsight.echoprint.AudioRecorder;
+import uk.co.glassinsight.adtechglassapp.NamedOutputStream;
 
 @Slf4j
 public class CameraService implements SurfaceHolder.Callback, Runnable {
@@ -64,7 +43,7 @@ public class CameraService implements SurfaceHolder.Callback, Runnable {
     private byte[] pps = null;
     private volatile int index = 0;
 
-    private Map<Long, NamedOS> writers = new HashMap<Long, NamedOS>();
+    private Map<Long, NamedOutputStream> writers = new HashMap<Long, NamedOutputStream>();
 
     public CameraService(SurfaceView view) {
         PATH = view.getContext().getExternalCacheDir();
@@ -99,7 +78,7 @@ public class CameraService implements SurfaceHolder.Callback, Runnable {
         }
 
         File filename = new File(PATH, tag + ".h264");
-        NamedOS bos = new NamedOS(filename.getAbsolutePath(), new FileOutputStream(filename));
+        NamedOutputStream bos = new NamedOutputStream(filename.getAbsolutePath(), new FileOutputStream(filename));
 
         // Save SPS/PPS
         if (sps != null) {
@@ -179,11 +158,11 @@ public class CameraService implements SurfaceHolder.Callback, Runnable {
                 Sample sample = new Sample(Arrays.copyOf(buf, read), System.currentTimeMillis());
                 buffer[index] = sample;
                 index = (index+1) % buffer.length;
-                Iterator<Map.Entry<Long, NamedOS>> it = writers.entrySet().iterator();
+                Iterator<Map.Entry<Long, NamedOutputStream>> it = writers.entrySet().iterator();
                 while (it.hasNext()) {
-                    Map.Entry<Long, NamedOS> entry = it.next();
+                    Map.Entry<Long, NamedOutputStream> entry = it.next();
                     Long endTime = entry.getKey();
-                    NamedOS bos = entry.getValue();
+                    NamedOutputStream bos = entry.getValue();
 
                     // Write sample
                     try {

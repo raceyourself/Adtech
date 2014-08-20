@@ -2,8 +2,10 @@ package uk.co.glassinsight.adtechglassapp;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.WindowManager;
 
 import com.google.android.glass.touchpad.Gesture;
 import com.google.android.glass.touchpad.GestureDetector;
@@ -31,6 +33,11 @@ public class RecognitionActivity extends Activity implements GestureDetector.Bas
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS_MODE, Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL);
+        WindowManager.LayoutParams lp = getWindow().getAttributes();
+        lp.screenBrightness = 0.00000000000001f;
+        getWindow().setAttributes(lp);
         setContentView(R.layout.recognition_main);
 
         // Glass gestures
@@ -45,7 +52,6 @@ public class RecognitionActivity extends Activity implements GestureDetector.Bas
     @Override
     public boolean onGesture(Gesture gesture) {
         if(gesture == Gesture.SWIPE_DOWN){
-            onMatch(System.currentTimeMillis(), "bub", 10*1000);
             // Block swipe down
             return true;
         }
