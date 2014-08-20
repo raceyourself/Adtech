@@ -11,7 +11,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Saying {
+public class Foo {
 	@JsonProperty
 	private long id;
 	
