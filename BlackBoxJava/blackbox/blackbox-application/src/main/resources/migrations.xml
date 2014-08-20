@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.0.xsd">
+
+	<changeSet id="1" author="dliroberts">
+		<createTable tableName="publisher_keys"
+		      remarks="Encryption keys to use for each publisher. Only one is valid at a time; see effective dates.">
+			<column name="publisher_id" type="bigint">
+				<constraints nullable="false" />
+			</column>
+			<column name="effective" type="timestamp">
+				<constraints nullable="false" />
+			</column>
+			<column name="key" type="varchar(64)">
+				<constraints nullable="false" />
+			</column>
+		</createTable>
+		<addPrimaryKey columnNames="publisher_id, effective"
+		    constraintName="pk_publisher_keys" tableName="publisher_keys" />
+		
+		<createTable tableName="adverts" remarks="Advert placement metadata for supported publisher pages.">
+            <column name="url" type="varchar(1024)" remarks=
+                    "Used for fetching fresh, unblocked ad content. Multiple pages with the same advert positioning
+                    can thus reference the same URL.">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="advert_rel_xpath" type="varchar(1024)">
+                <constraints nullable="false" />
+            </column>
+            <column name="blocked_abs_xpath" type="varchar(1024)">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+        
+        <createTable tableName="publisher_hosts" remarks="Domains owned by publishers.">
+            <column name="host" type="varchar(512)" remarks="e.g. stackoverflow.com, mysite.blogspot.com">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="publisher_id" type="bigint">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+	</changeSet>
+
+</databaseChangeLog>
