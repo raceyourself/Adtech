@@ -22,7 +22,7 @@ public class Crypto {
 	
 	static {
 		try {
-			// Padding required to allow for ciphering of arbitrary-length inputs
+			// PKCS5Padding required to allow for ciphering of arbitrary-length inputs
 			CIPHER = Cipher.getInstance("AES/CBC/PKCS5Padding");
 			/*
 			 * We want a nil initialisation vector, as otherwise even when the key is the same, regeneration of the page

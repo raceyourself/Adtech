@@ -7,6 +7,7 @@ import io.dropwizard.jdbi.DBIFactory;
 import io.dropwizard.migrations.MigrationsBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
+import io.dropwizard.views.ViewBundle;
 
 import org.apache.http.client.HttpClient;
 import org.skife.jdbi.v2.DBI;
@@ -26,12 +27,15 @@ public class BlackboxApplication extends Application<BlackboxConfiguration> {
 	
 	@Override
 	public void initialize(Bootstrap<BlackboxConfiguration> bootstrap) {
+		// For database migrations.
 	    bootstrap.addBundle(new MigrationsBundle<BlackboxConfiguration>() {
 	        @Override
             public DataSourceFactory getDataSourceFactory(BlackboxConfiguration configuration) {
                 return configuration.getDataSourceFactory();
             }
 	    });
+	    // For JavaScript templating.
+	    bootstrap.addBundle(new ViewBundle());
 	}
 	
 	@Override
