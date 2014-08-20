@@ -92,7 +92,17 @@ public class MotionService implements SensorEventListener {
             BufferedOutputStream bos = entry.getValue();
 
             // Write sample
-            sample.write(bos);
+            try {
+                sample.write(bos);
+            } catch (IOException e) {
+                log.error("Write error", e);
+                it.remove();
+                try {
+                    bos.close();
+                } catch (IOException ex) {
+                    log.error("Error closing writer", ex);
+                }
+            }
 
             // Remove writer if done
             if (endTime <= sample.ts) {
@@ -102,6 +112,7 @@ public class MotionService implements SensorEventListener {
                 } catch (IOException e) {
                     log.error("Error closing writer", e);
                 }
+                log.info("Closed writer");
             }
         }
     }
@@ -160,9 +171,9 @@ public class MotionService implements SensorEventListener {
             this.ts = ts;
         }
 
-        public void write(OutputStream os) {
+        public void write(OutputStream os) throws IOException {
             // TODO
-            log.debug("Wrote sample " + new Date(ts));
+//            log.debug("Wrote sample " + new Date(ts));
         }
     }
 }

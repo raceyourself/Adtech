@@ -8,6 +8,8 @@ import android.view.View;
 import com.google.android.glass.touchpad.Gesture;
 import com.google.android.glass.touchpad.GestureDetector;
 
+import net.majorkernelpanic.streaming.gl.SurfaceView;
+
 import java.io.IOException;
 import java.util.Random;
 
@@ -37,12 +39,13 @@ public class RecognitionActivity extends Activity implements GestureDetector.Bas
         // services
         audioFingerprintServiceService = new AudioFingerprintService(this);
         motionService = new MotionService(this);
-        cameraService = new CameraService();
+        cameraService = new CameraService((SurfaceView)findViewById(R.id.surface));
     }
 
     @Override
     public boolean onGesture(Gesture gesture) {
         if(gesture == Gesture.SWIPE_DOWN){
+            onMatch(System.currentTimeMillis(), "bub", 10*1000);
             // Block swipe down
             return true;
         }

@@ -12,9 +12,9 @@ public class AudioRecorder implements Runnable {
     private Thread thread;
     private volatile boolean isRunning = false;
 
-    private final int FREQUENCY = 11025;
-    private final int CHANNEL = AudioFormat.CHANNEL_IN_MONO;
-    private final int ENCODING = AudioFormat.ENCODING_PCM_16BIT;
+    public static final int FREQUENCY = 11025;
+    private static final int CHANNEL = AudioFormat.CHANNEL_IN_MONO;
+    private static final int ENCODING = AudioFormat.ENCODING_PCM_16BIT;
 
     AudioRecord mRecordInstance = null;
 
