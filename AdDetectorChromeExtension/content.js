@@ -1,43 +1,42 @@
 $(document).ready(function() {
-	// TODO ref images should be hashed in background script (page images need hashing in content script, as per current
-	// implementation).
-	hashReferenceImages();
+	// Start hashing after a 3s timeout so ready-handlers have time to change the DOM
+	// TODO: Stop using XPaths as identifiers as they may change when the DOM changes
+	setTimeout(function() {
+		chrome.runtime.sendMessage({action: "hashReferences"});
+	}, 3000);
+
+	(function() {
+		// Check visibility change when browser window has moved
+		var windowX = window.screenX;
+		var windowY = window.screenY;
+	setInterval(function() {
+		if (hashesCalculated && windowX !== window.screenX || windowY !== window.screenY) {
+				checkVisibilityChange();
+		}
+		windowX = window.screenX;
+		windowY = window.screenY;
+	}, 1000);
+	}());
 });
 $(window).scroll(function() {
-	if (hashesCalculated == true)
+	if (hashesCalculated === true)
 		checkVisibilityChange();
 });
 $(window).resize(function() {
-	if (hashesCalculated == true)
+	if (hashesCalculated === true)
 		checkVisibilityChange();
 });
 $(window).unload(function() {
-	if (hashesCalculated == true)
+	if (hashesCalculated === true)
 		clearVisible();
 });
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-	onDataUrlCalculated(request.dataUrl, request.index, request.type);
+	if (request.action === "dataUrlCalculated") {
+		onDataUrlCalculated(request.dataUrl, request.index, request.type);
+	} else if (request.action === "referenceHashList") {
+		onReferenceHashList(request.hashList);
+	}
 });
-
-// As of 2014-08-05 it appears to be impossible to make Chrome search for all files in an extension subdir.
-// So we need to name them explicitly (or load them over the web?).
-// NOTE: MUST BE MANUALLY UPDATED
-var refImages = new Array(
-		"ref_images/california-homepage-mediumSquare149-v2.png",
-		
-        "ref_images/200x90_Banner_Ad_Placholder.png",
-        "ref_images/300x250_Banner_Ad_Placholder.png",
-        "ref_images/300x125_Banner_Ad_Placholder.png",
-        "ref_images/300x150_Banner_Ad_Placholder.png",
-        "ref_images/300x250B_Banner_Ad_Placholder.png",
-        "ref_images/320x285_Banner_Ad_Placholder.png",
-        "ref_images/700x75_Banner_Ad_Placholder.png",
-        "ref_images/700x90_Banner_Ad_Placholder.png",
-        "ref_images/720x300_Banner_Ad_Placholder.png",
-        "ref_images/728x90_Banner_Ad_Placholder.png",
-        "ref_images/1000x90_Banner_Ad_Placholder.png",
-        "ref_images/9800x250_Banner_Ad_Placholder.png"
-);
 
 // Hashes of reference adverts in ref_adverts/. Set<hash>
 var refHashList = {};
@@ -55,50 +54,31 @@ var imagesInPage;
 
 var hashesCalculated = false;
 
-// Calc hashes of references images - the images we're looking out for.
-// Populates refHashList:Set<hash>.
-function hashReferenceImages() {
-	hashReferenceImage(0);
-}
-
-function hashReferenceImage(index) {
-	var imagePath = refImages[index];
-	
-	var imageUrl = chrome.extension.getURL(imagePath);
-	
-	chrome.runtime.sendMessage({action: "dataUrl", type: "ref", index: index, src: imageUrl});
+function onReferenceHashList(hashList) {
+	refHashList = hashList;
+	console.log("received " + Object.keys(refHashList).length + " reference hashes");
+	if (!hashesCalculated) hashImagesInPage();
 }
 
 function onDataUrlCalculated(dataUrl, index, type) {
-	var hashCode = dataUrl == null ? null : dataUrl2hashCode(dataUrl);
+	var hashCode = dataUrl === null ? null : dataUrl2hashCode(dataUrl);
 	var nextIndex = index + 1;
 	
-	if (type == "ref") {
-		refHashList[hashCode] = true; // add hashcode to set
-		
-		var limit = refImages.length;
-		if (nextIndex < limit) // more ref images need hashing
-			hashReferenceImage(nextIndex);
-		else
-			hashImagesInPage(); // start hashing images in page
-	}
-	else if (type == "page") {
+	if (type === "page") {
 		// only add if this in-page image matches one of our reference images.
 		if (hashCode in refHashList) {
 			var pageImage = imagesInPage[index];
 			var xPath = getXPath(pageImage);
 			pageHashesByXPath[xPath] = hashCode;
-		}
+		} 
 		var limit = imagesInPage.length;
 		if (nextIndex < limit)
 			hashImageInPage(nextIndex);
 		else {
 			hashesCalculated = true;
+			console.log(Object.keys(pageHashesByXPath).length + " images tracked");
 			checkVisibilityChange();
 		}
-	}
-	else {
-		console.log("AdDetector extension error: unexpected data URL type '" + type + "'");
 	}
 }
 
@@ -106,6 +86,7 @@ function onDataUrlCalculated(dataUrl, index, type) {
 // Populates pageHashesBySrc:Map<img.src,hashCode>.
 function hashImagesInPage() {
 	imagesInPage = $(document).find("img");
+	console.log("hashing " + imagesInPage.length + " images");
 	hashImageInPage(0);
 }
 
@@ -124,19 +105,13 @@ function hashImageInPage(index) {
 			image = match[1];
 	}
 
-	if ((index % 20) == 0) {
-		console.log("foo - " + index);
+	if (index === 0 || ((index+1) % 20) === 0 || (index+1) === imagesInPage.length) {
+		console.log("hashing image " + (index+1) + '/' + imagesInPage.length);
 	}
 	
 	chrome.runtime.sendMessage({action: "dataUrl", type: "page", index: index, src: image});
 }
-
-function dataUrl2hashCode(dataUrl) {
-	var base64 = dataUrl.replace(/^data:image\/(png|jpg);base64,/, "");
-	var hashCode = base64.hashCode();
-	return hashCode;
-}
-
+	
 // Record "not_visible" entries for everything currently visible before navigating to next page to clean up.
 function clearVisible() {
 	$.each(visibleImageXPaths, function(imageXPath, dummy) {

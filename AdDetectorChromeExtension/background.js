@@ -13,31 +13,108 @@
 var nativePort;
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-	if (request.action == "dataUrl")
-		calcDataUrl(request.type, request.index, request.src, sender.tab.id);
-	else if (request.action == "sendToNative")
+	if (request.action === "hashReferences") {
+		refHashListeners.push(sender.tab.id);
+		hashReferenceImages();
+	} else if (request.action === "dataUrl") {
+		calcDataUrl(request.src, function(dataUrl) {			
+			chrome.tabs.sendMessage(sender.tab.id, {action: "dataUrlCalculated", dataUrl: dataUrl, index: request.index, type: request.type});
+		});
+	} else if (request.action === "sendToNative") {
 		sendVisibilityInfoToNative(request.timestamp, request.url, request.hashCode, request.absPosLeft,
 				request.absPosRight, request.absPosTop, request.absPosBottom, request.visible);
+	}
 });
+
+// As of 2014-08-05 it appears to be impossible to make Chrome search for all files in an extension subdir.
+// So we need to name them explicitly (or load them over the web?).
+// NOTE: MUST BE MANUALLY UPDATED
+var refImages = new Array(
+		"ref_images/LEADERSHIP1-largeHorizontal375.jpg",		
+        "ref_images/200x90_Banner_Ad_Placholder.png",
+        "ref_images/300x250_Banner_Ad_Placholder.png",
+        "ref_images/300x125_Banner_Ad_Placholder.png",
+        "ref_images/300x150_Banner_Ad_Placholder.png",
+        "ref_images/300x250B_Banner_Ad_Placholder.png",
+        "ref_images/320x285_Banner_Ad_Placholder.png",
+        "ref_images/700x75_Banner_Ad_Placholder.png",
+        "ref_images/700x90_Banner_Ad_Placholder.png",
+        "ref_images/720x300_Banner_Ad_Placholder.png",
+        "ref_images/728x90_Banner_Ad_Placholder.png",
+        "ref_images/1000x90_Banner_Ad_Placholder.png",
+        "ref_images/9800x250_Banner_Ad_Placholder.png"
+);
+
+// Hashes of reference adverts in ref_adverts/. Set<hash>
+var refHashList = {};
+
+var hashesCalculated = false;
+
+var refHashListeners = [];
+
+// Calc hashes of references images - the images we're looking out for.
+// Populates refHashList:Set<hash>.
+function hashReferenceImages() {
+	if (!hashesCalculated) {
+		hashReferenceImage(0);
+	} else {
+		onReferenceImagesHashed();
+	}
+}
+
+function hashReferenceImage(index) {
+	var imagePath = refImages[index];
+	
+	var imageUrl = chrome.extension.getURL(imagePath);
+	
+	calcDataUrl(imageUrl, function(dataUrl) {			
+		onDataUrlCalculated(dataUrl, index);
+	});
+}
+
+function onReferenceImagesHashed() {
+	refHashListeners.forEach(function(tabId) {
+		console.log("Sending refHasList of " + Object.keys(refHashList).length);
+		chrome.tabs.sendMessage(tabId, {action: "referenceHashList", hashList: refHashList});
+	});
+	refHashListeners = [];
+}
+
+function onDataUrlCalculated(dataUrl, index) {
+	var hashCode = dataUrl === null ? null : dataUrl2hashCode(dataUrl);
+	var nextIndex = index + 1;
+	
+	refHashList[hashCode] = true; // add hashcode to set
+	
+	var limit = refImages.length;
+	if (nextIndex < limit) { // more ref images need hashing
+		hashReferenceImage(nextIndex);
+	} else {
+		hashesCalculated = true;
+		onReferenceImagesHashed();
+	}
+}
 
 function sendVisibilityInfoToNative(
 		timestamp, url, hashCode, absPosLeft, absPosRight, absPosTop, absPosBottom, visible) {
-	if (nativePort == null) {
+	if (nativePort === null) {
 		nativePort = chrome.runtime.connectNative('com.glassinsight.addetector');
 		nativePort.onDisconnect.addListener(onNativeDisconnect);
 		nativePort.onMessage.addListener(onNativeMessage);
 	}
 	
-	nativePort.postMessage({
-		timestamp: timestamp,
-		url: url,
-		hashCode: hashCode,
-		absPosLeft: absPosLeft,
-		absPosRight: absPosRight,
-		absPosTop: absPosTop,
-		absPosBottom: absPosBottom,
-		visible: visible
-	});
+	if (nativePort) {
+		nativePort.postMessage({
+			timestamp: timestamp,
+			url: url,
+			hashCode: hashCode,
+			absPosLeft: absPosLeft,
+			absPosRight: absPosRight,
+			absPosTop: absPosTop,
+			absPosBottom: absPosBottom,
+			visible: visible
+		});
+	}
 }
 
 function onNativeDisconnect() {
@@ -49,9 +126,9 @@ function onNativeMessage(msg) { // debug only
 	console.log("[FROM NATIVE] Received echoed message back from native app: " + JSON.stringify(msg));
 }
 
-function calcDataUrl(type, index, src, tabId) {
+function calcDataUrl(src, callback) {
 	if (!src) {
-		chrome.tabs.sendMessage(tabId, {dataUrl: null, index: index, type: type});
+		callback(null);
 		return;
 	}
 	
@@ -79,6 +156,8 @@ function calcDataUrl(type, index, src, tabId) {
 	    }
 	    
 	    // return data to content script
-	    chrome.tabs.sendMessage(tabId, {dataUrl: dataUrl, index: index, type: type});
+	    callback(dataUrl);
 	});
 }
+
+hashReferenceImages();

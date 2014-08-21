@@ -1,3 +1,8 @@
+function dataUrl2hashCode(dataUrl) {
+	var base64 = dataUrl.replace(/^data:image\/(png|jpg);base64,/, "");
+	var hashCode = base64.hashCode();
+	return hashCode;
+}
 
 String.prototype.endsWith = function(suffix) {
     return this.indexOf(suffix, this.length - suffix.length) !== -1;
