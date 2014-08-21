@@ -29,6 +29,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 // As of 2014-08-05 it appears to be impossible to make Chrome search for all files in an extension subdir.
 // So we need to name them explicitly (or load them over the web?).
 // NOTE: MUST BE MANUALLY UPDATED
+// TODO: Store hashes in plugin
 var refImages = new Array(
 		"ref_images/LEADERSHIP1-largeHorizontal375.jpg",		
         "ref_images/200x90_Banner_Ad_Placholder.png",

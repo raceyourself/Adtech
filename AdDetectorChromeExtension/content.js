@@ -50,6 +50,11 @@ $(window).resize(function() {
 $(window).unload(function() {
 	if (hashesCalculated === true)
 		clearVisible();
+	if (eventQueue.length > 0) {
+		// TODO: Move to background.js?
+		if (sendTimeout) clearTimeout(sendTimeout);
+		sendEvents();
+	}
 });
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 	if (request.action === "dataUrlCalculated") {
@@ -58,6 +63,12 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 		onReferenceHashList(request.hashList);
 	}
 });
+
+var eventQueue = [];
+var DEFAULT_SEND_DELAY = 1000; // milliseconds
+var sendDelay = DEFAULT_SEND_DELAY;
+var sendTimeout = false; // setTimeout reference
+var eventUrl = "https://www.glassinsight.co.uk/api/display_events";
 
 var recordVisibility = false;
 var recordImpressions = true;
@@ -205,6 +216,25 @@ function checkVisible(element) {
 	return withinBottomBound && withinTopBound && withinLeftBound && withinRightBound;
 }
 
+function trackEvent(event) {
+	eventQueue.push(event);
+	if (!sendTimeout) setTimeout(sendEvents, sendDelay);
+}
+
+function sendEvents() {
+	var queue = eventQueue;
+	eventQueue = [];
+	$.post(eventUrl, queue, function() {
+		console.log("Sent " + queue.length + " events");		
+		sendDelay = DEFAULT_SEND_DELAY;
+		sendTimeout = false;
+	}).fail(function() {
+		eventQueue.concat(queue);
+		sendDelay *= 4;
+		sendTimeout = setTimeout(sendEvents, sendDelay);
+	});
+}
+
 // Produce the output - visibility information.
 function recordVisibilityInfo(image, hashCode, isVisible) {
 	if (!recordVisibility) return;
@@ -306,6 +336,13 @@ function recordInteractionInfo(image, hashCode, isOver) {
 	var timestamp = (new Date()).getTime();
 	var source = image.src;
 	
+	var type = isVisible ? 'mouse_enter' : 'mouse_leave';
+	trackEvent({
+		type: type,
+		timestamp: timestamp,
+		source: image.src,
+		hash: hashCode
+	});
 	logInteractionInfo(timestamp, source, hashCode, isOver);
 }
 
@@ -326,6 +363,13 @@ function recordImpressionInfo(image, hashCode, isVisible) {
 	var timestamp = (new Date()).getTime();
 	var source = image.src;
 	
+	var type = isVisible ? 'viewport_enter' : 'viewport_leave';
+	trackEvent({
+		type: type,
+		timestamp: timestamp,
+		source: image.src,
+		hash: hashCode
+	});
 	logImpressionInfo(timestamp, source, hashCode, isVisible);
 }
 
