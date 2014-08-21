@@ -1,21 +1,40 @@
 $(document).ready(function() {
-	// Start hashing after a 3s timeout so ready-handlers have time to change the DOM
-	// TODO: Stop using XPaths as identifiers as they may change when the DOM changes
-	setTimeout(function() {
-		chrome.runtime.sendMessage({action: "hashReferences"});
-	}, 3000);
+	// Request reference hashes from background.js (callback starts hashing of page images)
+	chrome.runtime.sendMessage({action: "hashReferences"});
 
+	MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
+	var observer = new MutationObserver(function(mutations, observer) {
+		// fired when a mutation occurs
+		mutations.forEach(function(mutation) {
+			var nodeList = mutation.addedNodes;
+			for (var i = 0; i < nodeList.length; ++i) {
+				var node = nodeList[i];
+				if (node.nodeName == 'IMG') {
+					imagesInPage.push(node);
+					if (hashesCalculated) {
+						hashImageInPage(imagesInPage.length-1);
+					}
+				}
+			}
+		});
+	});
+	// define what element should be observed by the observer and what types of mutations trigger the callback
+	observer.observe(document, {
+	  subtree: true,	
+	  childList: true
+	});	
+	
 	(function() {
 		// Check visibility change when browser window has moved
 		var windowX = window.screenX;
 		var windowY = window.screenY;
-	setInterval(function() {
-		if (hashesCalculated && windowX !== window.screenX || windowY !== window.screenY) {
-				checkVisibilityChange();
-		}
-		windowX = window.screenX;
-		windowY = window.screenY;
-	}, 1000);
+		setInterval(function() {
+			if (hashesCalculated && windowX !== window.screenX || windowY !== window.screenY) {
+					checkVisibilityChange();
+			}
+			windowX = window.screenX;
+			windowY = window.screenY;
+		}, 1000);
 	}());
 });
 $(window).scroll(function() {
@@ -41,11 +60,13 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 // Hashes of reference adverts in ref_adverts/. Set<hash>
 var refHashList = {};
 
-// All images in page. Map<xpath,hash>
-var pageHashesByXPath = {};
+// All image hashes in page. Map<image,hash>
+var pageHashes = new WeakMap();
+var pageHashKeys = []; // WeakMap keys required for iteration
 
-// Images currently at least partially visible on-screen. Set<xpath>
-var visibleImageXPaths = {};
+// Images currently at least partially visible on-screen. Set<image>
+var visibleImages = new WeakSet();
+var visibleImageKeys = []; // WeakSet keys required for iteration
 
 // Required for callbacks from background script.
 var tabId;
@@ -68,15 +89,15 @@ function onDataUrlCalculated(dataUrl, index, type) {
 		// only add if this in-page image matches one of our reference images.
 		if (hashCode in refHashList) {
 			var pageImage = imagesInPage[index];
-			var xPath = getXPath(pageImage);
-			pageHashesByXPath[xPath] = hashCode;
+			pageHashes.set(pageImage, hashCode);
+			pageHashKeys.push(pageImage);
 		} 
 		var limit = imagesInPage.length;
 		if (nextIndex < limit)
 			hashImageInPage(nextIndex);
 		else {
 			hashesCalculated = true;
-			console.log(Object.keys(pageHashesByXPath).length + " images tracked");
+			console.log(pageHashKeys.length + " images tracked");
 			checkVisibilityChange();
 		}
 	}
@@ -114,49 +135,35 @@ function hashImageInPage(index) {
 	
 // Record "not_visible" entries for everything currently visible before navigating to next page to clean up.
 function clearVisible() {
-	$.each(visibleImageXPaths, function(imageXPath, dummy) {
-		var images = $(document.body).xpath(imageXPath);
-		var hashCode = pageHashesByXPath(imageXPath);
+	visibleImageKeys.forEach(function(image, index, visibleImageKeys) {
+		var hashCode = pageHashes.get(image);
 		
-		// FIXME see checkVisibilityChange() below on why this loop needs removing. 
-		$.each(images, function(index, image) {
-			recordVisibilityInfo(image, hashCode, false);
-		});
+		recordVisibilityInfo(image, hashCode, false);
 	});
 }
 
 function checkVisibilityChange() {
-	$.each(pageHashesByXPath, function(imageXPath, hashCode) {
-		// this xpath function appears to ignore some (all?) indexes. E.g. a lookup for xpath:
-		// /html/body/div[3]/main/section/div/div/div[2]/ol/li[2]/section/article/a/div/img
-		// will also return an element at:
-		// /html/body/div[3]/main/section/div/div/div[2]/ol/li[6]/section/article/a/div/img
-		// is this a bug/limitation in the jQuery-xpath library or incorrect usage/understanding?
-		var images = $(document.body).xpath(imageXPath);
-		
-		if (images.length > 1) {
-//			console.log("xpath non-unique :(");
+	pageHashKeys.forEach(function(image, index, pageHashKeys) {
+		var hashCode = pageHashes.get(image);
+		if (visibleImages.has(image)) {
+			if (checkVisible(image)) { // image still in viewport
+				recordVisibilityInfo(image, hashCode, true);
+			}
+			else { // image has left viewport
+				recordVisibilityInfo(image, hashCode, false);
+				visibleImages.delete(image);
+				var index = visibleImageKeys.indexOf(image);
+				if (index > -1) visibleImageKeys.splice(index, 1);
+			}
 		}
-		
-		// FIXME real answer is to find out why xpath is non-unique. for now though, we accept false-positives by using
-		// a loop. once xpath is guaranteed to give exactly one element, the loop can be removed.
-		$.each(images, function(index, image) {
-			if (imageXPath in visibleImageXPaths) {
-				if (checkVisible(image)) { // image still in viewport
-					recordVisibilityInfo(image, hashCode, true);
-				}
-				else { // image has left viewport
-					recordVisibilityInfo(image, hashCode, false);
-					delete visibleImageXPaths[imageXPath];
-				}
+		else { // not previously visible.
+			if (checkVisible(image)) { // has image entered viewport?
+				recordVisibilityInfo(image, hashCode, true);
+				visibleImages.add(image);
+				var index = visibleImageKeys.indexOf(image);
+				if (index < 0) visibleImageKeys.push(image);
 			}
-			else { // not previously visible.
-				if (checkVisible(image)) { // has image entered viewport?
-					recordVisibilityInfo(image, hashCode, true);
-					visibleImageXPaths[imageXPath] = true;
-				}
-			}
-		});
+		}
 	});
 };
 
