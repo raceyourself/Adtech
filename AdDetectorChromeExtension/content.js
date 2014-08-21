@@ -1,3 +1,5 @@
+// TODO: Generate unique ids for each element as src+hashCode may not be unique. 
+
 $(document).ready(function() {
 	// Request reference hashes from background.js (callback starts hashing of page images)
 	chrome.runtime.sendMessage({action: "hashReferences"});
@@ -57,6 +59,10 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 	}
 });
 
+var recordVisibility = false;
+var recordImpressions = true;
+var recordInteractions = true;
+
 // Hashes of reference adverts in ref_adverts/. Set<hash>
 var refHashList = {};
 
@@ -91,6 +97,14 @@ function onDataUrlCalculated(dataUrl, index, type) {
 			var pageImage = imagesInPage[index];
 			pageHashes.set(pageImage, hashCode);
 			pageHashKeys.push(pageImage);
+			$(pageImage).mouseleave(function(event) {
+				// NOTE: This does not fire until the mouse moves, if we need perfect accuracy
+				//       we would need to do our own visibility tracking.
+				recordInteractionInfo(pageImage, hashCode, false)
+			});
+			$(pageImage).mouseenter(function(event) {
+				recordInteractionInfo(pageImage, hashCode, true)
+			});
 		} 
 		var limit = imagesInPage.length;
 		if (nextIndex < limit)
@@ -139,6 +153,7 @@ function clearVisible() {
 		var hashCode = pageHashes.get(image);
 		
 		recordVisibilityInfo(image, hashCode, false);
+		recordImpressionInfo(image, hashCode, false);
 	});
 }
 
@@ -150,7 +165,8 @@ function checkVisibilityChange() {
 				recordVisibilityInfo(image, hashCode, true);
 			}
 			else { // image has left viewport
-				recordVisibilityInfo(image, hashCode, false);
+				recordVisibilityInfo(image, hashCode, false);				
+				recordImpressionInfo(image, hashCode, false);
 				visibleImages.delete(image);
 				var index = visibleImageKeys.indexOf(image);
 				if (index > -1) visibleImageKeys.splice(index, 1);
@@ -159,6 +175,7 @@ function checkVisibilityChange() {
 		else { // not previously visible.
 			if (checkVisible(image)) { // has image entered viewport?
 				recordVisibilityInfo(image, hashCode, true);
+				recordImpressionInfo(image, hashCode, true);
 				visibleImages.add(image);
 				var index = visibleImageKeys.indexOf(image);
 				if (index < 0) visibleImageKeys.push(image);
@@ -190,6 +207,7 @@ function checkVisible(element) {
 
 // Produce the output - visibility information.
 function recordVisibilityInfo(image, hashCode, isVisible) {
+	if (!recordVisibility) return;
 	var timestamp = (new Date()).getTime();
 	var source = image.src;
 
@@ -266,7 +284,7 @@ function recordVisibilityInfo(image, hashCode, isVisible) {
 }
 
 function logVisibilityInfo(timestamp, source, hashCode, sLeft, sRight, sTop, sBottom, isVisible) {
-	var out = "[ADVERT] " +
+	var out = "[ADVERT VISIBILITY] " +
 	"ts=" + timestamp +
 	",src=" + source +
 	",hash=" + hashCode;
@@ -276,6 +294,46 @@ function logVisibilityInfo(timestamp, source, hashCode, sLeft, sRight, sTop, sBo
 			",right=" + sRight +
 			",top=" + sTop +
 			",bottom=" + sBottom;
+	
+	out += ",visible=" + isVisible;
+	
+	console.log(out);
+}
+
+// Produce the output - interaction information.
+function recordInteractionInfo(image, hashCode, isOver) {
+	if (!recordInteractions) return;
+	var timestamp = (new Date()).getTime();
+	var source = image.src;
+	
+	logInteractionInfo(timestamp, source, hashCode, isOver);
+}
+
+function logInteractionInfo(timestamp, source, hashCode, isOver) {
+	var out = "[ADVERT INTERACTION] " +
+	"ts=" + timestamp +
+	",src=" + source +
+	",hash=" + hashCode;
+	
+	out += ",over=" + isOver;
+	
+	console.log(out);
+}
+
+// Produce the output - impression information.
+function recordImpressionInfo(image, hashCode, isVisible) {
+	if (!recordImpressions) return;
+	var timestamp = (new Date()).getTime();
+	var source = image.src;
+	
+	logImpressionInfo(timestamp, source, hashCode, isVisible);
+}
+
+function logImpressionInfo(timestamp, source, hashCode, isVisible) {
+	var out = "[ADVERT IMPRESSION] " +
+	"ts=" + timestamp +
+	",src=" + source +
+	",hash=" + hashCode;
 	
 	out += ",visible=" + isVisible;
 	
