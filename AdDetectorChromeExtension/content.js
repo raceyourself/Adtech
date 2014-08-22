@@ -74,7 +74,7 @@ var recordVisibility = false;
 var recordImpressions = true;
 var recordInteractions = true;
 
-// Hashes of reference adverts in ref_adverts/. Set<hash>
+// Hashes of reference adverts. Set<hash>
 var refHashList = {};
 
 // All image hashes in page. Map<image,hash>
@@ -93,7 +93,11 @@ var imagesInPage;
 var hashesCalculated = false;
 
 function onReferenceHashList(hashList) {
-	refHashList = hashList;
+	refHashList = {};
+	// Convert array to set/hash for faster lookup
+	hashList.forEach(function(hash, index, hashList) {
+		refHashList[hash] = true;
+	});
 	console.log("received " + Object.keys(refHashList).length + " reference hashes");
 	if (!hashesCalculated) hashImagesInPage();
 }
@@ -136,6 +140,7 @@ function hashImagesInPage() {
 	hashImageInPage(0);
 }
 
+var debugLastLogTimestamp = new Date().getTime();
 function hashImageInPage(index) {
 	var pageImage = imagesInPage[index];
 	
@@ -151,8 +156,10 @@ function hashImageInPage(index) {
 			image = match[1];
 	}
 
-	if (index === 0 || ((index+1) % 20) === 0 || (index+1) === imagesInPage.length) {
+	var timestamp = new Date().getTime();
+	if (index === 0 || timestamp > debugLastLogTimestamp + 1000 || (index+1) === imagesInPage.length) {
 		console.log("hashing image " + (index+1) + '/' + imagesInPage.length);
+		debugLastLogTimestamp = timestamp;
 	}
 	
 	chrome.runtime.sendMessage({action: "dataUrl", type: "page", index: index, src: image});

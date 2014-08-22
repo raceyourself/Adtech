@@ -3,12 +3,11 @@
 
   "name": "Advert Detector",
   "description": "Determines whether an advert has been scrolled into view.",
-  "version": "1.0",
+  "version": "1.1",
 
   "permissions": ["tabs", "<all_urls>", "nativeMessaging"],
   
   "web_accessible_resources": [
-    "ref_images/*"
   ],
   
   "content_scripts": [
@@ -16,8 +15,7 @@
       "matches": ["<all_urls>"],
       "js": [
       	"jquery-1.11.1.js",
-      	"jquery.xpath-0.2.5.js",
-        	"util.js",
+		"util.js",
       	"content.js"
   	  ]
     }
@@ -26,7 +24,6 @@
   "background": {
     "scripts": [
       "jquery-1.11.1.js",
-      "jquery.xpath-0.2.5.js",
       "util.js",
       "background.js"
     ]

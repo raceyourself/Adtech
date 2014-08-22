@@ -26,74 +26,46 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 	}
 });
 
-// As of 2014-08-05 it appears to be impossible to make Chrome search for all files in an extension subdir.
-// So we need to name them explicitly (or load them over the web?).
-// NOTE: MUST BE MANUALLY UPDATED
-// TODO: Store hashes in plugin
-var refImages = new Array(
-		"ref_images/LEADERSHIP1-largeHorizontal375.jpg",		
-        "ref_images/200x90_Banner_Ad_Placholder.png",
-        "ref_images/300x250_Banner_Ad_Placholder.png",
-        "ref_images/300x125_Banner_Ad_Placholder.png",
-        "ref_images/300x150_Banner_Ad_Placholder.png",
-        "ref_images/300x250B_Banner_Ad_Placholder.png",
-        "ref_images/320x285_Banner_Ad_Placholder.png",
-        "ref_images/700x75_Banner_Ad_Placholder.png",
-        "ref_images/700x90_Banner_Ad_Placholder.png",
-        "ref_images/720x300_Banner_Ad_Placholder.png",
-        "ref_images/728x90_Banner_Ad_Placholder.png",
-        "ref_images/1000x90_Banner_Ad_Placholder.png",
-        "ref_images/9800x250_Banner_Ad_Placholder.png"
-);
+var confUrl = "http://www.glassinsight.co.uk/api/display_conf";
 
-// Hashes of reference adverts in ref_adverts/. Set<hash>
-var refHashList = {};
+// Hashes of reference adverts. Set<hash>
+// TODO: Cache locally?
+var refHashList = [];
 
-var hashesCalculated = false;
+var hashesFetching = false;
 
 var refHashListeners = [];
 
 // Calc hashes of references images - the images we're looking out for.
 // Populates refHashList:Set<hash>.
 function hashReferenceImages() {
-	if (!hashesCalculated) {
-		hashReferenceImage(0);
+	if (refHashList.length === 0) {
+		if (!hashesFetching) {
+			hashesFetching = true;
+			$.getJSON(confUrl, function(data) {
+				if (data.reference_hashes && data.reference_hashes.length > 0) {
+					refHashList = data.reference_hashes;
+					hashesFetching = false;
+					console.log("Fetched " + refHashList.length + " reference hashes");
+					onReferenceImagesHashed();
+				} else {
+					console.log("Could not fetch reference hashes: bad response");
+				}
+			}).fail(function() {
+				console.log("Could not fetch reference hashes: network error");
+			});
+		}
 	} else {
 		onReferenceImagesHashed();
 	}
-}
-
-function hashReferenceImage(index) {
-	var imagePath = refImages[index];
-	
-	var imageUrl = chrome.extension.getURL(imagePath);
-	
-	calcDataUrl(imageUrl, function(dataUrl) {			
-		onDataUrlCalculated(dataUrl, index);
-	});
 }
 
 function onReferenceImagesHashed() {
 	refHashListeners.forEach(function(tabId) {
-		console.log("Sending refHasList of " + Object.keys(refHashList).length);
+		console.log("Sending refHasList of " + refHashList.length);
 		chrome.tabs.sendMessage(tabId, {action: "referenceHashList", hashList: refHashList});
 	});
 	refHashListeners = [];
-}
-
-function onDataUrlCalculated(dataUrl, index) {
-	var hashCode = dataUrl === null ? null : dataUrl2hashCode(dataUrl);
-	var nextIndex = index + 1;
-	
-	refHashList[hashCode] = true; // add hashcode to set
-	
-	var limit = refImages.length;
-	if (nextIndex < limit) { // more ref images need hashing
-		hashReferenceImage(nextIndex);
-	} else {
-		hashesCalculated = true;
-		onReferenceImagesHashed();
-	}
 }
 
 function sendVisibilityInfoToNative(
@@ -137,7 +109,9 @@ function calcDataUrl(src, callback) {
     var canvas = document.createElement("canvas");
     
     var image = new Image();
-	image.src = src;
+	image.addEventListener("error", function() {
+		callback(null);
+	});
 	image.addEventListener("load", function() {
 		// now that the image has loaded, we can find out its real dimensions ('natural' dimensions. Not dimensions
 		// declared in HTML/CSS.)
@@ -159,6 +133,7 @@ function calcDataUrl(src, callback) {
 	    // return data to content script
 	    callback(dataUrl);
 	});
+	image.src = src;
 }
 
 hashReferenceImages();
