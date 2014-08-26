@@ -20,8 +20,7 @@ public interface PublisherKeyDao {
 		"inner join\n" +
 		" (\n" +
 		"  select publisher_id, max(effective) maxeffective from publisher_keys\n" +
-		"  where publisher_id = :publisher_id\n" +
-		"  and effective < :publisher_ts\n" +
+		"  where effective < :publisher_ts\n" +
 		"  group by publisher_id\n" +
 		") past_publisher_keys\n" +
 		"on publisher_keys.publisher_id = past_publisher_keys.publisher_id\n" +
@@ -29,6 +28,6 @@ public interface PublisherKeyDao {
 		"inner join\n" +
 		"publisher_hosts hosts\n" +
 		"on hosts.publisher_id = publisher_keys.publisher_id\n" +
-		"where hosts.host like :host")
+		"where :host like hosts.host")
 	String getKey(@Bind("host") String host, @Bind("publisher_ts") DateTime publisherTs);
 }
