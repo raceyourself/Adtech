@@ -27,8 +27,8 @@ public interface PublisherKeyDao {
 		"on publisher_keys.publisher_id = past_publisher_keys.publisher_id\n" +
 		"and publisher_keys.effective = past_publisher_keys.maxeffective" +
 		"inner join\n" +
-		"domains\n" +
+		"publisher_hosts hosts\n" +
 		"on hosts.publisher_id = publisher_keys.publisher_id\n" +
-		"where hosts.host = :host")
+		"where hosts.host like :host")
 	String getKey(@Bind("host") String host, @Bind("publisher_ts") DateTime publisherTs);
 }

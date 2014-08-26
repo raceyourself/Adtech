@@ -50,4 +50,7 @@
         </createTable>
 	</changeSet>
 
+    <!-- <changeSet id="1" author="dliroberts">
+        <renameColumn oldColumnName="host" newColumnName="domain" tableName="publisher_hosts" />
+    </changeSet> -->
 </databaseChangeLog>
