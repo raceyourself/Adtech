@@ -2,7 +2,6 @@ package underad.blackbox.resources;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Collection;
 import java.util.List;
 
 import javax.ws.rs.GET;
@@ -25,7 +24,7 @@ import com.codahale.metrics.annotation.Timed;
 import com.google.common.collect.ImmutableList;
 
 @AllArgsConstructor
-@Path("/reconstruct")
+@Path("/jsinclude")
 @Produces("application/javascript")
 public class JsIncludeResource {
 	private static final String RECONSTRUCT_URL = "http://www.unicorn.io/reconstruct";
@@ -41,11 +40,12 @@ public class JsIncludeResource {
 	 * 'underad'-style 'adblock-proof' advert resources (images, JS, etc).
 	 * 
 	 * @param url The page serving the ads, i.e. that will link to this include.
+	 * @param publisherUnixTs Unix timestamp on publisher's server at point of sending request.
 	 * @return AdBlock-defeating JavaScript.
 	 */
 	@GET
 	@Timed
-	public JsIncludeView getInclude(@QueryParam("url") String url, @QueryParam("datetime") DateTime publisherTs) {
+	public JsIncludeView getInclude(@QueryParam("url") String url, @QueryParam("unixts") long publisherUnixTs) {
 	    URI uri;
 		try {
 			uri = new URI(url);
@@ -57,9 +57,10 @@ public class JsIncludeResource {
 	    // Determine what adverts need obfuscating.
 		List<AdvertMetadata> advertMetadata = ImmutableList.copyOf(adAugmentDao.getAdverts(url));
 		// Get appropriate key for encrypting paths.
+		DateTime publisherTs = new DateTime(publisherUnixTs);
 		String key = publisherKeyDao.getKey(host, publisherTs);
 		
-		// The only URL we need to cipher
+		// The only URL we need to cipher in the blackbox is the reconstruct URL that provides adblock-proof ad HTML.
 		String reconstructUrlCipherText = Crypto.encrypt(key, RECONSTRUCT_URL);
 		
 		JsIncludeView view = new JsIncludeView(reconstructUrlCipherText, advertMetadata);
