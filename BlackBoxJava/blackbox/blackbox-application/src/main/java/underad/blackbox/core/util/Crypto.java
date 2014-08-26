@@ -70,6 +70,7 @@ public class Crypto {
 			 */
 			throw new Error("These should never have been checked exceptions... (2)");
 		} catch (InvalidKeyException e) {
+			// See http://stackoverflow.com/questions/19856324/exception-in-thread-main-java-security-invalidkeyexception-illegal-key-size-o
 			throw new IllegalArgumentException(String.format("Key is invalid: %s", key), e);
 		}
 	}
