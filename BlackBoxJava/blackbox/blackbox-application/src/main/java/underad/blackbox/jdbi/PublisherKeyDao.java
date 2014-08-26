@@ -25,7 +25,7 @@ public interface PublisherKeyDao {
 		"  group by publisher_id\n" +
 		") past_publisher_keys\n" +
 		"on publisher_keys.publisher_id = past_publisher_keys.publisher_id\n" +
-		"and publisher_keys.effective = past_publisher_keys.maxeffective" +
+		"and publisher_keys.effective = past_publisher_keys.maxeffective\n" +
 		"inner join\n" +
 		"publisher_hosts hosts\n" +
 		"on hosts.publisher_id = publisher_keys.publisher_id\n" +
