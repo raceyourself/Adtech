@@ -11,6 +11,8 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response.Status;
 
+import lombok.AllArgsConstructor;
+
 import org.joda.time.DateTime;
 
 import underad.blackbox.core.AdvertMetadata;
@@ -18,7 +20,6 @@ import underad.blackbox.core.util.Crypto;
 import underad.blackbox.jdbi.AdAugmentDao;
 import underad.blackbox.jdbi.PublisherKeyDao;
 import underad.blackbox.views.JsIncludeView;
-import lombok.AllArgsConstructor;
 
 import com.codahale.metrics.annotation.Timed;
 import com.google.common.collect.ImmutableList;
@@ -55,6 +56,10 @@ public class JsIncludeResource {
 	    
 	    // Determine what adverts need obfuscating.
 		List<AdvertMetadata> advertMetadata = ImmutableList.copyOf(adAugmentDao.getAdverts(url));
+		if (advertMetadata.isEmpty()) 
+			// probably means that the URL isn't owned by one of our publisher clients at present. That or config error.
+			throw new WebApplicationException(Status.BAD_REQUEST);
+		
 		// DateTime(long) expects millis since Unix epoch, not seconds.
 		long publisherUnixTimeMillis = publisherUnixTimeSecs * 1000;
 		DateTime publisherTs = new DateTime(publisherUnixTimeMillis);
@@ -69,6 +74,9 @@ public class JsIncludeResource {
 		// TODO how can we minify the JavaScript that comes out of Mustache? Quite important for "security through
 		// obscurity" reasons... maybe with a Jersey interceptor?
 		// https://jersey.java.net/documentation/latest/filters-and-interceptors.html#d0e8333
+		// Unfortunately this is available from Jersey 2.x, and DropWizard is currently (2014-08-27) on 1.x.
+		// Easiest answer: revisit once DW goes over to 2.x. This might also be helpful:
+		// http://stackoverflow.com/questions/19785001/custom-method-annotation-using-jerseys-abstracthttpcontextinjectable-not-workin
 		return view;
 	}
 }

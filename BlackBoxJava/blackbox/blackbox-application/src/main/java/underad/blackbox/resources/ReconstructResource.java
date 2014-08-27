@@ -49,6 +49,5 @@ public class ReconstructResource {
 		}
 		
 		return null;
-//		return new Saying(counter.incrementAndGet(), value);
 	}
 }
