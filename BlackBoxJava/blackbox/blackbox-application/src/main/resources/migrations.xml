@@ -52,10 +52,17 @@
 		</createTable>
 	</changeSet>
 
-	<changeSet id="2" author="dliroberts">
-		<dropPrimaryKey tableName="adverts" />
-		<addPrimaryKey tableName="adverts"
-			columnNames="url, advert_rel_xpath, blocked_abs_xpath"
-			constraintName="pk_adverts" />
-	</changeSet>
+    <changeSet id="2" author="dliroberts">
+        <dropPrimaryKey tableName="adverts" />
+        <addPrimaryKey tableName="adverts"
+            columnNames="url, advert_rel_xpath, blocked_abs_xpath"
+            constraintName="pk_adverts" />
+    </changeSet>
+
+    <changeSet id="3" author="dliroberts">
+        <renameColumn tableName="publisher_keys"
+            oldColumnName="key"
+            newColumnName="password" />
+        <renameTable oldTableName="publisher_keys" newTableName="publisher_passwords"/>
+    </changeSet>
 </databaseChangeLog>

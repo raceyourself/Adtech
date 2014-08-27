@@ -15,7 +15,7 @@ import org.skife.jdbi.v2.DBI;
 import underad.blackbox.client.HttpConsumer;
 import underad.blackbox.health.BlackboxHealthCheck;
 import underad.blackbox.jdbi.AdAugmentDao;
-import underad.blackbox.jdbi.PublisherKeyDao;
+import underad.blackbox.jdbi.PublisherPasswordDao;
 import underad.blackbox.resources.JsIncludeResource;
 import underad.blackbox.resources.ReconstructResource;
 
@@ -48,7 +48,7 @@ public class BlackboxApplication extends Application<BlackboxConfiguration> {
 	    HttpClient httpClient = new HttpClientBuilder(env).using(config.getHttpClient()).build("http_client");
 	    
 		AdAugmentDao adAugmentDao = jdbi.onDemand(AdAugmentDao.class);
-		PublisherKeyDao publisherKeyDao = jdbi.onDemand(PublisherKeyDao.class);
+		PublisherPasswordDao publisherKeyDao = jdbi.onDemand(PublisherPasswordDao.class);
 		
 		HttpConsumer httpConsumer = new HttpConsumer(httpClient);
 		ReconstructResource reconstructResource = new ReconstructResource(httpConsumer);

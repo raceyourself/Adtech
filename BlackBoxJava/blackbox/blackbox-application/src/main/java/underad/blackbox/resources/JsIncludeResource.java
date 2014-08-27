@@ -18,7 +18,7 @@ import org.joda.time.DateTime;
 import underad.blackbox.core.AdvertMetadata;
 import underad.blackbox.core.util.Crypto;
 import underad.blackbox.jdbi.AdAugmentDao;
-import underad.blackbox.jdbi.PublisherKeyDao;
+import underad.blackbox.jdbi.PublisherPasswordDao;
 import underad.blackbox.views.JsIncludeView;
 
 import com.codahale.metrics.annotation.Timed;
@@ -32,7 +32,7 @@ public class JsIncludeResource {
 	private static final String RECONSTRUCT_URL = "http://www.unicorn.io/reconstruct";
 	
 	private final AdAugmentDao adAugmentDao;
-	private final PublisherKeyDao publisherKeyDao;
+	private final PublisherPasswordDao publisherKeyDao;
 	
 	/**
 	 * Returns JavaScript code required to:
@@ -64,7 +64,7 @@ public class JsIncludeResource {
 		long publisherUnixTimeMillis = publisherUnixTimeSecs * 1000;
 		DateTime publisherTs = new DateTime(publisherUnixTimeMillis);
 		// Get appropriate key for encrypting paths.
-		String key = publisherKeyDao.getKey(url, publisherTs);
+		String key = publisherKeyDao.getPassword(url, publisherTs);
 		
 		// The only URL we need to cipher in the blackbox is the reconstruct URL that provides adblock-proof ad HTML.
 		String reconstructUrlCipherText = Crypto.encrypt(key, publisherUnixTimeMillis, RECONSTRUCT_URL);
