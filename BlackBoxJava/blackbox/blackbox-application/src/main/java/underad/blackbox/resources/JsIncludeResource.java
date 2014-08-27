@@ -46,13 +46,11 @@ public class JsIncludeResource {
 	@GET
 	@Timed
 	public JsIncludeView getInclude(@QueryParam("url") String url, @QueryParam("unixtime") long publisherUnixTimeSecs) {
-	    URI uri;
-		try {
-			uri = new URI(url);
+	    try {
+			new URI(url); // slightly clumsy validation... TODO can this be replaced with DW's validation stuff?
 		} catch (URISyntaxException e) {
 			throw new WebApplicationException(e, Status.BAD_REQUEST);
 		}
-//	    String host = uri.getHost();
 	    
 	    // Determine what adverts need obfuscating.
 		List<AdvertMetadata> advertMetadata = ImmutableList.copyOf(adAugmentDao.getAdverts(url));

@@ -79,7 +79,7 @@ function recreate(selector, e, callback) {
   p.insertBefore(c, el.nextElementSibling);
 
   // Fetch clean style from server
-  jQuery.getJSON({{reconstructUrl}} + '?' + btoa('selector=' + btoa(selector) + '&parents=' + depth), function(data) {
+  jQuery.getJSON('{{reconstructUrl}}?' + btoa('selector=' + btoa(selector) + '&parents=' + depth), function(data) {
     console.log('restyling ' + selector + ' depth: ' + (data.length-1));
     var node = ce;
     for (var i=0, l = data.length; i < l; i++) {
