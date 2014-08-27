@@ -4,12 +4,17 @@ import java.nio.charset.Charset;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.KeySpec;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
+import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.commons.codec.binary.Base64;
@@ -19,7 +24,6 @@ public class Crypto {
 	private static final Charset CHARSET = Charset.forName("UTF-8");
 	private static final Cipher CIPHER;
 	private static final IvParameterSpec INIT_VECTOR_PARAM_SPEC;
-	private static final int requiredKeyBytes = 32; // = 256-bit
 	private static final Duration KEY_DURATION = new Duration(6000000);
 	
 	static {
@@ -41,39 +45,40 @@ public class Crypto {
 		}
 	}
 	
-	public static String encrypt(String key, long publisherUnixTimeMillis, String plainText) {
+	public static String encrypt(String password, long publisherUnixTimeMillis, String plainText) {
 		byte[] plainTextBytes = plainText.getBytes(CHARSET);
-	    byte[] cipherTextBytes = crypt(key, publisherUnixTimeMillis, plainTextBytes, Cipher.ENCRYPT_MODE);
+	    byte[] cipherTextBytes = crypt(password, publisherUnixTimeMillis, plainTextBytes, Cipher.ENCRYPT_MODE);
 	    return new String(Base64.encodeBase64(cipherTextBytes), CHARSET);
 	}
 	
-	public static String decrypt(String key, long publisherUnixTimeMillis, String cipherText) {
+	public static String decrypt(String password, long publisherUnixTimeMillis, String cipherText) {
 		byte[] cipherTextBytes = Base64.decodeBase64(cipherText.getBytes(CHARSET));
-		byte[] originalBytes = crypt(key, publisherUnixTimeMillis, cipherTextBytes, Cipher.DECRYPT_MODE);
+		byte[] originalBytes = crypt(password, publisherUnixTimeMillis, cipherTextBytes, Cipher.DECRYPT_MODE);
 		return new String(originalBytes, CHARSET);
 	}
 	
-	private static byte[] crypt(String key, long publisherUnixTimeMillis, byte[] input, int cipherMode) {
-		// TODO period is variable-length. Should be 'topped up' to exactly 32 bytes by key.
-		String periodedKey = (publisherUnixTimeMillis / KEY_DURATION.getMillis()) + key;
-		
-		byte[] keyBytes = periodedKey.getBytes(CHARSET);
-
-		SecretKeySpec sKeySpec = new SecretKeySpec(keyBytes, "AES");
+	private static byte[] crypt(String password, long publisherUnixTimeMillis, byte[] input, int cipherMode) {
+		long period = publisherUnixTimeMillis / KEY_DURATION.getMillis();
+		String periodedPassword = period + password;
+		SecretKey key = null;
 		try {
-			CIPHER.init(cipherMode, sKeySpec, INIT_VECTOR_PARAM_SPEC);
+			SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
+			KeySpec spec = new PBEKeySpec(periodedPassword.toCharArray(), new byte[] {0}, 65536, 256);
+			// Need key to have algorithm set to AES, hence one SecretKey (from generateSecret()) being used to make another
+			key = new SecretKeySpec(factory.generateSecret(spec).getEncoded(), "AES");
+			CIPHER.init(cipherMode, key, INIT_VECTOR_PARAM_SPEC);
 			byte[] cipherTextBytes = CIPHER.doFinal(input);
 			return cipherTextBytes;
-		} catch (InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException e) {
+		} catch (NoSuchAlgorithmException | InvalidAlgorithmParameterException | IllegalBlockSizeException e) {
 			/*
-			 * InvalidAlgorithmParameterException won't happen because cipher is
-			 * hard-coded. IllegalBlockSizeException can't happen with
-			 * PKCS5Padding. BadPaddingException can only ever happen when
-			 * decrypting.
+			 * NoSuchAlgorithmException/InvalidAlgorithmParameterException won't happen as values are hardcoded.
+			 * IllegalBlockSizeException can't happen with PKCS5Padding.
 			 */
 			throw new Error("These should never have been checked exceptions... (2)");
-		} catch (InvalidKeyException e) {
-			throw new IllegalArgumentException(String.format("Key is invalid: %s", periodedKey), e);
+		} catch (InvalidKeySpecException | InvalidKeyException e) {
+			throw new IllegalArgumentException(String.format("Key is invalid: %s", key), e);
+		} catch (BadPaddingException e) {
+			throw new IllegalArgumentException(String.format("Input ciphertext is invalid: %s", input));
 		}
 	}
 }

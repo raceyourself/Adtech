@@ -23,9 +23,10 @@ import lombok.AllArgsConstructor;
 import com.codahale.metrics.annotation.Timed;
 import com.google.common.collect.ImmutableList;
 
-@AllArgsConstructor
-@Path("/jsinclude")
+// Path naming gives a clue as to content it provides. A little misleading as it suggests a direct resource access...
+@Path("/include.js")
 @Produces("application/javascript")
+@AllArgsConstructor
 public class JsIncludeResource {
 	private static final String RECONSTRUCT_URL = "http://www.unicorn.io/reconstruct";
 	
