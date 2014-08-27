@@ -23,7 +23,7 @@ import lombok.AllArgsConstructor;
 import com.codahale.metrics.annotation.Timed;
 import com.google.common.collect.ImmutableList;
 
-// Path naming gives a clue as to content it provides. A little misleading as it suggests a direct resource access...
+// Path naming gives a clue as to content it provides. A little misleading as it doesn't suggest code gen...
 @Path("/include.js")
 @Produces("application/javascript")
 @AllArgsConstructor
