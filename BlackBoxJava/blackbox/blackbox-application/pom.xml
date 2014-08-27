@@ -8,97 +8,118 @@
 	</parent>
 	<artifactId>blackbox-application</artifactId>
 
-    <dependencies>
-        <!-- Database access -->
-        <dependency>
-            <groupId>io.dropwizard</groupId>
-            <artifactId>dropwizard-jdbi</artifactId>
-            <version>${dropwizard.version}</version>
-        </dependency>
-        <!-- Database migrations -->
-        <dependency>
-            <groupId>io.dropwizard</groupId>
-            <artifactId>dropwizard-migrations</artifactId>
-            <version>${dropwizard.version}</version>
-        </dependency>
-        <!-- Templating for generating JavaScript adblock detection/ad replacement includes. -->
-        <dependency>
-            <groupId>io.dropwizard</groupId>
-            <artifactId>dropwizard-views-mustache</artifactId>
-            <version>${dropwizard.version}</version>
-        </dependency>
+	<properties>
+		<selenium.version>2.42.2</selenium.version>
+	</properties>
 
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <version>1.4.181</version>
-        </dependency>
-        
-        <dependency>
-            <groupId>underad</groupId>
-            <artifactId>blackbox-api</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>underad</groupId>
-            <artifactId>blackbox-client</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-    </dependencies>
-    
-    <build>
-        <plugins>
-            <!-- Produce one 'fat' JAR containing all dependencies (recommended by Dropwizard) -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>1.6</version>
-                <configuration>
-                    <createDependencyReducedPom>true</createDependencyReducedPom>
-                    <filters>
-                        <filter>
-                            <artifact>*:*</artifact>
-                            <excludes>
-                                <exclude>META-INF/*.SF</exclude>
-                                <exclude>META-INF/*.DSA</exclude>
-                                <exclude>META-INF/*.RSA</exclude>
-                            </excludes>
-                        </filter>
-                    </filters>
-                </configuration>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <transformers>
-                                <transformer
-                                    implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
-                                <transformer
-                                    implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>underad.blackbox.BlackboxApplication</mainClass>
-                                </transformer>
-                            </transformers>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
+	<dependencies>
+		<!-- Database access -->
+		<dependency>
+			<groupId>io.dropwizard</groupId>
+			<artifactId>dropwizard-jdbi</artifactId>
+			<version>${dropwizard.version}</version>
+		</dependency>
+		<!-- Database migrations -->
+		<dependency>
+			<groupId>io.dropwizard</groupId>
+			<artifactId>dropwizard-migrations</artifactId>
+			<version>${dropwizard.version}</version>
+		</dependency>
+		<!-- Templating for generating JavaScript adblock detection/ad replacement 
+			includes. -->
+		<dependency>
+			<groupId>io.dropwizard</groupId>
+			<artifactId>dropwizard-views-mustache</artifactId>
+			<version>${dropwizard.version}</version>
+		</dependency>
 
-            <!-- Populates manifest with implementation version info. -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>2.4</version>
-                <configuration>
-                    <archive>
-                        <manifest>
-                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-                        </manifest>
-                    </archive>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+		<!-- Database impl. TODO replace with mysql/postgres once more established -->
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<version>1.4.181</version>
+		</dependency>
+		<!-- For WebDriver. We need to render the publisher's page to resolve styling. -->
+		<dependency>
+			<groupId>org.seleniumhq.selenium</groupId>
+			<artifactId>selenium-java</artifactId>
+			<version>${selenium.version}</version>
+		</dependency>
+		<!-- We use the ChromeDriver implementation of WebDriver. Favouring ChromeDriver 
+			over FirefoxDriver because we have a Chrome extension for ad detection. If 
+			memory becomes an issue, reconsider... -->
+		<dependency>
+			<groupId>org.seleniumhq.selenium</groupId>
+			<artifactId>selenium-chrome-driver</artifactId>
+			<version>${selenium.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>underad</groupId>
+			<artifactId>blackbox-api</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>underad</groupId>
+			<artifactId>blackbox-client</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<!-- Produce one 'fat' JAR containing all dependencies (recommended by 
+				Dropwizard) -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>1.6</version>
+				<configuration>
+					<createDependencyReducedPom>true</createDependencyReducedPom>
+					<filters>
+						<filter>
+							<artifact>*:*</artifact>
+							<excludes>
+								<exclude>META-INF/*.SF</exclude>
+								<exclude>META-INF/*.DSA</exclude>
+								<exclude>META-INF/*.RSA</exclude>
+							</excludes>
+						</filter>
+					</filters>
+				</configuration>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+							<transformers>
+								<transformer
+									implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+								<transformer
+									implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+									<mainClass>underad.blackbox.BlackboxApplication</mainClass>
+								</transformer>
+							</transformers>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- Populates manifest with implementation version info. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>2.4</version>
+				<configuration>
+					<archive>
+						<manifest>
+							<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+						</manifest>
+					</archive>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 </project>

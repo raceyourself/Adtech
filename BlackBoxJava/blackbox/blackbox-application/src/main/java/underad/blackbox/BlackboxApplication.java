@@ -1,7 +1,6 @@
 package underad.blackbox;
 
 import io.dropwizard.Application;
-import io.dropwizard.client.HttpClientBuilder;
 import io.dropwizard.db.DataSourceFactory;
 import io.dropwizard.jdbi.DBIFactory;
 import io.dropwizard.migrations.MigrationsBundle;
@@ -9,10 +8,8 @@ import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.views.ViewBundle;
 
-import org.apache.http.client.HttpClient;
 import org.skife.jdbi.v2.DBI;
 
-import underad.blackbox.client.HttpConsumer;
 import underad.blackbox.health.BlackboxHealthCheck;
 import underad.blackbox.jdbi.AdAugmentDao;
 import underad.blackbox.jdbi.PublisherPasswordDao;
@@ -45,13 +42,10 @@ public class BlackboxApplication extends Application<BlackboxConfiguration> {
 	    DBIFactory factory = new DBIFactory();
 	    DBI jdbi = factory.build(env, config.getDataSourceFactory(), "database");
 	    
-	    HttpClient httpClient = new HttpClientBuilder(env).using(config.getHttpClient()).build("http_client");
-	    
 		AdAugmentDao adAugmentDao = jdbi.onDemand(AdAugmentDao.class);
 		PublisherPasswordDao publisherKeyDao = jdbi.onDemand(PublisherPasswordDao.class);
 		
-		HttpConsumer httpConsumer = new HttpConsumer(httpClient);
-		ReconstructResource reconstructResource = new ReconstructResource(httpConsumer);
+		ReconstructResource reconstructResource = new ReconstructResource();
 		env.jersey().register(reconstructResource);
 
 		JsIncludeResource jsIncludeResource = new JsIncludeResource(adAugmentDao, publisherKeyDao);
