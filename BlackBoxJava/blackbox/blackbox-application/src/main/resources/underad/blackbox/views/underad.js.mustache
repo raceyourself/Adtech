@@ -168,7 +168,7 @@ for(var i=0, l=iframes.length; i < l; i++) {
 document.addEventListener('readystatechange', function() {
   if(document.readyState === 'complete') {
 {{#adverts}}
-    underad('{{xpath}}', '{{widthWithUnit}}', '{{heightWithUnit}}', 'TODO img url should be retrieved from ad gen'); ?>', 'TODO href should be retrieved from ad gen');
+    underad('{{blockedAbsXpath}}', '{{advertRelXpath}}', '{{widthWithUnit}}', '{{heightWithUnit}}', 'TODO img url should be retrieved from ad gen', 'TODO href should be retrieved from ad gen');
 {{/adverts}}
   }
 });

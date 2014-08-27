@@ -13,12 +13,14 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.commons.codec.binary.Base64;
+import org.joda.time.Duration;
 
 public class Crypto {
 	private static final Charset CHARSET = Charset.forName("UTF-8");
 	private static final Cipher CIPHER;
 	private static final IvParameterSpec INIT_VECTOR_PARAM_SPEC;
 	private static final int requiredKeyBytes = 32; // = 256-bit
+	private static final Duration KEY_DURATION = new Duration(6000000);
 	
 	static {
 		try {
@@ -39,26 +41,27 @@ public class Crypto {
 		}
 	}
 	
-	public static String encrypt(String key, String plainText) {
+	public static String encrypt(String key, long publisherUnixTimeMillis, String plainText) {
 		byte[] plainTextBytes = plainText.getBytes(CHARSET);
-	    byte[] cipherTextBytes = crypt(key, plainTextBytes, Cipher.ENCRYPT_MODE);
+	    byte[] cipherTextBytes = crypt(key, publisherUnixTimeMillis, plainTextBytes, Cipher.ENCRYPT_MODE);
 	    return new String(Base64.encodeBase64(cipherTextBytes), CHARSET);
 	}
 	
-	public static String decrypt(String key, String cipherText) {
+	public static String decrypt(String key, long publisherUnixTimeMillis, String cipherText) {
 		byte[] cipherTextBytes = Base64.decodeBase64(cipherText.getBytes(CHARSET));
-		byte[] originalBytes = crypt(key, cipherTextBytes, Cipher.DECRYPT_MODE);
+		byte[] originalBytes = crypt(key, publisherUnixTimeMillis, cipherTextBytes, Cipher.DECRYPT_MODE);
 		return new String(originalBytes, CHARSET);
 	}
 	
-	private static byte[] crypt(String key, byte[] input, int cipherMode) {
-		byte[] keyBytes = key.getBytes(CHARSET);
-		if (keyBytes.length != requiredKeyBytes)
-			throw new IllegalArgumentException("Invalid key size.");
+	private static byte[] crypt(String key, long publisherUnixTimeMillis, byte[] input, int cipherMode) {
+		// TODO period is variable-length. Should be 'topped up' to exactly 32 bytes by key.
+		String periodedKey = (publisherUnixTimeMillis / KEY_DURATION.getMillis()) + key;
+		
+		byte[] keyBytes = periodedKey.getBytes(CHARSET);
 
-		SecretKeySpec skeySpec = new SecretKeySpec(keyBytes, "AES");
+		SecretKeySpec sKeySpec = new SecretKeySpec(keyBytes, "AES");
 		try {
-			CIPHER.init(cipherMode, skeySpec, INIT_VECTOR_PARAM_SPEC);
+			CIPHER.init(cipherMode, sKeySpec, INIT_VECTOR_PARAM_SPEC);
 			byte[] cipherTextBytes = CIPHER.doFinal(input);
 			return cipherTextBytes;
 		} catch (InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException e) {
@@ -70,8 +73,7 @@ public class Crypto {
 			 */
 			throw new Error("These should never have been checked exceptions... (2)");
 		} catch (InvalidKeyException e) {
-			// See http://stackoverflow.com/questions/19856324/exception-in-thread-main-java-security-invalidkeyexception-illegal-key-size-o
-			throw new IllegalArgumentException(String.format("Key is invalid: %s", key), e);
+			throw new IllegalArgumentException(String.format("Key is invalid: %s", periodedKey), e);
 		}
 	}
 }

@@ -57,12 +57,13 @@ public class JsIncludeResource {
 	    // Determine what adverts need obfuscating.
 		List<AdvertMetadata> advertMetadata = ImmutableList.copyOf(adAugmentDao.getAdverts(url));
 		// DateTime(long) expects millis since Unix epoch, not seconds.
-		DateTime publisherTs = new DateTime(publisherUnixTimeSecs * 1000);
+		long publisherUnixTimeMillis = publisherUnixTimeSecs * 1000;
+		DateTime publisherTs = new DateTime(publisherUnixTimeMillis);
 		// Get appropriate key for encrypting paths.
 		String key = publisherKeyDao.getKey(url, publisherTs);
 		
 		// The only URL we need to cipher in the blackbox is the reconstruct URL that provides adblock-proof ad HTML.
-		String reconstructUrlCipherText = Crypto.encrypt(key, RECONSTRUCT_URL);
+		String reconstructUrlCipherText = Crypto.encrypt(key, publisherUnixTimeMillis, RECONSTRUCT_URL);
 		
 		JsIncludeView view = new JsIncludeView(reconstructUrlCipherText, advertMetadata);
 		

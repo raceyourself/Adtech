@@ -6,7 +6,7 @@
 
 	<changeSet id="1" author="dliroberts">
 		<createTable tableName="publisher_keys"
-		      remarks="Encryption keys to use for each publisher. Only one is valid at a time; see effective dates.">
+			remarks="Encryption keys to use for each publisher. Only one is valid at a time; see effective dates.">
 			<column name="publisher_id" type="bigint">
 				<constraints nullable="false" />
 			</column>
@@ -18,39 +18,44 @@
 			</column>
 		</createTable>
 		<addPrimaryKey columnNames="publisher_id, effective"
-		    constraintName="pk_publisher_keys" tableName="publisher_keys" />
-		
-		<createTable tableName="adverts" remarks="Advert placement metadata for supported publisher pages.">
-            <column name="url" type="varchar(1024)" remarks=
-                    "Used for fetching fresh, unblocked ad content. Multiple pages with the same advert positioning
+			constraintName="pk_publisher_keys" tableName="publisher_keys" />
+
+		<createTable tableName="adverts"
+			remarks="Advert placement metadata for supported publisher pages.">
+			<column name="url" type="varchar(1024)"
+				remarks="Used for fetching fresh, unblocked ad content. Multiple pages with the same advert positioning
                     can thus reference the same URL.">
-                <constraints primaryKey="true" nullable="false"/>
-            </column>
-            <column name="advert_rel_xpath" type="varchar(1024)">
-                <constraints nullable="false" />
-            </column>
-            <column name="blocked_abs_xpath" type="varchar(1024)">
-                <constraints nullable="false" />
-            </column>
-            <column name="width_with_unit" type="varchar(32)">
-                <constraints nullable="false" />
-            </column>
-            <column name="height_with_unit" type="varchar(32)">
-                <constraints nullable="false" />
-            </column>
-        </createTable>
-        
-        <createTable tableName="publisher_hosts" remarks="Domains owned by publishers.">
-            <column name="host" type="varchar(512)" remarks="e.g. stackoverflow.com, mysite.blogspot.com">
-                <constraints primaryKey="true" nullable="false"/>
-            </column>
-            <column name="publisher_id" type="bigint">
-                <constraints nullable="false" />
-            </column>
-        </createTable>
+				<constraints primaryKey="true" nullable="false" />
+			</column>
+			<column name="advert_rel_xpath" type="varchar(1024)">
+				<constraints nullable="false" />
+			</column>
+			<column name="blocked_abs_xpath" type="varchar(1024)">
+				<constraints nullable="false" />
+			</column>
+			<column name="width_with_unit" type="varchar(32)">
+				<constraints nullable="false" />
+			</column>
+			<column name="height_with_unit" type="varchar(32)">
+				<constraints nullable="false" />
+			</column>
+		</createTable>
+
+		<createTable tableName="publisher_hosts" remarks="Domains owned by publishers.">
+			<column name="host" type="varchar(512)"
+				remarks="e.g. stackoverflow.com, mysite.blogspot.com">
+				<constraints primaryKey="true" nullable="false" />
+			</column>
+			<column name="publisher_id" type="bigint">
+				<constraints nullable="false" />
+			</column>
+		</createTable>
 	</changeSet>
 
-    <!-- <changeSet id="1" author="dliroberts">
-        <renameColumn oldColumnName="host" newColumnName="domain" tableName="publisher_hosts" />
-    </changeSet> -->
+	<changeSet id="2" author="dliroberts">
+		<dropPrimaryKey tableName="adverts" />
+		<addPrimaryKey tableName="adverts"
+			columnNames="url, advert_rel_xpath, blocked_abs_xpath"
+			constraintName="pk_adverts" />
+	</changeSet>
 </databaseChangeLog>
