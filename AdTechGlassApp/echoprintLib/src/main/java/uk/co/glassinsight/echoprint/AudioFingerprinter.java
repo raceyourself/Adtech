@@ -50,8 +50,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.InflaterOutputStream;
 
-import edu.gvsu.masl.echoprint.Codegen;
-
 /**
  * Main fingerprinting class<br>
  * This class will record audio from the microphone, generate the fingerprint code using a native library and query the data server for a match
