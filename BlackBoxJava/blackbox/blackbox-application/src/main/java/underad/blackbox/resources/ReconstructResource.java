@@ -2,7 +2,9 @@ package underad.blackbox.resources;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.net.URL;
+import java.util.Map;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -22,7 +24,11 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import underad.blackbox.BlackboxConfiguration;
 
 import com.codahale.metrics.annotation.Timed;
+import com.github.mustachejava.DefaultMustacheFactory;
+import com.github.mustachejava.Mustache;
+import com.github.mustachejava.MustacheFactory;
 import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 
@@ -93,15 +99,26 @@ public class ReconstructResource {
 			// WebDriver.get() already waits for document.readyState==complete, and then some.
 			driver.get(url);
 					
-			URL resUrl = Resources.getResource("underad/blackbox/resources/chrome_resolve_styling.js");
-			String scriptContent;
-			try {
-				scriptContent = Resources.toString(resUrl, Charsets.UTF_8);
-			} catch (IOException e) {
-				throw new WebApplicationException(Status.INTERNAL_SERVER_ERROR);
-			}
+//			URL resUrl = Resources.getResource("underad/blackbox/resources/chrome_resolve_styling.js.mustache");
+//			String scriptContent;
+//			try {
+//				scriptContent = Resources.toString(resUrl, Charsets.UTF_8);
+//			} catch (IOException e) {
+//				throw new WebApplicationException(Status.INTERNAL_SERVER_ERROR);
+//			}
+			
+			Map<String, String> scopes = ImmutableMap.of(
+					"blockedAbsXpath", blockedAbsXpath, "advertRelXpath", advertRelXpath);
+			MustacheFactory mf = new DefaultMustacheFactory();
+			Mustache template = mf.compile("underad/blackbox/resources/chrome_resolve_styling.js.mustache");
+			StringWriter writer = new StringWriter();
+			template.execute(writer, scopes).flush();
+			String scriptContent = writer.toString();
+			
 			WebElement htmlFragment = (WebElement) driver.executeScript(scriptContent, blockedAbsXpath, advertRelXpath);
 			return htmlFragment.getAttribute("outerHTML"); // outerHTML doesn't work in FF apparently
+		} catch (IOException e) {
+			throw new WebApplicationException(Status.INTERNAL_SERVER_ERROR);
 		}
 		finally {
 			if (driver != null)
