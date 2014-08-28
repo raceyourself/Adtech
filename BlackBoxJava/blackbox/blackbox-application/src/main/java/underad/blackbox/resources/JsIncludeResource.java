@@ -77,6 +77,8 @@ public class JsIncludeResource {
 		// Unfortunately this is available from Jersey 2.x, and DropWizard is currently (2014-08-27) on 1.x.
 		// Easiest answer: revisit once DW goes over to 2.x. This might also be helpful:
 		// http://stackoverflow.com/questions/19785001/custom-method-annotation-using-jerseys-abstracthttpcontextinjectable-not-workin
+		// Question posed here:
+		// http://stackoverflow.com/questions/25546778/intercepting-http-response-body-in-dropwizard-0-7-0-jersey-1-x
 		return view;
 	}
 }
