@@ -1,11 +1,9 @@
-template: Hello, %s!
-defaultName: Stranger
-#server:
-#  type: simple
-#  applicationContextPath: /api/*
-
 database:
   driverClass: org.h2.Driver
   user: sa
   password: sa
   url: jdbc:h2:./target/blackbox_db
+
+chromeDriverPath: C:\Program Files (x86)\Google\chromedriver.exe
+
+hostUrl: https://www.unicorn.io:8080/

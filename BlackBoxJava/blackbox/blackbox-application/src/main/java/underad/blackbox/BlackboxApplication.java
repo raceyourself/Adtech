@@ -10,7 +10,7 @@ import io.dropwizard.views.ViewBundle;
 
 import org.skife.jdbi.v2.DBI;
 
-import underad.blackbox.health.BlackboxHealthCheck;
+import underad.blackbox.health.IncludeJsHealthCheck;
 import underad.blackbox.jdbi.AdAugmentDao;
 import underad.blackbox.jdbi.PublisherPasswordDao;
 import underad.blackbox.resources.JsIncludeResource;
@@ -45,13 +45,13 @@ public class BlackboxApplication extends Application<BlackboxConfiguration> {
 		AdAugmentDao adAugmentDao = jdbi.onDemand(AdAugmentDao.class);
 		PublisherPasswordDao publisherKeyDao = jdbi.onDemand(PublisherPasswordDao.class);
 		
-		ReconstructResource reconstructResource = new ReconstructResource();
+		ReconstructResource reconstructResource = new ReconstructResource(config);
 		env.jersey().register(reconstructResource);
 
-		JsIncludeResource jsIncludeResource = new JsIncludeResource(adAugmentDao, publisherKeyDao);
+		JsIncludeResource jsIncludeResource = new JsIncludeResource(config, adAugmentDao, publisherKeyDao);
 		env.jersey().register(jsIncludeResource);
 		
-		BlackboxHealthCheck healthCheck = new BlackboxHealthCheck(config.getTemplate());
-		env.healthChecks().register("template", healthCheck);
+		IncludeJsHealthCheck includeJsHealthCheck = new IncludeJsHealthCheck();
+		env.healthChecks().register("include.js", includeJsHealthCheck);
 	}
 }

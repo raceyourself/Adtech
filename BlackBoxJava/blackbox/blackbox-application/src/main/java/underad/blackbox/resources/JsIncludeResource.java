@@ -1,7 +1,9 @@
 package underad.blackbox.resources;
 
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.List;
 
 import javax.ws.rs.GET;
@@ -10,11 +12,13 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.core.UriBuilder;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 
 import org.joda.time.DateTime;
 
+import underad.blackbox.BlackboxConfiguration;
 import underad.blackbox.core.AdvertMetadata;
 import underad.blackbox.core.util.Crypto;
 import underad.blackbox.jdbi.AdAugmentDao;
@@ -27,12 +31,28 @@ import com.google.common.collect.ImmutableList;
 // Path naming gives a clue as to content it provides. A little misleading as it doesn't suggest code gen...
 @Path("/include.js")
 @Produces("application/javascript")
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class JsIncludeResource {
-	private static final String RECONSTRUCT_URL = "http://www.unicorn.io/reconstruct";
 	
+	private final BlackboxConfiguration configuration;
 	private final AdAugmentDao adAugmentDao;
 	private final PublisherPasswordDao publisherKeyDao;
+	
+	private URI reconstructionUrl;
+	
+	private URI getReconstructionUrl() {
+		if (reconstructionUrl == null) {
+			try {
+				URI reconstructRelUrl = UriBuilder.fromResource(ReconstructResource.class).build();
+				URL hostUrl = configuration.getHostUrl();
+				reconstructionUrl = new URL(hostUrl.getProtocol(), hostUrl.getHost(), hostUrl.getPort(),
+						reconstructRelUrl.getPath(), null).toURI();
+			} catch (MalformedURLException | URISyntaxException e) {
+				throw new WebApplicationException(Status.INTERNAL_SERVER_ERROR);
+			}
+		}
+		return reconstructionUrl;
+	}
 	
 	/**
 	 * Returns JavaScript code required to:
@@ -67,7 +87,8 @@ public class JsIncludeResource {
 		String key = publisherKeyDao.getPassword(url, publisherTs);
 		
 		// The only URL we need to cipher in the blackbox is the reconstruct URL that provides adblock-proof ad HTML.
-		String reconstructUrlCipherText = Crypto.encrypt(key, publisherUnixTimeMillis, RECONSTRUCT_URL);
+		String reconstructUrlCipherText = Crypto.encrypt(
+				key, publisherUnixTimeMillis, getReconstructionUrl().toString());
 		
 		JsIncludeView view = new JsIncludeView(reconstructUrlCipherText, advertMetadata);
 		

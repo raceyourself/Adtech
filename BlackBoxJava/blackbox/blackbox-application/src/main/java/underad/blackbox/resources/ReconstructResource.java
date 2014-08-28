@@ -3,7 +3,6 @@ package underad.blackbox.resources;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.util.UUID;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -13,21 +12,27 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 
 import org.openqa.selenium.Dimension;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 
+import underad.blackbox.BlackboxConfiguration;
+
 import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Charsets;
+import com.google.common.io.Files;
 import com.google.common.io.Resources;
 
-@AllArgsConstructor
+@RequiredArgsConstructor
 @Path("/reconstruct")
 @Produces(MediaType.TEXT_HTML)
 public class ReconstructResource {
 
+	private final BlackboxConfiguration configuration;
+	
 	/**
 	 * <ol>
 	 * <li>Retrieves fresh style information from <code>url</code> for the
@@ -55,39 +60,52 @@ public class ReconstructResource {
 	public String reconstructAdvert(@QueryParam("url") String url,
 			@QueryParam("blockedAbsXpath") String blockedAbsXpath,
 			@QueryParam("advertRelXpath") String advertRelXpath) {
+		
+		File userDataDir = Files.createTempDir();
+		
 		ChromeOptions options = new ChromeOptions();
 		options.addArguments(
 				"--start-maximized",
 				"--disable-java",
 				"--incognito",
+				"--disable-extensions", // TODO when linking in Ad Detector extension, work out how to disable the others
 				"--use-mock-keychain",
 				"--disable-web-security",
-				String.format("user-data-dir=/opt/chromedriver/vanilla_profile_%s", UUID.randomUUID()
-		));
+				"user-data-dir=" + userDataDir.getAbsolutePath()
+		);
 		// TODO add ad detector plugin; use it to determine advert positioning.
 		//options.addExtensions(new File("/path/to/extension.crx"));
-		ChromeDriver driver = new ChromeDriver(options);
 		
-		// The statements below should be redundant given the startup arg --start-maximized.
-		driver.manage().window().setSize(new Dimension(1920, 1200));
-		driver.manage().window().maximize();
+		File chromeDriverPath = configuration.getChromeDriverPath();
+		if (chromeDriverPath != null) // not required as may be set in path
+			System.setProperty("webdriver.chrome.driver", chromeDriverPath.getAbsolutePath());
 		
-		// No wait for readystate:
-		// http://stackoverflow.com/questions/15122864/selenium-wait-until-document-is-ready suggests that
-		// WebDriver.get() already waits for document.readyState==complete, and then some.
-		driver.get(url);
-				
-		URL resUrl = Resources.getResource("chrome_resolve_styling.js");
-		String scriptContent;
+		ChromeDriver driver = null;
 		try {
-			scriptContent = Resources.toString(resUrl, Charsets.UTF_8);
-		} catch (IOException e) {
-			throw new WebApplicationException(Status.INTERNAL_SERVER_ERROR);
+			driver = new ChromeDriver(options);
+			
+			// The statements below should be redundant given the startup arg --start-maximized.
+			driver.manage().window().setSize(new Dimension(1920, 1200));
+			driver.manage().window().maximize();
+			
+			// No wait for readystate:
+			// http://stackoverflow.com/questions/15122864/selenium-wait-until-document-is-ready suggests that
+			// WebDriver.get() already waits for document.readyState==complete, and then some.
+			driver.get(url);
+					
+			URL resUrl = Resources.getResource("underad/blackbox/resources/chrome_resolve_styling.js");
+			String scriptContent;
+			try {
+				scriptContent = Resources.toString(resUrl, Charsets.UTF_8);
+			} catch (IOException e) {
+				throw new WebApplicationException(Status.INTERNAL_SERVER_ERROR);
+			}
+			WebElement htmlFragment = (WebElement) driver.executeScript(scriptContent, blockedAbsXpath, advertRelXpath);
+			return htmlFragment.getAttribute("outerHTML"); // outerHTML doesn't work in FF apparently
 		}
-		driver.executeScript(scriptContent, blockedAbsXpath, advertRelXpath);
-		
-		driver.quit();
-
-		return null;
+		finally {
+			if (driver != null)
+				driver.quit();
+		}
 	}
 }
