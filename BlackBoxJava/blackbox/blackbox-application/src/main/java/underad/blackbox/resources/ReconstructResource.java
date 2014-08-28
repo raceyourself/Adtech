@@ -3,7 +3,6 @@ package underad.blackbox.resources;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
-import java.net.URL;
 import java.util.Map;
 
 import javax.ws.rs.GET;
@@ -27,10 +26,8 @@ import com.codahale.metrics.annotation.Timed;
 import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.Mustache;
 import com.github.mustachejava.MustacheFactory;
-import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
-import com.google.common.io.Resources;
 
 @RequiredArgsConstructor
 @Path("/reconstruct")
@@ -98,15 +95,9 @@ public class ReconstructResource {
 			// http://stackoverflow.com/questions/15122864/selenium-wait-until-document-is-ready suggests that
 			// WebDriver.get() already waits for document.readyState==complete, and then some.
 			driver.get(url);
-					
-//			URL resUrl = Resources.getResource("underad/blackbox/resources/chrome_resolve_styling.js.mustache");
-//			String scriptContent;
-//			try {
-//				scriptContent = Resources.toString(resUrl, Charsets.UTF_8);
-//			} catch (IOException e) {
-//				throw new WebApplicationException(Status.INTERNAL_SERVER_ERROR);
-//			}
-			
+
+			// Slightly overengineered for what boils down to a trivial string replacement, but hey, we're using
+			// Mustache elsewhere, so...
 			Map<String, String> scopes = ImmutableMap.of(
 					"blockedAbsXpath", blockedAbsXpath, "advertRelXpath", advertRelXpath);
 			MustacheFactory mf = new DefaultMustacheFactory();
