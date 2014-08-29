@@ -1,11 +1,11 @@
-function underad(reconstructUrl, blockedAbsXpath, advertRelXpath, width, height) {
+function underad(reconstructUrl, blockedAbsXpath) {
   var e = xmlDoc.evaluate(blockedAbsXpath, document, null, XPathResult.ANY_TYPE, null);
   if (e === null) return; // TODO: Recreate from server-side template
-  if (hidden(e)) recreate(blockedAbsXpath, advertRelXpath, e);
+  if (hidden(e)) recreate(blockedAbsXpath, e);
 };
 
 // Recreate element e matching blockedAbsXpath
-function recreate(reconstructUrl, blockedAbsXpath, advertRelXpath, e) {
+function recreate(reconstructUrl, blockedAbsXpath, e) {
   var request = newHttpObject();
   request.open('GET', reconstructUrl + '?{{timestamp}}', true);
   request.send(null);
@@ -81,7 +81,7 @@ for(var i=0, l=iframes.length; i < l; i++) {
 document.addEventListener('readystatechange', function() {
   if(document.readyState === 'complete') {
 {{#adverts}}
-    underad('{{encryptedReconstructUrl}}', {{blockedAbsXpath}}', '{{advertRelXpath}}', '{{widthWithUnit}}', '{{heightWithUnit}}');
+    underad('{{encryptedReconstructUrl}}', {{blockedAbsXpath}}');
 {{/adverts}}
   }
 });

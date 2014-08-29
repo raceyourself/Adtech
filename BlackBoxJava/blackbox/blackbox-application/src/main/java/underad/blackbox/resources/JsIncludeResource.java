@@ -63,35 +63,35 @@ public class JsIncludeResource {
 	 */
 	@GET
 	@Timed
-	public JsIncludeView getInclude(@QueryParam("url") String url, @QueryParam("unixtime") long publisherUnixTimeSecs) {
-	    try {
-			new URI(url); // slightly clumsy validation... TODO can this be replaced with DW's validation stuff?
-		} catch (URISyntaxException e) {
-			throw new WebApplicationException(e, Status.BAD_REQUEST);
-		}
+	public JsIncludeView getInclude(@QueryParam("url") URL url, @QueryParam("unixtime") long publisherUnixTimeSecs) {
+//	    try {
+//			new URI(url); // slightly clumsy validation... TODO can this be replaced with DW's validation stuff?
+//		} catch (URISyntaxException e) {
+//			throw new WebApplicationException(e, Status.BAD_REQUEST);
+//		}
 		// DateTime(long) expects millis since Unix epoch, not seconds.
 		long publisherUnixTimeMillis = publisherUnixTimeSecs * 1000;
 		DateTime publisherTs = new DateTime(publisherUnixTimeMillis);
 	    
 	    // Determine what adverts need obfuscating.
-		List<AdvertMetadata> advertMetadata = ImmutableList.copyOf(adAugmentDao.getAdverts(url, publisherTs));
-		if (advertMetadata.isEmpty()) 
+		List<AdvertMetadata> adverts = ImmutableList.copyOf(adAugmentDao.getAdverts(url.toString(), publisherTs));
+		if (adverts.isEmpty()) 
 			// probably means that the URL isn't owned by one of our publisher clients at present. That or config error.
 			throw new WebApplicationException(Status.BAD_REQUEST);
 		
 		// Get appropriate key for encrypting paths.
-		String key = publisherKeyDao.getPassword(url, publisherTs);
+		String key = publisherKeyDao.getPassword(url.toString(), publisherTs);
 		
-		for (AdvertMetadata adMeta : advertMetadata) {
-			String reconstructUrl = getReconstructionUrl(adMeta.getId()).toString();
+		for (AdvertMetadata advert : adverts) {
+			String reconstructUrl = getReconstructionUrl(advert.getId()).toString();
 			// The only URL we need to encrypt in the blackbox is the reconstruct URL that provides adblock-proof ad
 			// HTML.
 			String reconstructUrlCipherText = Crypto.encrypt(
 					key, publisherUnixTimeMillis, reconstructUrl);
-			adMeta.setEncryptedReconstructUrl(reconstructUrlCipherText);
+			advert.setEncryptedReconstructUrl(reconstructUrlCipherText);
 		}
 		
-		JsIncludeView view = new JsIncludeView(advertMetadata, publisherUnixTimeSecs);
+		JsIncludeView view = new JsIncludeView(adverts, publisherUnixTimeSecs);
 		
 		// TODO how can we minify the JavaScript that comes out of Mustache? Quite important for "security through
 		// obscurity" reasons... maybe with a Jersey interceptor?
