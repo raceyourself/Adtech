@@ -79,6 +79,12 @@ public class ReconstructResource {
 		// TODO add ad detector plugin; use it to determine advert positioning.
 		//options.addExtensions(new File("/path/to/extension.crx"));
 		
+		// TODO use virtual framebuffer rather than popping up a browser each time. This may be helpful, though it's for
+		// FF:
+		// http://stackoverflow.com/questions/23741517/headless-webdriver-tests-unable-to-use-xvfb-in-java
+		// or this:
+		// http://stackoverflow.com/questions/13127291/running-selenium-tests-with-chrome-on-ubuntu-in-a-headless-environment
+		
 		File chromeDriverPath = configuration.getChromeDriverPath();
 		if (chromeDriverPath != null) // not required as may be set in path
 			System.setProperty("webdriver.chrome.driver", chromeDriverPath.getAbsolutePath());

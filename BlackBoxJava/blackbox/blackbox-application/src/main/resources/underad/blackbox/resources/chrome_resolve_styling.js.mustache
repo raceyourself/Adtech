@@ -3,13 +3,7 @@ try {
     var parents = '{{blockedAbsXpath}}';
     var selector = '{{advertRelXpath}}';
     var sel = selector;
-    var index = 0;
-    // Custom 'n-th class result' selector
-    if (sel[0] === '.') {
-        var pivot = sel.lastIndexOf('#');
-        sel = selector.substr(0, pivot);
-        index = ~~(selector.substr(pivot));
-    }
+    
     var el = document.querySelectorAll(sel)[index];
     if (el === null) throw {name: 'Custom Exception', message: 'Could not find '+selector};
     for (var d=0; d<parents && el !== null; d++) {
@@ -22,7 +16,7 @@ try {
             for (var j=0, jl=css.length; j<jl; j++) {
                 var key = css[j];
                 if (!isNaN(key)) continue;
-                if (key === 'cssText') continue;
+                if (key === 'cssText') continue; // TODO break cssText into a Map<K,V>
                 if (key === 'length') continue;
                 if (key.indexOf('webkit') !== -1) continue;
                 // TODO: Correct CSS specificity order?

@@ -11,6 +11,7 @@ import underad.blackbox.core.AdvertMetadata;
 public class AdvertMetadataMapper implements ResultSetMapper<AdvertMetadata> {
 	public AdvertMetadata map(int index, ResultSet r, StatementContext ctx) throws SQLException {
 		return new AdvertMetadata(
+			r.getLong("id"),
 			r.getString("blocked_abs_xpath"),
 			r.getString("advert_rel_xpath"),
 			r.getString("width_with_unit"),

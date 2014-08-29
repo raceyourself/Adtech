@@ -65,4 +65,30 @@
             newColumnName="password" />
         <renameTable oldTableName="publisher_keys" newTableName="publisher_passwords"/>
     </changeSet>
+    
+    <changeSet id="4" author="dliroberts">
+        <!-- Superfluous to have /reconstruct calls take in all advert details. Just send an ID and look it up. -->
+        <addColumn tableName="adverts">
+            <column name="id" type="integer">
+                <constraints nullable="false" />
+            </column>
+        </addColumn>
+        <addColumn tableName="adverts">
+            <column name="effective" type="timestamp" remarks="When advert is going to start being shown." />
+        </addColumn>
+        <addColumn tableName="adverts">
+            <column name="obsolete" type="timestamp"
+                remarks="If not nil AND date is in the past, this advert is inactive." />
+        </addColumn>
+
+        <dropPrimaryKey tableName="adverts" />
+        <addPrimaryKey tableName="adverts"
+            columnNames="id"
+            constraintName="pk_adverts" />
+    </changeSet>
+
+    <changeSet id="5" author="dliroberts">
+        <addAutoIncrement tableName="adverts" columnName="id" columnDataType="integer" />
+        <addNotNullConstraint tableName="adverts" columnName="effective" columnDataType="timestamp" />
+    </changeSet>
 </databaseChangeLog>

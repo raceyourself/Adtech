@@ -1,13 +1,16 @@
 package underad.blackbox.core;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 
-@AllArgsConstructor
+@RequiredArgsConstructor
 @Data
 public class AdvertMetadata {
-	private String blockedAbsXpath;
-	private String advertRelXpath;
-	private String widthWithUnit;
-	private String heightWithUnit;
+	private final long id;
+	private final String blockedAbsXpath;
+	private final String advertRelXpath;
+	private final String widthWithUnit;
+	private final String heightWithUnit;
+	/** Encrypted /reconstruct URL. Contains advert ID, so different for each advert. */
+	private String encryptedReconstructUrl;
 }

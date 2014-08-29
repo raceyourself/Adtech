@@ -1,100 +1,30 @@
-function underad(selector, width, height, url, link){
-  var sel = selector;
-  var index = 0;
-  if (sel[0] === '.') {
-    var pivot = sel.lastIndexOf('#');
-    sel = selector.substr(0, pivot);
-    index = ~~(selector.substr(pivot))
-  }
-  console.log('selector: ' + sel + ' index: ' + index);
-  var d = document.querySelectorAll(sel)[index];
-  if (d === null) return; // TODO: Recreate from server-side template
-  if (hidden(d)) recreate(selector, d, function(underad) { 
-    //if (underad.offsetWidth >= parseInt(width) && underad.offsetHeight >= parseInt(height)) {
-    if (true) {
-      underad.innerHTML = '';
-      var img = document.createElement('img');
-      img.style.width = width;
-      img.style.height = height;
-      img.src = url;
-      underad.appendChild(img);
-      if (hidden(img)) {
-        var el = img;
-        while (el !== null) {
-          if (el.style && el.style.display === 'none') {
-            el.style.removeProperty('display');
-          }
-          el = el.parentNode;
-        }
-      }
-    }
-    /*
-    underad.style.width = width;
-    underad.style.height = height;
-    underad.style.backgroundImage = "url('" + url + "')";
-    underad.style.backgroundPosition = '50% 50%';
-    underad.style.backgroundRepeat = 'no-repeat';
-    */
-    underad.style.cursor = 'pointer';
-    underad.addEventListener('click', function() {
-      window.location = link;
-    });
-  });
+function underad(reconstructUrl, blockedAbsXpath, advertRelXpath, width, height) {
+  var e = xmlDoc.evaluate(blockedAbsXpath, document, null, XPathResult.ANY_TYPE, null);
+  if (e === null) return; // TODO: Recreate from server-side template
+  if (hidden(e)) recreate(blockedAbsXpath, advertRelXpath, e);
 };
 
-// Recreate element e matching selector selector
-function recreate(selector, e, callback) {
-  if (e === null || !hidden(e)) return null; 
-  console.log('recreating ' + selector);
+// Recreate element e matching blockedAbsXpath
+function recreate(reconstructUrl, blockedAbsXpath, advertRelXpath, e) {
+  var request = newHttpObject();
+  request.open('GET', reconstructUrl + '?{{timestamp}}', true);
+  request.send(null);
+  request.onreadystatechange = function() {
+  if (request.readyState == 4)
+    e.innerHTML = request.responseText;
+  };
+}
 
-  // TODO: figure out a way to find the cloned element that doesn't rely on easy (detectable) identifiers
-  if (!e.id) e.id = 'tmp_'+~~(Math.random() * 99999);
+// If we end up with more cross-browser compatibility woes, just take the hit and include jQuery.
+function newHttpObject() {
+  try {return new XMLHttpRequest();}
+  catch (error) {}
+  try {return new ActiveXObject("Msxml2.XMLHTTP");}
+  catch (error) {}
+  try {return new ActiveXObject("Microsoft.XMLHTTP");}
+  catch (error) {}
 
-  // Find patient zero
-  var patientZero = recurseFindHighestBlocked(e);
-  var el = patientZero.element;
-  var depth = patientZero.depth;
-
-  // Clone patient zero and all its children
-  var c = el.cloneNode(true);
-  // Cloned element (a child of patient zero)
-  var ce = null;
-
-  // Remove blockable identifiers from clones
-  c.removeAttribute('class');
-  // Find cloned element
-  if (c.id && c.id === e.id) ce = c;
-  c.removeAttribute('id');
-  var children = c.getElementsByTagName('*');
-  for (var i=0, l=children.length; i < l; i++) {
-    var child = children[i];
-    child.removeAttribute('class')
-    // Find cloned element
-    if (child.id && child.id === e.id) ce = child;
-    child.removeAttribute('id');
-  }
-
-  // Insert clones next to patient zero
-  var p = el.parentNode;
-  p.insertBefore(c, el.nextElementSibling);
-
-  // Fetch clean style from server
-  jQuery.getJSON('{{reconstructUrl}}?' + btoa('selector=' + btoa(selector) + '&parents=' + depth), function(data) {
-    console.log('restyling ' + selector + ' depth: ' + (data.length-1));
-    var node = ce;
-    for (var i=0, l = data.length; i < l; i++) {
-      node.removeAttribute('style');
-      for (var key in data[i]) { 
-        node.style.setProperty(key, data[i][key]); 
-      } 
-      node = node.parentNode; 
-    }
-    callback(ce);
-  }).error(function() {
-    console.error('could not restyle ' + selector);
-    callback(ce);
-  });
-  return ce;
+  throw new Error("Could not create HTTP request object.");
 }
 
 // Is this element hidden or are all its children hidden?
@@ -133,23 +63,6 @@ function isImageOk(img) {
     return true;
 }
 
-// Recurse through parents until we find an element that isn't hidden
-function recurseFindHighestBlocked(el, d) {
-  if (el === null) throw {name: 'NullReferenceException', message: 'argument el is Null'};
-  d = d || 0;
-  if (!hidden(el)) {
-    return {element: el, depth: d};
-  }
-  if (el.parentNode === null) {
-    return {element: el, depth: d};
-  }
-  var pel = el.parentNode;
-  if (!hidden(pel)) {
-    return {element: el, depth: d};
-  }
-  return recurseFindHighestBlocked(pel, 1+d);
-}
-
 // Hide iframes that fail to load so we can detect the failures.
 var iframes = document.getElementsByTagName('iframe');
 for(var i=0, l=iframes.length; i < l; i++) {
@@ -168,7 +81,7 @@ for(var i=0, l=iframes.length; i < l; i++) {
 document.addEventListener('readystatechange', function() {
   if(document.readyState === 'complete') {
 {{#adverts}}
-    underad('{{blockedAbsXpath}}', '{{advertRelXpath}}', '{{widthWithUnit}}', '{{heightWithUnit}}', 'TODO img url should be retrieved from ad gen', 'TODO href should be retrieved from ad gen');
+    underad('{{encryptedReconstructUrl}}', {{blockedAbsXpath}}', '{{advertRelXpath}}', '{{widthWithUnit}}', '{{heightWithUnit}}');
 {{/adverts}}
   }
 });

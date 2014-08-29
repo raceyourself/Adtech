@@ -38,27 +38,23 @@ public class JsIncludeResource {
 	private final AdAugmentDao adAugmentDao;
 	private final PublisherPasswordDao publisherKeyDao;
 	
-	private URI reconstructionUrl;
-	
-	private URI getReconstructionUrl() {
-		if (reconstructionUrl == null) {
-			try {
-				URI reconstructRelUrl = UriBuilder.fromResource(ReconstructResource.class).build();
-				URL hostUrl = configuration.getHostUrl();
-				reconstructionUrl = new URL(hostUrl.getProtocol(), hostUrl.getHost(), hostUrl.getPort(),
-						reconstructRelUrl.getPath(), null).toURI();
-			} catch (MalformedURLException | URISyntaxException e) {
-				throw new WebApplicationException(Status.INTERNAL_SERVER_ERROR);
-			}
+	private URI getReconstructionUrl(long id) {
+		try {
+			// TODO need to use UriInfo.getBaseUriBuilder() as well I think
+			URI reconstructRelUrl = UriBuilder.fromResource(ReconstructResource.class).path("?id=" + id).build();
+			URL hostUrl = configuration.getHostUrl();
+			return new URL(hostUrl.getProtocol(), hostUrl.getHost(), hostUrl.getPort(),
+					reconstructRelUrl.getPath(), null).toURI();
+		} catch (MalformedURLException | URISyntaxException e) {
+			throw new WebApplicationException(Status.INTERNAL_SERVER_ERROR);
 		}
-		return reconstructionUrl;
 	}
 	
 	/**
 	 * Returns JavaScript code required to:
 	 * 
 	 * 1. Detect whether the adverts in the page have been blocked,
-	 * 2. Retrieve fresh styling information (via ReconstructResource) for blocked adverts, including references to new,
+	 * 2. Retrieve fresh advert HTML (via ReconstructResource) to replace blocked adverts, including references to new,
 	 * 'underad'-style 'adblock-proof' advert resources (images, JS, etc).
 	 * 
 	 * @param url The page serving the ads, i.e. that will link to this include.
@@ -73,24 +69,29 @@ public class JsIncludeResource {
 		} catch (URISyntaxException e) {
 			throw new WebApplicationException(e, Status.BAD_REQUEST);
 		}
+		// DateTime(long) expects millis since Unix epoch, not seconds.
+		long publisherUnixTimeMillis = publisherUnixTimeSecs * 1000;
+		DateTime publisherTs = new DateTime(publisherUnixTimeMillis);
 	    
 	    // Determine what adverts need obfuscating.
-		List<AdvertMetadata> advertMetadata = ImmutableList.copyOf(adAugmentDao.getAdverts(url));
+		List<AdvertMetadata> advertMetadata = ImmutableList.copyOf(adAugmentDao.getAdverts(url, publisherTs));
 		if (advertMetadata.isEmpty()) 
 			// probably means that the URL isn't owned by one of our publisher clients at present. That or config error.
 			throw new WebApplicationException(Status.BAD_REQUEST);
 		
-		// DateTime(long) expects millis since Unix epoch, not seconds.
-		long publisherUnixTimeMillis = publisherUnixTimeSecs * 1000;
-		DateTime publisherTs = new DateTime(publisherUnixTimeMillis);
 		// Get appropriate key for encrypting paths.
 		String key = publisherKeyDao.getPassword(url, publisherTs);
 		
-		// The only URL we need to cipher in the blackbox is the reconstruct URL that provides adblock-proof ad HTML.
-		String reconstructUrlCipherText = Crypto.encrypt(
-				key, publisherUnixTimeMillis, getReconstructionUrl().toString());
+		for (AdvertMetadata adMeta : advertMetadata) {
+			String reconstructUrl = getReconstructionUrl(adMeta.getId()).toString();
+			// The only URL we need to encrypt in the blackbox is the reconstruct URL that provides adblock-proof ad
+			// HTML.
+			String reconstructUrlCipherText = Crypto.encrypt(
+					key, publisherUnixTimeMillis, reconstructUrl);
+			adMeta.setEncryptedReconstructUrl(reconstructUrlCipherText);
+		}
 		
-		JsIncludeView view = new JsIncludeView(reconstructUrlCipherText, advertMetadata);
+		JsIncludeView view = new JsIncludeView(advertMetadata, publisherUnixTimeSecs);
 		
 		// TODO how can we minify the JavaScript that comes out of Mustache? Quite important for "security through
 		// obscurity" reasons... maybe with a Jersey interceptor?
