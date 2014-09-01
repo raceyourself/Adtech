@@ -1,34 +1,97 @@
 try {
-    var a = [];
     var blockedAbsXpath = '{{blockedAbsXpath}}';
     var advertRelXpath = '{{advertRelXpath}}';
     
-    var el = document.evaluate(blockedAbsXpath, document, null, XPathResult.ANY_TYPE, null);
-    
-    if (el === null) throw {name: 'Custom Exception', message: 'Could not find '+blockedAbsXpath};
-    
-    for (var d=0; d<parents && el !== null; d++) {
-        var rules = window.getMatchedCSSRules(el);
-        if (rules === null) throw {name: 'Custom Exception', message: 'Could not find rules for '+blockedAbsXpath + ' depth ' + d};
-        var style = {};
-        // Extract all CSS into a single inline style
-        for (var i=0, il=rules.length; i<il; i++) {
-            var css = rules[i].style;
-            for (var j=0, jl=css.length; j<jl; j++) {
-                var key = css[j];
-                if (!isNaN(key)) continue;
-                if (key === 'cssText') continue; // TODO break cssText into a Map<K,V>
-                if (key === 'length') continue;
-                if (key.indexOf('webkit') !== -1) continue;
-                // TODO: Correct CSS specificity order?
-                if (css[key] !== '') style[key] = css[key];
-            }
-        }
-        a.push(style);
-        el = el.parentNode;
-    }
-    return JSON.stringify(a);
+    return getInlineStyle(blockedAbsXpath, advertRelXpath);
 } catch (e) {
     throw e;
-    return "[]";
+    return "<!-- Error: " + e + " -->";
+}
+
+// returns blockedAbsElement : WebElement - element found at blockedAbsXpath, but with flattened CSS style info.
+function getInlineStyle(blockedAbsXpath, advertRelXpath) {
+    var blockedElem = document.evaluate(blockedAbsXpath, document, null, XPathResult.ANY_TYPE, null);
+    var advertElem = document.evaluate(advertAbsXpath, document, null, XPathResult.ANY_TYPE, null);
+    
+    var advertAbsXpath = blockedAbsXpath;
+    if (!endsWith(blockedAbsXpath, '/')
+        advertAbsXpath = advertAbsXpath + '/';
+    advertAbsXpath = advertAbsXpath + advertRelXpath;
+    
+    // Go through every element between blockedAbsXpath (inclusive) and advertAbsXpath (inclusive).
+    // Retrieve associated CSS styling and inline it so it can be returned as a flat HTML.
+    var advertXpathElems = advertRelXpath.split('/');
+    var currentElem = blockedElem;
+    for (var i = 0; i < advertPathElems.length; i++) {
+        var style = getStyle(currentElem);
+        
+        currentElem.removeAttribute('style');
+        for (var key in style) { 
+            node.style.setProperty(key, style[key]); 
+        }
+        
+        if (currentElem == advertElem) {
+            // Advert injected later (this function is done 'offline', prior to the browser requesting it)
+        }
+        else {
+            var advertPathElem = advertPathElems[i];
+            var pathElem = advertPathElems[i];
+            currentElem = document.evaluate(advertPathElem, currentElem, null, XPathResult.ANY_TYPE, null);
+        }
+    }
+    
+    for (currentElem = blockedAbsElem; true; currentElem = currentElem.xpath(advertPathElems)) {
+        var rules = window.getMatchedCSSRules(el);
+        if (currentElem.styles.rules.isEmpty)
+            currentElem.styles.addEmptyRule
+        
+        for (rule in rules) {
+            for (property in rule) {
+                if (isApplicable(property.key)) { // isApplicable = returns false for cssText/*webkit* etc initially
+                    currentElem.styles.rules[0][property.key] = property.value;
+                }
+            }
+        }
+        
+        if (currentElem.xpath() == advertAbsXpath) {
+            // advert injection.
+            currentElem.style.backgroundImage = "url(" + replacementAdvert.src + ")";
+            break;
+        }
+    }
+    return blockedAbsElement;
+}
+
+function getStyle(elem) {
+    var rules = window.getMatchedCSSRules(elem);
+    if (rules === null)
+        throw {name: 'Custom Exception', message: 'Could not find rules for ' + elem};
+    var style = {};
+    // Extract all CSS into a single inline style
+    for (var i = 0, il = rules.length; i < il; i++) {
+        var css = rules[i].style;
+        for (var j = 0, jl = css.length; j < jl; j++) {
+            var key = css[j];
+            if (isApplicable(key))
+                style[key] = css[key];
+            if (css[key] !== '') style[key] = css[key];
+        }
+    }
+}
+
+function isApplicable(key) {
+    if (!isNaN(key))
+        return false;
+    if (key === 'cssText')
+        return false; // TODO break cssText into a Map<K,V>
+    if (key === 'length')
+        return false;
+    if (key.indexOf('webkit') !== -1) // ignore expermental properties. TODO why?
+        continue;
+    // TODO: Correct CSS specificity order?
+    return css[key] !== '';
+}
+
+function endsWith(str, suffix) {
+    return str.indexOf(suffix, str.length - suffix.length) !== -1;
 }

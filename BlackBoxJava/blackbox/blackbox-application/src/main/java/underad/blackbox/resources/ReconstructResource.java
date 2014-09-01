@@ -64,6 +64,8 @@ public class ReconstructResource {
 			@QueryParam("blockedAbsXpath") String blockedAbsXpath,
 			@QueryParam("advertRelXpath") String advertRelXpath) {
 		
+		// TODO fetch all params from DB based off single advert id param.
+		
 		File userDataDir = Files.createTempDir();
 		
 		ChromeOptions options = new ChromeOptions();
