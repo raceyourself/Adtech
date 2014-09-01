@@ -40,25 +40,6 @@ function getInlineStyle(blockedAbsXpath, advertRelXpath) {
         }
     }
     
-    for (currentElem = blockedAbsElem; true; currentElem = currentElem.xpath(advertPathElems)) {
-        var rules = window.getMatchedCSSRules(el);
-        if (currentElem.styles.rules.isEmpty)
-            currentElem.styles.addEmptyRule
-        
-        for (rule in rules) {
-            for (property in rule) {
-                if (isApplicable(property.key)) { // isApplicable = returns false for cssText/*webkit* etc initially
-                    currentElem.styles.rules[0][property.key] = property.value;
-                }
-            }
-        }
-        
-        if (currentElem.xpath() == advertAbsXpath) {
-            // advert injection.
-            currentElem.style.backgroundImage = "url(" + replacementAdvert.src + ")";
-            break;
-        }
-    }
     return blockedAbsElement;
 }
 
