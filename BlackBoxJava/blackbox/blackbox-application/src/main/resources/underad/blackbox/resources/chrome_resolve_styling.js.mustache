@@ -1,14 +1,15 @@
 try {
     var a = [];
-    var parents = '{{blockedAbsXpath}}';
-    var selector = '{{advertRelXpath}}';
-    var sel = selector;
+    var blockedAbsXpath = '{{blockedAbsXpath}}';
+    var advertRelXpath = '{{advertRelXpath}}';
     
-    var el = document.querySelectorAll(sel)[index];
-    if (el === null) throw {name: 'Custom Exception', message: 'Could not find '+selector};
+    var el = document.evaluate(blockedAbsXpath, document, null, XPathResult.ANY_TYPE, null);
+    
+    if (el === null) throw {name: 'Custom Exception', message: 'Could not find '+blockedAbsXpath};
+    
     for (var d=0; d<parents && el !== null; d++) {
         var rules = window.getMatchedCSSRules(el);
-        if (rules === null) throw {name: 'Custom Exception', message: 'Could not find rules for '+selector + ' depth ' + d};
+        if (rules === null) throw {name: 'Custom Exception', message: 'Could not find rules for '+blockedAbsXpath + ' depth ' + d};
         var style = {};
         // Extract all CSS into a single inline style
         for (var i=0, il=rules.length; i<il; i++) {

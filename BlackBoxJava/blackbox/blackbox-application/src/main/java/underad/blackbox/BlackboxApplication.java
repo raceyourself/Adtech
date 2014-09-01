@@ -1,5 +1,10 @@
 package underad.blackbox;
 
+import java.util.EnumSet;
+
+import javax.servlet.DispatcherType;
+import javax.ws.rs.core.UriBuilder;
+
 import io.dropwizard.Application;
 import io.dropwizard.db.DataSourceFactory;
 import io.dropwizard.jdbi.DBIFactory;
@@ -10,6 +15,7 @@ import io.dropwizard.views.ViewBundle;
 
 import org.skife.jdbi.v2.DBI;
 
+import underad.blackbox.core.util.MinifyJs;
 import underad.blackbox.health.IncludeJsHealthCheck;
 import underad.blackbox.jdbi.AdAugmentDao;
 import underad.blackbox.jdbi.PublisherPasswordDao;
@@ -53,5 +59,11 @@ public class BlackboxApplication extends Application<BlackboxConfiguration> {
 		
 		IncludeJsHealthCheck includeJsHealthCheck = new IncludeJsHealthCheck();
 		env.healthChecks().register("include.js", includeJsHealthCheck);
+		
+		if (config.isMinifyJs()) {
+			String path = UriBuilder.fromResource(JsIncludeResource.class).build().toString();
+			env.servlets().addFilter("MinifyJs", MinifyJs.class).addMappingForUrlPatterns(
+					EnumSet.allOf(DispatcherType.class), true, path);
+		}
 	}
 }

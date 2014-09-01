@@ -35,6 +35,11 @@ public class BlackboxConfiguration extends Configuration {
 	 */
 	private File chromeDriverPath;
 	
+	/**
+	 * Should JavaScript be minified before being sent back to the client?
+	 */
+	private boolean minifyJs;
+	
 	@Valid
 	@NotNull
 	@JsonProperty("database")

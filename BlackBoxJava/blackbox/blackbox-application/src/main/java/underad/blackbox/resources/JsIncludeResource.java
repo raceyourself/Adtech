@@ -64,11 +64,6 @@ public class JsIncludeResource {
 	@GET
 	@Timed
 	public JsIncludeView getInclude(@QueryParam("url") URL url, @QueryParam("unixtime") long publisherUnixTimeSecs) {
-//	    try {
-//			new URI(url); // slightly clumsy validation... TODO can this be replaced with DW's validation stuff?
-//		} catch (URISyntaxException e) {
-//			throw new WebApplicationException(e, Status.BAD_REQUEST);
-//		}
 		// DateTime(long) expects millis since Unix epoch, not seconds.
 		long publisherUnixTimeMillis = publisherUnixTimeSecs * 1000;
 		DateTime publisherTs = new DateTime(publisherUnixTimeMillis);
@@ -86,21 +81,10 @@ public class JsIncludeResource {
 			String reconstructUrl = getReconstructionUrl(advert.getId()).toString();
 			// The only URL we need to encrypt in the blackbox is the reconstruct URL that provides adblock-proof ad
 			// HTML.
-			String reconstructUrlCipherText = Crypto.encrypt(
-					key, publisherUnixTimeMillis, reconstructUrl);
+			String reconstructUrlCipherText = Crypto.encrypt(key, publisherUnixTimeMillis, reconstructUrl);
 			advert.setEncryptedReconstructUrl(reconstructUrlCipherText);
 		}
 		
-		JsIncludeView view = new JsIncludeView(adverts, publisherUnixTimeSecs);
-		
-		// TODO how can we minify the JavaScript that comes out of Mustache? Quite important for "security through
-		// obscurity" reasons... maybe with a Jersey interceptor?
-		// https://jersey.java.net/documentation/latest/filters-and-interceptors.html#d0e8333
-		// Unfortunately this is available from Jersey 2.x, and DropWizard is currently (2014-08-27) on 1.x.
-		// Easiest answer: revisit once DW goes over to 2.x. This might also be helpful:
-		// http://stackoverflow.com/questions/19785001/custom-method-annotation-using-jerseys-abstracthttpcontextinjectable-not-workin
-		// Question posed here:
-		// http://stackoverflow.com/questions/25546778/intercepting-http-response-body-in-dropwizard-0-7-0-jersey-1-x
-		return view;
+		return new JsIncludeView(adverts, publisherUnixTimeSecs);
 	}
 }

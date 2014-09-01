@@ -1,5 +1,5 @@
 function underad(reconstructUrl, blockedAbsXpath) {
-  var e = xmlDoc.evaluate(blockedAbsXpath, document, null, XPathResult.ANY_TYPE, null);
+  var e = document.evaluate(blockedAbsXpath, document, null, XPathResult.ANY_TYPE, null);
   if (e === null) return; // TODO: Recreate from server-side template
   if (hidden(e)) recreate(blockedAbsXpath, e);
 };

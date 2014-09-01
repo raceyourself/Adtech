@@ -7,3 +7,9 @@ database:
 chromeDriverPath: C:\Program Files (x86)\Google\chromedriver.exe
 
 hostUrl: https://www.unicorn.io:8080/
+
+minifyJs: true
+
+#server:
+#  gzip:
+#    enabled: false
