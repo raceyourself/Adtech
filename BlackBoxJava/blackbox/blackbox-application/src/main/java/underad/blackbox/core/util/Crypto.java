@@ -46,7 +46,9 @@ public class Crypto {
 			 * will result in different cipher texts. This in turn would result in cache misses for downloaded images/JS
 			 * etc when fresh HTML is retrieved.
 			 */
-			INIT_VECTOR_PARAM_SPEC = new IvParameterSpec(new byte[CIPHER.getBlockSize()]);
+//			byte[] ivBytes = new byte[CIPHER.getBlockSize()];
+			byte[] ivBytes = "FIXED_1234567890".getBytes(); // must be exactly 16 bytes long.
+			INIT_VECTOR_PARAM_SPEC = new IvParameterSpec(ivBytes);
 		} catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
 			/*
 			 * NoSuchAlgorithmException/NoSuchPaddingException won't happen because
