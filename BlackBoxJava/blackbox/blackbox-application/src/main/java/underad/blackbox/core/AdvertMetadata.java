@@ -11,6 +11,7 @@ public class AdvertMetadata {
 	private final String advertRelXpath;
 	private final String widthWithUnit;
 	private final String heightWithUnit;
+	private final String url;
 	/** Encrypted /reconstruct URL. Contains advert ID, so different for each advert. */
 	private String encryptedReconstructUrl;
 }

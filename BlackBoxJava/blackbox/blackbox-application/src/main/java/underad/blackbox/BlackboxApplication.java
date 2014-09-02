@@ -51,7 +51,7 @@ public class BlackboxApplication extends Application<BlackboxConfiguration> {
 		AdAugmentDao adAugmentDao = jdbi.onDemand(AdAugmentDao.class);
 		PublisherPasswordDao publisherKeyDao = jdbi.onDemand(PublisherPasswordDao.class);
 		
-		ReconstructResource reconstructResource = new ReconstructResource(config);
+		ReconstructResource reconstructResource = new ReconstructResource(config, adAugmentDao);
 		env.jersey().register(reconstructResource);
 
 		JsIncludeResource jsIncludeResource = new JsIncludeResource(config, adAugmentDao, publisherKeyDao);

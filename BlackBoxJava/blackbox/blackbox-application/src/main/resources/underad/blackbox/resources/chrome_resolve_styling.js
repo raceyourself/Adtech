@@ -1,6 +1,6 @@
 try {
-    var blockedAbsXpath = '{{blockedAbsXpath}}';
-    var advertRelXpath = '{{advertRelXpath}}';
+    var blockedAbsXpath = arguments[0];
+    var advertRelXpath = arguments[1];
     
     return getInlineStyle(blockedAbsXpath, advertRelXpath);
 } catch (e) {

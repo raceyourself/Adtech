@@ -2,8 +2,7 @@ package underad.blackbox.resources;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.StringWriter;
-import java.util.Map;
+import java.net.URL;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -21,13 +20,13 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 
 import underad.blackbox.BlackboxConfiguration;
+import underad.blackbox.core.AdvertMetadata;
+import underad.blackbox.jdbi.AdAugmentDao;
 
 import com.codahale.metrics.annotation.Timed;
-import com.github.mustachejava.DefaultMustacheFactory;
-import com.github.mustachejava.Mustache;
-import com.github.mustachejava.MustacheFactory;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.base.Charsets;
 import com.google.common.io.Files;
+import com.google.common.io.Resources;
 
 @RequiredArgsConstructor
 @Path("/reconstruct")
@@ -35,6 +34,7 @@ import com.google.common.io.Files;
 public class ReconstructResource {
 
 	private final BlackboxConfiguration configuration;
+	private final AdAugmentDao adAugmentDao;
 	
 	/**
 	 * <ol>
@@ -60,9 +60,9 @@ public class ReconstructResource {
 	 */
 	@GET
 	@Timed
-	public String reconstructAdvert(@QueryParam("url") String url,
-			@QueryParam("blockedAbsXpath") String blockedAbsXpath,
-			@QueryParam("advertRelXpath") String advertRelXpath) {
+	public String reconstructAdvert(@QueryParam("id") int id) {
+		
+		AdvertMetadata advert = adAugmentDao.getAdvert(id);
 		
 		// TODO fetch all params from DB based off single advert id param.
 		
@@ -102,19 +102,13 @@ public class ReconstructResource {
 			// No wait for readystate:
 			// http://stackoverflow.com/questions/15122864/selenium-wait-until-document-is-ready suggests that
 			// WebDriver.get() already waits for document.readyState==complete, and then some.
-			driver.get(url);
+			driver.get(advert.getUrl());
 
-			// Slightly overengineered for what boils down to a trivial string replacement, but hey, we're using
-			// Mustache elsewhere, so...
-			Map<String, String> scopes = ImmutableMap.of(
-					"blockedAbsXpath", blockedAbsXpath, "advertRelXpath", advertRelXpath);
-			MustacheFactory mf = new DefaultMustacheFactory();
-			Mustache template = mf.compile("underad/blackbox/resources/chrome_resolve_styling.js.mustache");
-			StringWriter writer = new StringWriter();
-			template.execute(writer, scopes).flush();
-			String scriptContent = writer.toString();
+			URL url = Resources.getResource("underad/blackbox/resources/chrome_resolve_styling.js");
+			String scriptContent = Resources.toString(url, Charsets.UTF_8);
 			
-			WebElement htmlFragment = (WebElement) driver.executeScript(scriptContent, blockedAbsXpath, advertRelXpath);
+			WebElement htmlFragment = (WebElement) driver.executeScript(
+					scriptContent, advert.getBlockedAbsXpath(), advert.getAdvertRelXpath());
 			return htmlFragment.getAttribute("outerHTML"); // outerHTML doesn't work in FF apparently
 		} catch (IOException e) {
 			throw new WebApplicationException(Status.INTERNAL_SERVER_ERROR);
