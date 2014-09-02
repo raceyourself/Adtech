@@ -23,11 +23,11 @@ function password2key($password)
 
 function encrypt_with_key($plaintext, $key) {
     $plaintext = pkcs5_pad($plaintext, 16);
-    return bin2hex(mcrypt_encrypt(MCRYPT_RIJNDAEL_128, hex2bin($key), $plaintext, MCRYPT_MODE_ECB));
+    return bin2hex(mcrypt_encrypt(MCRYPT_RIJNDAEL_128, $key, $plaintext, MCRYPT_MODE_ECB));
 }
 
 function decrypt_with_key($encrypted, $key) {
-    $decrypted = mcrypt_decrypt(MCRYPT_RIJNDAEL_128, hex2bin($key), hex2bin($encrypted), MCRYPT_MODE_ECB);
+    $decrypted = mcrypt_decrypt(MCRYPT_RIJNDAEL_128, $key, hex2bin($encrypted), MCRYPT_MODE_ECB);
     $padSize = ord(substr($decrypted, -1));
     return substr($decrypted, 0, $padSize*-1);
 }
