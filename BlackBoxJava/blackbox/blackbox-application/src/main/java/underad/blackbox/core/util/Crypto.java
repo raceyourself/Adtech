@@ -21,10 +21,16 @@ import org.apache.commons.codec.binary.Base64;
 import org.joda.time.Duration;
 
 public class Crypto {
+	private static final String PBKDF2_HASH_ALGORITHM = "PBKDF2WithHmacSHA512";
+	private static final int PBKDF2_ITERATIONS = 65000;
+	private static final int PBKDF2_HASH_BYTE_SIZE = 32;
+	
 	private static final Charset CHARSET = Charset.forName("UTF-8");
 	private static final Cipher CIPHER;
 	private static final IvParameterSpec INIT_VECTOR_PARAM_SPEC;
-	private static final Duration KEY_DURATION = new Duration(6000000);
+	// 600,000ms = 600s = 10 mins
+	private static final Duration KEY_DURATION = new Duration(600000);
+	private static final byte[] NULL_SALT = Base64.encodeBase64(new byte[] {0});
 	
 	static {
 		try {
@@ -62,8 +68,9 @@ public class Crypto {
 		String periodedPassword = period + password;
 		SecretKey key = null;
 		try {
-			SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
-			KeySpec spec = new PBEKeySpec(periodedPassword.toCharArray(), new byte[] {0}, 65536, 256);
+			SecretKeyFactory factory = SecretKeyFactory.getInstance(PBKDF2_HASH_ALGORITHM);
+			KeySpec spec = new PBEKeySpec(
+					periodedPassword.toCharArray(), NULL_SALT, PBKDF2_ITERATIONS, PBKDF2_HASH_BYTE_SIZE * 8);
 			// Need key to have algorithm set to AES, hence one SecretKey (from generateSecret()) being used to make another
 			key = new SecretKeySpec(factory.generateSecret(spec).getEncoded(), "AES");
 			CIPHER.init(cipherMode, key, INIT_VECTOR_PARAM_SPEC);

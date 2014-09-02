@@ -75,13 +75,13 @@ public class JsIncludeResource {
 			throw new WebApplicationException(Status.BAD_REQUEST);
 		
 		// Get appropriate key for encrypting paths.
-		String key = publisherKeyDao.getPassword(url.toString(), publisherTs);
+		String password = publisherKeyDao.getPassword(url.toString(), publisherTs);
 		
 		for (AdvertMetadata advert : adverts) {
 			String reconstructUrl = getReconstructionUrl(advert.getId()).toString();
 			// The only URL we need to encrypt in the blackbox is the reconstruct URL that provides adblock-proof ad
 			// HTML.
-			String reconstructUrlCipherText = Crypto.encrypt(key, publisherUnixTimeMillis, reconstructUrl);
+			String reconstructUrlCipherText = Crypto.encrypt(password, publisherUnixTimeMillis, reconstructUrl);
 			advert.setEncryptedReconstructUrl(reconstructUrlCipherText);
 		}
 		
