@@ -31,7 +31,11 @@ public class Crypto {
 	private static final IvParameterSpec INIT_VECTOR_PARAM_SPEC;
 	// 600,000ms = 600s = 10 mins
 	private static final Duration KEY_DURATION = new Duration(600000);
-	private static final byte[] NULL_SALT = Base64.encodeBase64(new byte[] {0});
+	/**
+	 * Salt is mandatory, but we don't want it to be dynamic as that would break caching. We're changing the keys
+	 * anyway over time - see KEY_DURATION.
+	 */
+	private static final byte[] NULL_SALT = Base64.encodeBase64("FIXED".getBytes());
 	
 	static {
 		try {
