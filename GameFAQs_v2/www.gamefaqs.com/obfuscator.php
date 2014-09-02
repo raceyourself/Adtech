@@ -16,9 +16,8 @@ function getPassword($time) {
     $password = -1;
     $file_lines = file('passwords.txt');
     foreach ($file_lines as $file_index => $file_line) {
-    
         if (!preg_match("/^[0-9]/", $file_line))
-            continue; # ignore 
+            continue; # ignore header lines/blank lines etc
         
         $rowTime = strtotime(row.split(",")[0]);
         if ($time > $rowTime) {
@@ -31,10 +30,6 @@ function getPassword($time) {
     if ($password === -1)
         throw new Exception('No password currently in effect.');
     return $password;
-}
-
-function startsWith($haystack, $needle) {
-    return $needle === "" || strpos($haystack, $needle) === 0;
 }
 
 function after($this, $inthat) {

@@ -1,6 +1,8 @@
 <?php
 
-define("PBKDF2_HASH_ALGORITHM", "sha512");
+# Ideally replace this with SHA512. Requires same change on Java side, which in turn means an external lib
+# (Bouncy Castle?)
+define("PBKDF2_HASH_ALGORITHM", "sha1");
 define("PBKDF2_ITERATIONS", 65000);
 define("PBKDF2_HASH_BYTE_SIZE", 32);
 

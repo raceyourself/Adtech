@@ -21,7 +21,8 @@ import org.apache.commons.codec.binary.Base64;
 import org.joda.time.Duration;
 
 public class Crypto {
-	private static final String PBKDF2_HASH_ALGORITHM = "PBKDF2WithHmacSHA512";
+	// Ideally use SHA512... though appears to require usage of Bouncy Castle libs.
+	private static final String PBKDF2_HASH_ALGORITHM = "PBKDF2WithHmacSHA1";
 	private static final int PBKDF2_ITERATIONS = 65000;
 	private static final int PBKDF2_HASH_BYTE_SIZE = 32;
 	
