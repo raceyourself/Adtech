@@ -9,16 +9,16 @@ define("PBKDF2_HASH_BYTE_SIZE", 32);
 function password2key($password)
 {
     // null salt.
-    $salt = base64_encode(array(0));
+    $salt = base64_encode("FIXED");
     
-    return base64_encode(hash_pbkdf2(
+    return hash_pbkdf2(
             PBKDF2_HASH_ALGORITHM,
             $password,
             $salt,
             PBKDF2_ITERATIONS,
             PBKDF2_HASH_BYTE_SIZE,
             true
-        ));
+        );
 }
 
 function encrypt_with_key($plaintext, $key) {
@@ -38,12 +38,12 @@ function pkcs5_pad($text, $blocksize)
     return $text . str_repeat(chr($pad), $pad);
 }
 
-function encrypt_with_password($plaintext, $password) {
+function encrypt_with_password($password, $plaintext) {
     $key = password2key($password);
     return encrypt_with_key($plaintext, $key);
 }
 
-function decrypt_with_password($encrypted, $password) {
+function decrypt_with_password($password, $encrypted) {
     $key = password2key($password);
     return decrypt_with_key($encrypted, $key);
 }

@@ -1,5 +1,7 @@
 <?php
-require_once('sqaes.php'); 
+require_once('sqaes.php');
+// Use UTC everywhere for consistency.
+date_default_timezone_set('UTC');
 
 function obfuscate($path, $time) {
     $password = getPassword($time); # TODO
@@ -19,7 +21,8 @@ function getPassword($time) {
         if (!preg_match("/^[0-9]/", $file_line))
             continue; # ignore header lines/blank lines etc
         
-        $rowTime = strtotime(row.split(",")[0]);
+        $timestr = split(",", $file_line)[0];
+        $rowTime = strtotime($timestr);
         if ($time > $rowTime) {
             $password = after(',', $file_line);
         }
