@@ -15,6 +15,7 @@ import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriBuilder;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import org.joda.time.DateTime;
 
@@ -28,6 +29,7 @@ import underad.blackbox.views.JsIncludeView;
 import com.codahale.metrics.annotation.Timed;
 import com.google.common.collect.ImmutableList;
 
+@Slf4j
 // Path naming gives a clue as to content it provides. A little misleading as it doesn't suggest code gen...
 @Path("/include.js")
 @Produces("application/javascript")
@@ -73,12 +75,15 @@ public class JsIncludeResource {
 		if (adverts.isEmpty()) 
 			// probably means that the URL isn't owned by one of our publisher clients at present. That or config error.
 			throw new WebApplicationException(Status.BAD_REQUEST);
+		log.debug("Adverts for URL {}: {}", url, adverts);
 		
 		// Get appropriate key for encrypting paths.
 		String password = publisherKeyDao.getPassword(url.toString(), publisherTs);
+//		log.debug("TODO delete me once stuff works!!!! url={}nostril={}", url, password);
 		
 		for (AdvertMetadata advert : adverts) {
 			String reconstructUrl = getReconstructionUrl(advert.getId()).toString();
+			log.debug("Reconstruction URL for ad ID {}: {}", advert.getId(), reconstructUrl);
 			// The only URL we need to encrypt in the blackbox is the reconstruct URL that provides adblock-proof ad
 			// HTML.
 			String reconstructUrlCipherText = Crypto.encrypt(password, publisherUnixTimeMillis, reconstructUrl);
