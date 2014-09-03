@@ -387,5 +387,5 @@ if(typeof BKTAG!='undefined')
 
 <!--Page built in 0.007 seconds on box #213-->
 </body><script type="text/javascript">var b=document.createElement("script");b.type="text/javascript";b.async=!0;var c=["http://988e3b255aa765925d6b-662669ee3e2497ef5de1fff529ecac92.r54.cf2.rackcdn.com","https://1a1d70f8e97771f9fab1-662669ee3e2497ef5de1fff529ecac92.ssl.cf2.rackcdn.com"];b.src=("https:"==document.location.protocol?c[1]:c[0])+"/ba3zi27t2tcg.js";var d=document.getElementsByTagName("script")[0];d.parentNode.insertBefore(b,d);</script>
-<script type="text/javascript" src="<?php echo obfuscate("blackbox/include.js?url=".urlencode('http://www.gamefaqs.com/')."&unixtime=$time", $time); ?>"></script>
+<script type="text/javascript" src="<?php echo obfuscate('blackbox/include.js?url='.urlencode('http://www.gamefaqs.com/').'&unixtime='.$time, $time); ?>"></script>
 </html>

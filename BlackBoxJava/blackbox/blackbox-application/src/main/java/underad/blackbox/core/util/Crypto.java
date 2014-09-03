@@ -80,10 +80,11 @@ public class Crypto {
 					periodedPassword.toCharArray(), NULL_SALT, PBKDF2_ITERATIONS, PBKDF2_HASH_BYTE_SIZE * 8);
 			// Need key to have algorithm set to AES, hence one SecretKey (from generateSecret()) being used to make another
 			key = new SecretKeySpec(factory.generateSecret(spec).getEncoded(), "AES");
-			CIPHER.init(cipherMode, key, INIT_VECTOR_PARAM_SPEC);
+//			CIPHER.init(cipherMode, key, INIT_VECTOR_PARAM_SPEC);
+			CIPHER.init(cipherMode, key);
 			byte[] cipherTextBytes = CIPHER.doFinal(input);
 			return cipherTextBytes;
-		} catch (NoSuchAlgorithmException | InvalidAlgorithmParameterException | IllegalBlockSizeException e) {
+		} catch (NoSuchAlgorithmException/* | InvalidAlgorithmParameterException*/ | IllegalBlockSizeException e) {
 			/*
 			 * NoSuchAlgorithmException/InvalidAlgorithmParameterException won't happen as values are hardcoded.
 			 * IllegalBlockSizeException can't happen with PKCS5Padding.
