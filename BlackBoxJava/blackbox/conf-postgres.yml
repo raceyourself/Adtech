@@ -1,0 +1,31 @@
+database:
+  driverClass: org.postgresql.Driver
+  user: blackbox
+  password: caix4prETO
+  url: jdbc:postgresql:blackbox_db
+
+chromeDriverPath: /opt/chromedriver/chromedriver
+
+hostUrl: http://rp.glassinsight.co.uk/
+
+minifyJs: true
+
+server:
+  applicationConnectors:
+  - type: http
+    port: 9080
+  adminConnectors:
+  - type: http
+    port: 9081
+#  gzip:
+#    enabled: false
+
+logging:
+  appenders:
+  - type: console
+    threshold: INFO
+  - type: file
+    threshold: DEBUG
+    currentLogFilename: ./logs/blackbox.log
+    archivedLogFilenamePattern: ./logs/blackbox-%d.log.gz
+    archivedFileCount: 5
