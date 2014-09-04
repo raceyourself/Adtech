@@ -35,8 +35,6 @@ package uk.co.glassinsight.echoprint;
  */
 public class Codegen 
 {
-	private final float normalizingValue = Short.MAX_VALUE;
-	
 	native String codegen(float data[], int numSamples);
 	
 	static 
@@ -75,8 +73,12 @@ public class Codegen
 		// core audio data, and I guess ffmpeg
 		// Android records data as 16 bit shorts, so we need to normalize the
 		// data before sending it to echoprint
-		float normalizeAudioData[] = new float[numSamples];
-		for (int i = 0; i < numSamples - 1; i++) 
+        float normalizingValue = 512; // Minimum
+        for (int i = 0; i < numSamples - 1; i++)
+            if (data[i] > normalizingValue) normalizingValue = data[i];
+
+        float normalizeAudioData[] = new float[numSamples];
+        for (int i = 0; i < numSamples - 1; i++)
 			normalizeAudioData[i] = data[i] / normalizingValue;
 		
 		return this.codegen(normalizeAudioData, numSamples);

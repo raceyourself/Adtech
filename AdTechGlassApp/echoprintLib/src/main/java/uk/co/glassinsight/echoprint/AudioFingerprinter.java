@@ -32,10 +32,12 @@ import android.util.Log;
 import android.util.Pair;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
@@ -77,6 +79,8 @@ public class AudioFingerprinter implements Runnable, AudioRecorder.Listener
     private BlockingQueue<Recording> recordings = new LinkedBlockingQueue<Recording>();
 	
 	private AudioFingerprinterListener listener;
+
+    private final File PATH = new File("/sdcard/audiofingerprinter");
 	
 	/**
 	 * Constructor for the class
@@ -148,6 +152,11 @@ public class AudioFingerprinter implements Runnable, AudioRecorder.Listener
                     long started = recording.started;
                     short[] audioData = recording.data;
 
+                    if (System.currentTimeMillis()-started > 60000) {
+                        Log.e("Fingerprinter", "Sample outside of retention buffer! Skipping!");
+                        continue;
+                    }
+
 					// create an echoprint codegen wrapper and get the code
 					long time = System.currentTimeMillis();
 					Codegen codegen = new Codegen();
@@ -160,7 +169,7 @@ public class AudioFingerprinter implements Runnable, AudioRecorder.Listener
 	    			{
 	    				// no code?
 	    				// not enough audio data?
-                        didNotFindMatchForCode(code);
+                        didNotFindMatchForCode(code, audioData);
 						continue;
 	    			}
 
@@ -170,13 +179,13 @@ public class AudioFingerprinter implements Runnable, AudioRecorder.Listener
                     List<Pair<Long,Long>> tuples = decodeFingerprint(code);
                     if(tuples.size() < 50)
                     {
-                        didNotFindMatchForCode(code);
+                        didNotFindMatchForCode(code, audioData);
                         continue;
                     }
                     Pair<String, String> best = bestMatch(tuples);
 
                     if (best == null) {
-                        didNotFindMatchForCode(code);
+                        didNotFindMatchForCode(code, audioData);
                     } else {
                         Hashtable<String, Object> match = new Hashtable<String, Object>();
                         match.put(SCORE_KEY, best.second);
@@ -540,7 +549,7 @@ public class AudioFingerprinter implements Runnable, AudioRecorder.Listener
 			listener.didFindMatchForCode(table, code);
 	}
 	
-	private void didNotFindMatchForCode(final String code)
+	private void didNotFindMatchForCode(final String code, short[] audioData)
 	{
 		if(listener == null)
 			return;
@@ -558,7 +567,19 @@ public class AudioFingerprinter implements Runnable, AudioRecorder.Listener
 		}
 		else
 			listener.didNotFindMatchForCode(code);
-	}
+
+        try {
+            PATH.mkdir();
+            File tmp = new File(PATH, code.substring(0, 8) + '-' + System.currentTimeMillis() + ".wav.tmp");
+            File file = new File(PATH, code.substring(0, 8) + '-' + System.currentTimeMillis() + ".wav");
+            WaveFileWriter wav = new WaveFileWriter(tmp, AudioRecorder.FREQUENCY, 1, 16);
+            wav.write(audioData);
+            wav.close();
+            tmp.renameTo(file);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 	
 	private void didFailWithException(final Exception e)
 	{
