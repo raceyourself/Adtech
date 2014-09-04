@@ -12,9 +12,10 @@ function recreate(reconstructUrl, e) {
   request.send(null);
   console.log("FOO recreate - " + reconstructUrl + '?{{timestamp}}');
   request.onreadystatechange = function() {
-  if (request.readyState == 4)
-  console.log("FOO recreate response - " + request.responseText);
-    e.innerHTML = request.responseText;
+    if (request.readyState == 4) {
+      console.log("FOO recreate response - " + request.responseText);
+      e.innerHTML = request.responseText;
+    }
   };
 }
 
