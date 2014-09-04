@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.JedisPool;
 import underad.statistics.core.Response;
+import underad.statistics.views.HitView;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -14,8 +15,8 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
 @Slf4j
-@Path("/hit")
-@Produces(MediaType.APPLICATION_JSON)
+@Path("/hit/{id}")
+@Produces("application/javascript")
 public class HitResource {
     @Context
     JedisPool jedis;
@@ -23,13 +24,16 @@ public class HitResource {
     public static final String REDIS_HIT_KEY = "hit";
 
     @GET
-    public Response hit(@PathParam("id") String id) {
-        log.info("hit");
+    public HitView hit(@PathParam("id") String id) {
         if (id == null) {
             // Still count bad requests
             id = "";
         }
         jedis.getResource().incr(REDIS_HIT_KEY + ":" + id);
-        return new Response();
+
+        // Currently we're using the same (static) honeypot id. It would be preferable to use a per-hit id for the
+        // honeypot, ie. generate one every hit (expire after X) and only count a successful honeypot hit when the
+        // honeypot id exists.
+        return new HitView(id);
     }
 }
