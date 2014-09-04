@@ -19,7 +19,7 @@
    	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<dropwizard.version>0.7.1</dropwizard.version>
-		<jetty.version>9.0.6.v20130930</jetty.version>
+		<jetty.version>9.1.5.v20140505</jetty.version>
 	</properties>
 
 	<dependencies>
