@@ -7,10 +7,12 @@ function underad(reconstructUrl, blockedAbsXpath) {
 
 // Recreate element e matching blockedAbsXpath
 function recreate(reconstructUrl, e) {
+  var url = '/assets/' + reconstructUrl + '?{{timestamp}}';
+  
   var request = newHttpObject();
-  request.open('GET', reconstructUrl + '?{{timestamp}}', true);
+  request.open('GET', url, true);
   request.send(null);
-  console.log("FOO recreate - " + reconstructUrl + '?{{timestamp}}');
+  console.log("FOO recreate - " + url);
   request.onreadystatechange = function() {
     if (request.readyState == 4) {
       console.log("FOO recreate response - " + request.responseText);
