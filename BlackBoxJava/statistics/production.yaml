@@ -1,0 +1,10 @@
+http:
+  port: 9090
+  adminPort: 9091
+
+logging:
+  level: INFO
+
+redis:
+  host: localhost
+  port: 6379
