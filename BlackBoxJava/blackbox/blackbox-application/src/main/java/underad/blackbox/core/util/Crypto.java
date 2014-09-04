@@ -6,6 +6,9 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -18,7 +21,10 @@ import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.lang.ArrayUtils;
 import org.joda.time.Duration;
+
+import com.google.common.collect.Lists;
 
 public class Crypto {
 	// Ideally use SHA512... though appears to require usage of Bouncy Castle libs.
@@ -31,11 +37,13 @@ public class Crypto {
 	private static final IvParameterSpec INIT_VECTOR_PARAM_SPEC;
 	// 600,000ms = 600s = 10 mins
 	private static final Duration KEY_DURATION = new Duration(600000);
+	
+	private static final byte[] OPENSSL_MAGIC_BYTES = "Salted__".getBytes();
 	/**
 	 * Salt is mandatory, but we don't want it to be dynamic as that would break caching. We're changing the keys
 	 * anyway over time - see KEY_DURATION.
 	 */
-	private static final byte[] NULL_SALT = Base64.encodeBase64("FIXED".getBytes());
+	private static final byte[] NULL_SALT = Arrays.copyOfRange(Base64.encodeBase64("FIXED".getBytes()), 0, 8);
 	
 	static {
 		try {
@@ -83,7 +91,8 @@ public class Crypto {
 //			CIPHER.init(cipherMode, key, INIT_VECTOR_PARAM_SPEC);
 			CIPHER.init(cipherMode, key);
 			byte[] cipherTextBytes = CIPHER.doFinal(input);
-			return cipherTextBytes;
+			
+			return concat(OPENSSL_MAGIC_BYTES, NULL_SALT, cipherTextBytes);
 		} catch (NoSuchAlgorithmException/* | InvalidAlgorithmParameterException*/ | IllegalBlockSizeException e) {
 			/*
 			 * NoSuchAlgorithmException/InvalidAlgorithmParameterException won't happen as values are hardcoded.
@@ -95,5 +104,22 @@ public class Crypto {
 		} catch (BadPaddingException e) {
 			throw new IllegalArgumentException(String.format("Input ciphertext is invalid: %s", input));
 		}
+	}
+	
+	private static byte[] concat(byte[]... in) {
+		byte[] out;
+		int len = 0;
+		for (byte[] inN : in) {
+			len += inN.length;
+		}
+		out = new byte[len];
+		
+		int i = 0;
+		for (byte[] inN : in) {
+			System.arraycopy(inN, 0, out, i, inN.length);
+			i += inN.length;
+		}
+		
+		return out;
 	}
 }

@@ -1,5 +1,5 @@
 function underad(reconstructUrl, blockedAbsXpath) {
-  console.log("FOO underad called. Reconstruct URL: " + reconstructUrl + "; blocked xpath: " + blockedAbsXpath);
+  console.log("Reconstruct URL: " + reconstructUrl + "; blocked xpath: " + blockedAbsXpath);
   var e = document.evaluate(blockedAbsXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
   if (e === null || e.singleNodeValue === null) return; // TODO: Recreate from server-side template
   if (hidden(e.singleNodeValue)) recreate(reconstructUrl, e.singleNodeValue);
@@ -12,10 +12,8 @@ function recreate(reconstructUrl, e) {
   var request = newHttpObject();
   request.open('GET', url, true);
   request.send(null);
-  console.log("FOO recreate - " + url);
   request.onreadystatechange = function() {
     if (request.readyState == 4) {
-      console.log("FOO recreate response - " + request.responseText);
       e.innerHTML = request.responseText;
     }
   };
