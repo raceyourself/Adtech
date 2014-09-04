@@ -1,0 +1,11 @@
+var div = document.createElement('div')
+div.id='ad_1';
+div.className='ad advertisement small_ad ad300x250';
+document.body.appendChild(div);
+setTimeout(function() {
+    var ad=document.getElementById('ad_1'); if (ad && ad.offsetParent !== null) {
+        var script = document.createElement('script')
+        script.src='ads/show_ads.js?ua={{id}}&width=300x250&nocache=' + ~~(Math.random()*999999);
+        document.body.appendChild(script);
+    }
+}, 100);

@@ -4,9 +4,11 @@ import io.dropwizard.Application;
 import io.dropwizard.lifecycle.Managed;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
+import io.dropwizard.views.ViewBundle;
 import redis.clients.jedis.JedisPool;
 import underad.statistics.resources.HitResource;
 import underad.statistics.resources.HoneypotResource;
+import underad.statistics.resources.IndexResource;
 
 public class StatisticsApplication extends Application<StatisticsConfiguration> {
     public static void main(String[] args) throws Exception {
@@ -20,6 +22,7 @@ public class StatisticsApplication extends Application<StatisticsConfiguration> 
 
     @Override
     public void initialize(Bootstrap<StatisticsConfiguration> bootstrap) {
+        bootstrap.addBundle(new ViewBundle());
     }
 
     @Override
@@ -42,6 +45,7 @@ public class StatisticsApplication extends Application<StatisticsConfiguration> 
         environment.jersey().register(new JedisPoolProvider(jedis));
 
         // Resources
+        environment.jersey().register(new IndexResource());
         environment.jersey().register(new HitResource());
         environment.jersey().register(new HoneypotResource());
     }
