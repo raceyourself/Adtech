@@ -1,0 +1,12 @@
+server:
+  type: simple
+  connector:
+    type: http
+    port: 80
+
+logging:
+  level: INFO
+
+redis:
+  hostname: localhost
+  port: 6379
