@@ -1,14 +1,11 @@
 package underad.blackbox.core.util;
 
 import java.nio.charset.Charset;
-import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -21,10 +18,7 @@ import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.lang.ArrayUtils;
 import org.joda.time.Duration;
-
-import com.google.common.collect.Lists;
 
 public class Crypto {
 	// Ideally use SHA512... though appears to require usage of Bouncy Castle libs.

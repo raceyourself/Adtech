@@ -6,8 +6,8 @@ import java.net.URL;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
@@ -29,7 +29,7 @@ import com.google.common.io.Files;
 import com.google.common.io.Resources;
 
 @RequiredArgsConstructor
-@Path("/reconstruct")
+@Path("/reconstruct/{id}")
 @Produces(MediaType.TEXT_HTML)
 public class ReconstructResource {
 
@@ -60,7 +60,7 @@ public class ReconstructResource {
 	 */
 	@GET
 	@Timed
-	public String reconstructAdvert(@QueryParam("id") int id) {
+	public String reconstructAdvert(@PathParam("id") int id) {
 		
 		AdvertMetadata advert = adAugmentDao.getAdvert(id);
 		

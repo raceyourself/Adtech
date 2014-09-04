@@ -43,7 +43,7 @@ public class JsIncludeResource {
 	private URI getReconstructionUrl(long id) {
 		try {
 			// TODO need to use UriInfo.getBaseUriBuilder() as well I think
-			URI reconstructRelUrl = UriBuilder.fromResource(ReconstructResource.class).path("?id=" + id).build();
+			URI reconstructRelUrl = UriBuilder.fromResource(ReconstructResource.class).build(id);
 			URL hostUrl = configuration.getHostUrl();
 			return new URL(hostUrl.getProtocol(), hostUrl.getHost(), hostUrl.getPort(),
 					reconstructRelUrl.getPath(), null).toURI();
@@ -72,7 +72,7 @@ public class JsIncludeResource {
 	    
 	    // Determine what adverts need obfuscating.
 		List<AdvertMetadata> adverts = ImmutableList.copyOf(adAugmentDao.getAdverts(url.toString(), publisherTs));
-		if (adverts.isEmpty()) 
+		if (adverts.isEmpty())
 			// probably means that the URL isn't owned by one of our publisher clients at present. That or config error.
 			throw new WebApplicationException(Status.BAD_REQUEST);
 		log.debug("Adverts for URL {}: {}", url, adverts);
