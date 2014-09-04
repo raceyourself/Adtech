@@ -42,11 +42,21 @@ public class JsIncludeResource {
 	
 	private URI getReconstructionUrl(long id) {
 		try {
-			// TODO need to use UriInfo.getBaseUriBuilder() as well I think
+			// TODO should use UriInfo.getBaseUriBuilder() as well I think
 			URI reconstructRelUrl = UriBuilder.fromResource(ReconstructResource.class).build(id);
 			URL hostUrl = configuration.getHostUrl();
+			StringBuilder path = new StringBuilder();
+			
+			String hPath = hostUrl.getPath();
+			String rPath = reconstructRelUrl.getPath();
+			
+			if (hPath != null)
+				path.append(hPath, 0, hPath.endsWith("/") ? hPath.length() - 1 : hPath.length());
+			if (rPath != null)
+				path.append(rPath);
+			
 			return new URL(hostUrl.getProtocol(), hostUrl.getHost(), hostUrl.getPort(),
-					reconstructRelUrl.getPath(), null).toURI();
+					path.toString(), null).toURI();
 		} catch (MalformedURLException | URISyntaxException e) {
 			throw new WebApplicationException(Status.INTERNAL_SERVER_ERROR);
 		}
