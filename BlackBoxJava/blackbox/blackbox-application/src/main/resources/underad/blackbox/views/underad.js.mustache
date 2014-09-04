@@ -86,7 +86,7 @@ for(var i=0, l=iframes.length; i < l; i++) {
 document.addEventListener('readystatechange', function() {
   if(document.readyState === 'complete') {
 {{#adverts}}
-    underad('{{{encryptedReconstructUrl}}}', '{{{blockedAbsXpath}}}');
+    underad('{{{encryptedReconstructUrl}}}', '{{{blockedAbsXpathJsEscaped}}}');
 {{/adverts}}
   }
 });

@@ -1,5 +1,7 @@
 package underad.blackbox.core;
 
+import org.apache.commons.lang.StringEscapeUtils;
+
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
@@ -14,4 +16,8 @@ public class AdvertMetadata {
 	private final String heightWithUnit;
 	/** Encrypted /reconstruct URL. Contains advert ID, so different for each advert. */
 	private String encryptedReconstructUrl;
+	
+	public String getBlockedAbsXpathJsEscaped() {
+		return StringEscapeUtils.escapeJavaScript(blockedAbsXpath);
+	}
 }
