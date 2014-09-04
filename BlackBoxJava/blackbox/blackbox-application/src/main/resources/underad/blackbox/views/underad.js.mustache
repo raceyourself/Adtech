@@ -1,6 +1,6 @@
 function underad(reconstructUrl, blockedAbsXpath) {
   console.log("FOO underad called. Reconstruct URL: " + reconstructUrl + "; blocked xpath: " + blockedAbsXpath);
-  var e = document.evaluate(blockedAbsXpath, document, null, XPathResult.ANY_TYPE, null);
+  var e = document.evaluate(blockedAbsXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
   if (e === null) return; // TODO: Recreate from server-side template
   if (hidden(e)) recreate(blockedAbsXpath, e);
 };
