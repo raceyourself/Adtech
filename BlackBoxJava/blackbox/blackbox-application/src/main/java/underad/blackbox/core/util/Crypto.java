@@ -17,9 +17,12 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import lombok.extern.slf4j.Slf4j;
+
 import org.apache.commons.codec.binary.Base64;
 import org.joda.time.Duration;
 
+@Slf4j
 public class Crypto {
 	// Ideally use SHA512... though appears to require usage of Bouncy Castle libs.
 	private static final String PBKDF2_HASH_ALGORITHM = "PBKDF2WithHmacSHA1";
@@ -84,7 +87,10 @@ public class Crypto {
 			key = new SecretKeySpec(factory.generateSecret(spec).getEncoded(), "AES");
 			
 			// FIXME HAXXX can't get PBKDF2-derived keys consistent across PHP and Perl, so doing something more stupid
+			String dumbKey = dumbKeyDerivation(periodedPassword);
+			key = new SecretKeySpec(dumbKey.getBytes(), "AES");
 			
+			log.debug("FOOO k" + dumbKey);
 //			CIPHER.init(cipherMode, key, INIT_VECTOR_PARAM_SPEC);
 			CIPHER.init(cipherMode, key);
 			byte[] cipherTextBytes = CIPHER.doFinal(input);
@@ -103,12 +109,12 @@ public class Crypto {
 		}
 	}
 	
-	private byte[] dumbKeyDerivation(String password) {
+	private static String dumbKeyDerivation(String password) {
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < 10; i++) {
 			sb.append(password);
 		}
-		return sb.substring(0, 32).getBytes();
+		return sb.substring(0, 32);
 	}
 	
 	private static byte[] concat(byte[]... in) {
