@@ -1,5 +1,5 @@
 package UnderAd::Deobfuscation;
-  
+
 use strict;
 use warnings FATAL => 'all';
 
@@ -16,11 +16,11 @@ sub handler {
     my $key_duration_secs = int($r->dir_config('period'));
     my $path_pattern = $r->dir_config('path_pattern');
 
-    my $period = int(time()/$$key_duration_secs);
+    my $period = int(time() / $key_duration_secs);
 
     if ($r->uri =~ m/$path_pattern/) {
       # $1 = encrypted URL
-      my $encrypted = $1;
+      my $ciphertext = $1;
       # $2 = app server unix time at point of page generation
       my $appServerUnixTime = $2;
       
@@ -36,7 +36,7 @@ sub handler {
       );
       
       my $salt = encode_base64("FIXED");
-      my $hash = $pbkdf2->generate($period$password, $salt);
+      my $hash = $pbkdf2->generate($period . $password, $salt);
       
       my $cipher = Crypt::CBC->new(
         -key         => $hash,
@@ -46,24 +46,36 @@ sub handler {
         -iv          => encode_base64("FIXED_1234567890")
       );
       
-      my $plaintext = $cipher->decrypt(decode_base64($encrypted));
-      $r->uri('/' . $plaintext);
-      warn("Rewrote $1 to $plaintext");
+      my $plaintext = $cipher->decrypt(decode_base64($ciphertext));
+
+      if ($plaintext =~ m/(.*)\?(.*)/) {
+        my $path = $1;
+        my $query = $2;
+        $r->uri('/' . $path);
+        $r->args($query);
+        warn("$ciphertext rewritten to /$path?$query (has query params)");
+      }
+      else {
+        $r->uri('/' . $plaintext);
+        warn("$ciphertext rewritten to /$plaintext (no query params)");
+      }
     }
     
     return Apache2::Const::DECLINED;
 }
 
-sub getPassword($unixTime) {
+sub getPassword {
+    my ($unixTime) = @_;
     my $password = -1;
     open(PASSWORDS, 'passwords.txt') or die("Could not open  file.");
+    my $line;
     foreach $line (<PASSWORDS>) {
         chomp $line;
         
         if ($line =~ m/^([0-9]+),(.*)$/) { # ignore header lines/blank lines etc
-            $timestr = $1;
-            $rowTime = str2time($timestr);
-            if ($time > $rowTime) {
+            my $timestr = $1;
+            my $rowTime = str2time($timestr);
+            if ($unixTime > $rowTime) {
                 $password = $2;
             }
             else {

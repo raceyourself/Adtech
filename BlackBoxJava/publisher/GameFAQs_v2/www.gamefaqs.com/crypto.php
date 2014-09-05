@@ -21,12 +21,12 @@ function password2key($password)
         );
 }
 
-function encrypt_with_key($plaintext, $key) {
+function encrypt_with_key($key, $plaintext) {
     $plaintext = pkcs5_pad($plaintext, 16);
     return bin2hex(mcrypt_encrypt(MCRYPT_RIJNDAEL_128, $key, $plaintext, MCRYPT_MODE_CBC, "FIXED_1234567890"));
 }
 
-function decrypt_with_key($encrypted, $key) {
+function decrypt_with_key($key, $encrypted) {
     $decrypted = mcrypt_decrypt(MCRYPT_RIJNDAEL_128, $key, hex2bin($encrypted), MCRYPT_MODE_CBC, "FIXED_1234567890");
     $padSize = ord(substr($decrypted, -1));
     return substr($decrypted, 0, $padSize*-1);
@@ -40,12 +40,12 @@ function pkcs5_pad($text, $blocksize)
 
 function encrypt_with_password($password, $plaintext) {
     $key = password2key($password);
-    return encrypt_with_key($plaintext, $key);
+    return encrypt_with_key($key, $plaintext);
 }
 
 function decrypt_with_password($password, $encrypted) {
     $key = password2key($password);
-    return decrypt_with_key($encrypted, $key);
+    return decrypt_with_key($key, $encrypted);
 }
 
 ?>
