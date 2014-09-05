@@ -19,8 +19,9 @@ function password2key($password)
             $salt,
             PBKDF2_ITERATIONS,
             PBKDF2_HASH_BYTE_SIZE,
-            false
+            true
         );
+    $key = base64_encode($key);
     
     # TODO HAXXX. difficult getting php-perl-java to align with pbkdf2, so just concatenating the period+password then truncating to 32bytes/256bits for AES
     $altKey = "";
@@ -28,7 +29,7 @@ function password2key($password)
     	$altKey = $altKey . $password;
     }
     $altKey = substr($altKey, 0, 32);
-    $key = $altKey;
+    #$key = $altKey;
     # END HAXXX
     
     return $key;

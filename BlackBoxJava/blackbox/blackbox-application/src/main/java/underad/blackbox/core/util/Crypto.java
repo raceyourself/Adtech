@@ -82,6 +82,9 @@ public class Crypto {
 					periodedPassword.toCharArray(), NULL_SALT, PBKDF2_ITERATIONS, PBKDF2_HASH_BYTE_SIZE * 8);
 			// Need key to have algorithm set to AES, hence one SecretKey (from generateSecret()) being used to make another
 			key = new SecretKeySpec(factory.generateSecret(spec).getEncoded(), "AES");
+			
+			// FIXME HAXXX can't get PBKDF2-derived keys consistent across PHP and Perl, so doing something more stupid
+			
 //			CIPHER.init(cipherMode, key, INIT_VECTOR_PARAM_SPEC);
 			CIPHER.init(cipherMode, key);
 			byte[] cipherTextBytes = CIPHER.doFinal(input);
@@ -98,6 +101,14 @@ public class Crypto {
 		} catch (BadPaddingException e) {
 			throw new IllegalArgumentException(String.format("Input ciphertext is invalid: %s", input));
 		}
+	}
+	
+	private byte[] dumbKeyDerivation(String password) {
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < 10; i++) {
+			sb.append(password);
+		}
+		return sb.substring(0, 32).getBytes();
 	}
 	
 	private static byte[] concat(byte[]... in) {
