@@ -17,7 +17,7 @@ function password2key($password)
             $salt,
             PBKDF2_ITERATIONS,
             PBKDF2_HASH_BYTE_SIZE,
-            true
+            false
         );
 }
 
@@ -40,6 +40,9 @@ function pkcs5_pad($text, $blocksize)
 
 function encrypt_with_password($password, $plaintext) {
     $key = password2key($password);
+    
+    error_log("FOOO PHP p=$password;k=$key");
+    
     return encrypt_with_key($key, $plaintext);
 }
 

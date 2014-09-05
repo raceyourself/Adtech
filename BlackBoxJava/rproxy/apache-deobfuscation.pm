@@ -15,16 +15,15 @@ sub handler {
     my $r = shift;
     my $key_duration_secs = int($r->dir_config('period'));
     my $path_pattern = $r->dir_config('path_pattern');
-
+    
     my $period = int(time() / $key_duration_secs);
 
     if ($r->uri =~ m/$path_pattern/) {
       # $1 = encrypted URL
       my $ciphertext = $1;
-      # $2 = app server unix time at point of page generation
-      my $appServerUnixTime = $2;
-      
+      my $appServerUnixTime = $r->args;
       my $password = getPassword($appServerUnixTime);
+      #warn("FOOO appserver_unixtime=$appServerUnixTime;$password"); # TODO DELETEME
       
       my $pbkdf2 = Crypt::PBKDF2->new(
         hash_class => 'HMACSHA1',
@@ -36,10 +35,12 @@ sub handler {
       );
       
       my $salt = encode_base64("FIXED");
-      my $hash = $pbkdf2->generate($period . $password, $salt);
+      my $key = $pbkdf2->generate($period . $password, $salt);
+      
+      warn("FOOO Perl k=$key"); # TODO DELETEME
       
       my $cipher = Crypt::CBC->new(
-        -key         => $hash,
+        -key         => $key,
         -literal-key => 1, # hashing done separately in order to ensure consistent parameters with Java/PHP code
         -cipher      => 'Crypt::OpenSSL::AES',
         #-salt        => encode_base64("FIXED"),
@@ -53,11 +54,11 @@ sub handler {
         my $query = $2;
         $r->uri('/' . $path);
         $r->args($query);
-        warn("$ciphertext rewritten to /$path?$query (has query params)");
+        warn("$ciphertext?$appServerUnixTime rewritten to /$path?$query (has query params)");
       }
       else {
         $r->uri('/' . $plaintext);
-        warn("$ciphertext rewritten to /$plaintext (no query params)");
+        warn("$ciphertext?$appServerUnixTime rewritten to /$plaintext (no query params)");
       }
     }
     
@@ -66,13 +67,13 @@ sub handler {
 
 sub getPassword {
     my ($unixTime) = @_;
-    my $password = -1;
-    open(PASSWORDS, 'passwords.txt') or die("Could not open  file.");
+    my $password = "";
+    open(PASSWORDS, '/opt/obfuscator/passwords.txt') or die("Could not open  file.");
     my $line;
     foreach $line (<PASSWORDS>) {
         chomp $line;
         
-        if ($line =~ m/^([0-9]+),(.*)$/) { # ignore header lines/blank lines etc
+        if ($line =~ m/^([0-9].+),(.*)$/) { # ignore header lines/blank lines etc
             my $timestr = $1;
             my $rowTime = str2time($timestr);
             if ($unixTime > $rowTime) {
@@ -83,9 +84,8 @@ sub getPassword {
             }
         }
     }
-    if (isint($password))
-        die('No password currently in effect.');
+    close PASSWORDS;
+    die "No password currently in effect." if ($password eq "");
     return $password;
 }
-
 1;

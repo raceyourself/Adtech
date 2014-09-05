@@ -16,11 +16,11 @@ function obfuscate($path, $time) {
 
 function getPassword($time) {
     $password = -1;
-    $file_lines = file('passwords.txt');
+    $file_lines = file('/var/www/vhosts/demo/passwords.txt');
     foreach ($file_lines as $file_index => $file_line) {
         if (!preg_match("/^[0-9]/", $file_line))
             continue; # ignore header lines/blank lines etc
-        
+		
         $timestr = explode(",", $file_line)[0];
         $rowTime = strtotime($timestr);
         if ($time > $rowTime) {
@@ -39,5 +39,5 @@ function after($this, $inthat) {
     if (!is_bool(strpos($inthat, $this)))
         return substr($inthat, strpos($inthat,$this) + strlen($this));
 };
-    
+
 ?>
