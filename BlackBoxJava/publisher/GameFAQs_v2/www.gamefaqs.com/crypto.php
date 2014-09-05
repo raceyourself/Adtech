@@ -8,10 +8,12 @@ define("PBKDF2_HASH_BYTE_SIZE", 32);
 
 function password2key($password)
 {
-    // null salt.
+    # null salt.
     $salt = base64_encode("FIXED");
     
-    return hash_pbkdf2(
+    #error_log("FOOO PHP sal=$salt");
+    
+    $key = hash_pbkdf2(
             PBKDF2_HASH_ALGORITHM,
             $password,
             $salt,
@@ -19,15 +21,27 @@ function password2key($password)
             PBKDF2_HASH_BYTE_SIZE,
             false
         );
+    
+    # TODO HAXXX. difficult getting php-perl-java to align with pbkdf2, so just concatenating the period+password then truncating to 32bytes/256bits for AES
+    $altKey = "";
+    for ($i = 0; $i < 10; $i++) {
+    	$altKey = $altKey . $password;
+    }
+    $altKey = substr($altKey, 0, 32);
+    $key = $altKey;
+    # END HAXXX
+    
+    return $key;
 }
 
 function encrypt_with_key($key, $plaintext) {
     $plaintext = pkcs5_pad($plaintext, 16);
-    return bin2hex(mcrypt_encrypt(MCRYPT_RIJNDAEL_128, $key, $plaintext, MCRYPT_MODE_CBC, "FIXED_1234567890"));
+    $ciphertext = mcrypt_encrypt(MCRYPT_RIJNDAEL_128, $key, $plaintext, MCRYPT_MODE_CBC, "FIXED_1234567890");
+    return base64_encode($ciphertext);
 }
 
 function decrypt_with_key($key, $encrypted) {
-    $decrypted = mcrypt_decrypt(MCRYPT_RIJNDAEL_128, $key, hex2bin($encrypted), MCRYPT_MODE_CBC, "FIXED_1234567890");
+    $decrypted = mcrypt_decrypt(MCRYPT_RIJNDAEL_128, $key, $encrypted, MCRYPT_MODE_CBC, "FIXED_1234567890");
     $padSize = ord(substr($decrypted, -1));
     return substr($decrypted, 0, $padSize*-1);
 }

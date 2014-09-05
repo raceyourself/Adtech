@@ -2,7 +2,6 @@ package UnderAd::Deobfuscation;
 
 use strict;
 use warnings FATAL => 'all';
-
 use Apache2::RequestRec;
 use Apache2::RequestUtil;
 use Apache2::Const -compile => qw(DECLINED);
@@ -35,16 +34,27 @@ sub handler {
       );
       
       my $salt = encode_base64("FIXED");
+      #warn("FOOO Perl sal=$salt");
       my $key = $pbkdf2->generate($period . $password, $salt);
       
-      warn("FOOO Perl k=$key"); # TODO DELETEME
+      # TODO HAXXX. difficult getting php-perl-java to align with pbkdf2, so just concatenating the period+password then truncating to 32bytes/256bits for AES
+      my $altKey = "";
+      for (my $i = 0; $i < 10; $i++) {
+        $altKey = $altKey . $period . $password;
+      }
+      $altKey = substr $altKey, 0, 32;
+      $key = $altKey;
+      # END HAXXX
       
+      warn("FOOO Perl p=$period$password;k=$key"); # TODO DELETEME
+      
+      # hashing done separately in order to ensure consistent parameters with Java/PHP code
       my $cipher = Crypt::CBC->new(
         -key         => $key,
-        -literal-key => 1, # hashing done separately in order to ensure consistent parameters with Java/PHP code
+        -literal_key => 1,
         -cipher      => 'Crypt::OpenSSL::AES',
-        #-salt        => encode_base64("FIXED"),
-        -iv          => encode_base64("FIXED_1234567890")
+        -iv          => "FIXED_1234567890",
+        -header      => 'none'
       );
       
       my $plaintext = $cipher->decrypt(decode_base64($ciphertext));

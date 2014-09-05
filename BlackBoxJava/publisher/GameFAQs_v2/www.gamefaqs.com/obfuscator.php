@@ -24,7 +24,7 @@ function getPassword($time) {
         $timestr = explode(",", $file_line)[0];
         $rowTime = strtotime($timestr);
         if ($time > $rowTime) {
-            $password = after(',', $file_line);
+            $password = trim(after(',', $file_line));
         }
         else {
             break;
