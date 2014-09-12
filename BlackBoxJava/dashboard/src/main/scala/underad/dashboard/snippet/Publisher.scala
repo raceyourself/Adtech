@@ -88,7 +88,7 @@ object Publisher extends Logger {
         <h1>Thank you for signing up for underad analytics</h1>
         <p>
           Please confirm your e-mail address by clicking the follow link:
-          <a href="{confirmationUrl}">{confirmationUrl}</a>
+          <a href={confirmationUrl}>{confirmationUrl}</a>
         </p>
         <small>If you did not request this e-mail, please report the error by replying to this e-mail.</small>
       </body>

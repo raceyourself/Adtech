@@ -5,7 +5,7 @@ db.url=jdbc:postgresql:dashboard
 
 # E-mail
 mail.smtp.host=localhost
-mail.smtp.from=underad@glassinsight.co.uk
+mail.smtp.from=UnderAd Analytics <underad@glassinsight.co.uk>
 
 statistics.host=statistics.glassinsight.co.uk
 publisher.confirmation_url=http://dashboard.glassinsight.co.uk/confirmation
