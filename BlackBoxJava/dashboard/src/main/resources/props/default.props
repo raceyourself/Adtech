@@ -1,0 +1,8 @@
+# Database
+db.user=dashboard
+db.password=dfg3G3fdsdf3
+db.url=jdbc:postgresql:dashboard
+
+# E-mail
+mail.smtp.host=localhost
+mail.smtp.from=underad@glassinsight.co.uk
