@@ -100,7 +100,7 @@ object Publisher extends Logger {
       "  " + confirmationUrl + "\n"
 
     Mailer.sendMail(
-      From(Props.get("mail.smtp.from", "default@dashboard.invalid")),
+      From(Props.get("mail.smtp.from", "default@dashboard.invalid"), Full(Props.get("mail.smtp.from.name", "Dashboard"))),
       Subject("Please confirm your e-mail address"),
       To(publisher.name + "<" + publisher.email + ">"),
       PlainMailBodyType(text),
