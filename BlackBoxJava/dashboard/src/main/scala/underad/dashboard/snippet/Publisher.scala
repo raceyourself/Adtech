@@ -50,9 +50,18 @@ object Publisher extends Logger {
           case Full(publisher) => {
             info("Confirmed " + publisher.name + " <" + publisher.email + ">/" + publisher.id)
 
-            // TODO: Output js snippet
+            val statisticsHost = Props.get("statistics.host", "statistics.example")
+
             "head title *" #> "Confirmation succeeded!" &
-              "body #content *" #> ("Hello " + publisher.name)
+              "body #content *" #> <h1>Thank you for signing up for underad analytics!</h1>
+                <p>Insert the following javascript snippet into the HTML of your desired webpage and we will start sending you daily reports:</p>
+                <pre><code>
+                &lt;script&gt;
+                  var script = document.createElement('script')
+                  script.src='//{statisticsHost}/hit/{publisher.id}?nocache=' + ~~(Math.random()*999999);
+                  document.body.appendChild(script);
+                &lt;/script&gt;
+              </code></pre>
           }
           case _ => {
             "head title *" #> "Confirmation failed!" &
@@ -67,25 +76,31 @@ object Publisher extends Logger {
   }
 
   // Send confirmation e-mail to publisher
-  def sendConfirmation(publisher : PublisherMapper) {
+  def sendConfirmation(publisher : PublisherMapper): Unit = {
+    val baseUrl = Props.get("publisher.confirmation_url", "http://" + hostName + "/confirmation") // NOTE: default does not support ports
+    val confirmationUrl = baseUrl + "?token=" + publisher.confirmationToken;
+
     val html = <html>
       <head>
         <title>Please confirm your e-mail address</title>
       </head>
       <body>
         <h1>Thank you for signing up for underad analytics</h1>
-        Please confirm your e-mail address by clicking the follow link:
-        <a>TODO</a>
+        <p>
+          Please confirm your e-mail address by clicking the follow link:
+          <a href="{confirmationUrl}">{confirmationUrl}</a>
+        </p>
+        <small>If you did not request this e-mail, please report the error by replying to this e-mail.</small>
       </body>
     </html>
 
     var text = "Thank you for signing up for underad analytics!\n" +
       "\n" +
       "Please confirm your e-mail address by clicking the follow link:\n" +
-      "TODO\n"
+      "  " + confirmationUrl + "\n"
 
     Mailer.sendMail(
-      From(Props.get("mail.smtp.from", "default@dashboard")),
+      From(Props.get("mail.smtp.from", "default@dashboard.invalid")),
       Subject("Please confirm your e-mail address"),
       To(publisher.name + "<" + publisher.email + ">"),
       PlainMailBodyType(text),
