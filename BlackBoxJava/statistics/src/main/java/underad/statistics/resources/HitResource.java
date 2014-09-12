@@ -3,6 +3,7 @@ package underad.statistics.resources;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import underad.statistics.core.Response;
 import underad.statistics.views.HitView;
@@ -29,7 +30,10 @@ public class HitResource {
             // Still count bad requests
             id = "";
         }
-        jedis.getResource().incr(REDIS_HIT_KEY + ":" + id);
+
+        Jedis redis = jedis.getResource();
+        redis.incr(REDIS_HIT_KEY + ":" + id);
+        jedis.returnResource(redis);
 
         // Currently we're using the same (static) honeypot id. It would be preferable to use a per-hit id for the
         // honeypot, ie. generate one every hit (expire after X) and only count a successful honeypot hit when the

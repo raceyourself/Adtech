@@ -3,6 +3,7 @@ package underad.statistics.resources;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import underad.statistics.core.Response;
 
@@ -25,7 +26,11 @@ public class HoneypotResource {
             // Still count bad requests
             id = "";
         }
-        jedis.getResource().incr(REDIS_HONEYPOT_KEY + ":" + id);
+
+        Jedis redis = jedis.getResource();
+        redis.incr(REDIS_HONEYPOT_KEY + ":" + id);
+        jedis.returnResource(redis);
+
         return "false;";
     }
 }
