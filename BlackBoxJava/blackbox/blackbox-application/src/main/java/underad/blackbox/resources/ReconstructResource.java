@@ -12,12 +12,16 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
-import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import org.openqa.selenium.Dimension;
+import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeDriverService;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.remote.DesiredCapabilities;
+import org.openqa.selenium.remote.RemoteWebDriver;
 
 import underad.blackbox.BlackboxConfiguration;
 import underad.blackbox.core.AdvertMetadata;
@@ -25,16 +29,37 @@ import underad.blackbox.jdbi.AdAugmentDao;
 
 import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 
-@RequiredArgsConstructor
+@Slf4j
 @Path("/reconstruct/{id}")
 @Produces(MediaType.TEXT_HTML)
 public class ReconstructResource {
 
 	private final BlackboxConfiguration configuration;
 	private final AdAugmentDao adAugmentDao;
+	private final ChromeDriverService cds;
+
+	public ReconstructResource(BlackboxConfiguration configuration, AdAugmentDao adAugmentDao) throws IOException {
+		this.configuration = configuration;
+		this.adAugmentDao = adAugmentDao;
+				
+		File chromeDriverPath = configuration.getChromeDriverPath();
+		if (chromeDriverPath != null) // not required as may be set in path
+			System.setProperty("webdriver.chrome.driver", chromeDriverPath.getAbsolutePath());
+		
+		cds = new ChromeDriverService.Builder()
+			.usingDriverExecutable(chromeDriverPath)
+			.usingAnyFreePort()
+			.withEnvironment(ImmutableMap.of("DISPLAY", ":1.5"))
+			.build();
+		cds.start();
+		
+		// TODO use shutdown hook to kill service
+	}
 	
 	/**
 	 * <ol>
@@ -64,34 +89,13 @@ public class ReconstructResource {
 		
 		AdvertMetadata advert = adAugmentDao.getAdvert(id);
 		
-		File userDataDir = Files.createTempDir();
-		
-		ChromeOptions options = new ChromeOptions();
-		options.addArguments(
-				"--start-maximized",
-				"--disable-java",
-				"--incognito",
-				"--disable-extensions", // TODO when linking in Ad Detector extension, work out how to disable the others
-				"--use-mock-keychain",
-				"--disable-web-security",
-				"user-data-dir=" + userDataDir.getAbsolutePath()
-		);
-		// TODO add ad detector plugin; use it to determine advert positioning.
-		//options.addExtensions(new File("/path/to/extension.crx"));
-		
-		// TODO use virtual framebuffer rather than popping up a browser each time. This may be helpful, though it's for
-		// FF:
-		// http://stackoverflow.com/questions/23741517/headless-webdriver-tests-unable-to-use-xvfb-in-java
-		// or this:
+		// TODO use virtual framebuffer rather than popping up a browser each time.
 		// http://stackoverflow.com/questions/13127291/running-selenium-tests-with-chrome-on-ubuntu-in-a-headless-environment
+		// https://code.google.com/p/selenium/issues/detail?id=2673
 		
-		File chromeDriverPath = configuration.getChromeDriverPath();
-		if (chromeDriverPath != null) // not required as may be set in path
-			System.setProperty("webdriver.chrome.driver", chromeDriverPath.getAbsolutePath());
-		
-		ChromeDriver driver = null;
+		RemoteWebDriver driver = null;
 		try {
-			driver = new ChromeDriver(options);
+			driver = newWebDriver();
 			
 			// The statements below should be redundant given the startup arg --start-maximized.
 			driver.manage().window().setSize(new Dimension(1920, 1200));
@@ -115,5 +119,26 @@ public class ReconstructResource {
 			if (driver != null)
 				driver.quit();
 		}
+	}
+	
+	private RemoteWebDriver newWebDriver() {
+		File userDataDir = Files.createTempDir();
+		log.debug("Chrome profile dir: {}", userDataDir.getAbsolutePath());
+		
+		DesiredCapabilities capabilities = DesiredCapabilities.chrome();
+		
+		// TODO add ad detector plugin; use it to determine advert positioning.
+		//options.addExtensions(new File("/path/to/extension.crx"));
+		capabilities.setCapability("chrome.switches", ImmutableList.of(
+				"--start-maximized",
+				"--disable-java",
+				"--incognito",
+				"--disable-extensions", // TODO when linking in Ad Detector extension, work out how to disable the others
+				"--use-mock-keychain",
+				"--disable-web-security",
+				"user-data-dir=" + userDataDir.getAbsolutePath()));
+		RemoteWebDriver driver = new RemoteWebDriver(cds.getUrl(), capabilities);
+		
+		return driver;
 	}
 }
