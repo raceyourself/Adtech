@@ -73,6 +73,17 @@ public class Crypto {
 	
 	public static String decrypt(String password, long publisherUnixTimeMillis, String cipherText) {
 		byte[] cipherTextBytesForOpenSsl = Base64.decodeBase64(cipherText.getBytes(CHARSET));
+		
+		// Sanity-check input contains magic and (fixed) salt.
+		for (int i = 0; i < OPENSSL_MAGIC_BYTES.length; i++) {
+			if (cipherTextBytesForOpenSsl[i] != OPENSSL_MAGIC_BYTES[i])
+				throw new IllegalArgumentException("Invalid ciphertext: once base64 decoded, first eight bytes are not 'Salted__'.");
+		}
+		for (int i = 0; i < NULL_SALT.length; i++) {
+			if (cipherTextBytesForOpenSsl[OPENSSL_MAGIC_BYTES.length + i] != NULL_SALT[i])
+				throw new IllegalArgumentException("Invalid ciphertext: once base64 decoded, second set of eight bytes aren't equal to our salt.");
+		}
+		
 		int len = cipherTextBytesForOpenSsl.length - OPENSSL_MAGIC_BYTES.length - NULL_SALT.length;
 		byte[] cipherTextBytes = new byte[len];
 		System.arraycopy(cipherTextBytesForOpenSsl, OPENSSL_MAGIC_BYTES.length + NULL_SALT.length, cipherTextBytes, 0,
@@ -94,9 +105,9 @@ public class Crypto {
 			
 			// FIXME HAXXX can't get PBKDF2-derived keys consistent across PHP and Perl, so doing something more stupid
 			String dumbKey = dumbKeyDerivation(periodedPassword);
+			log.debug("FOOO java k=" + dumbKey);
 			key = new SecretKeySpec(dumbKey.getBytes(), "AES");
 			
-			log.debug("FOOO java k=" + key);
 			CIPHER.init(cipherMode, key, INIT_VECTOR_PARAM_SPEC);
 //			CIPHER.init(cipherMode, key);
 			byte[] cipherTextBytes = CIPHER.doFinal(input);
