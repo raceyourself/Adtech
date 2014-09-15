@@ -93,10 +93,11 @@ public class JsIncludeResource {
 		
 		for (AdvertMetadata advert : adverts) {
 			String reconstructUrl = getReconstructionUrl(advert.getId()).toString();
-			log.debug("Reconstruction URL for ad ID {}: {}", advert.getId(), reconstructUrl);
 			// The only URL we need to encrypt in the blackbox is the reconstruct URL that provides adblock-proof ad
 			// HTML.
 			String reconstructUrlCipherText = Crypto.encrypt(password, publisherUnixTimeMillis, reconstructUrl);
+			log.debug("Reconstruction URL for ad ID {}: {} => {}", advert.getId(), reconstructUrl,
+					reconstructUrlCipherText);
 			advert.setEncryptedReconstructUrl(reconstructUrlCipherText);
 		}
 		

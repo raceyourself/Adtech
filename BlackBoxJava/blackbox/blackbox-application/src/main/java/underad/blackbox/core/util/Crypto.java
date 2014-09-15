@@ -90,7 +90,7 @@ public class Crypto {
 			String dumbKey = dumbKeyDerivation(periodedPassword);
 			key = new SecretKeySpec(dumbKey.getBytes(), "AES");
 			
-			log.debug("FOOO k" + dumbKey);
+			log.debug("FOOO java k=" + dumbKey);
 //			CIPHER.init(cipherMode, key, INIT_VECTOR_PARAM_SPEC);
 			CIPHER.init(cipherMode, key);
 			byte[] cipherTextBytes = CIPHER.doFinal(input);
