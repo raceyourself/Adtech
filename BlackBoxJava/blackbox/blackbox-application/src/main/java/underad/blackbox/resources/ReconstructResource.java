@@ -64,8 +64,6 @@ public class ReconstructResource {
 		
 		AdvertMetadata advert = adAugmentDao.getAdvert(id);
 		
-		// TODO fetch all params from DB based off single advert id param.
-		
 		File userDataDir = Files.createTempDir();
 		
 		ChromeOptions options = new ChromeOptions();

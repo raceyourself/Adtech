@@ -90,7 +90,7 @@ public class Crypto {
 			
 			// FIXME HAXXX can't get PBKDF2-derived keys consistent across PHP and Perl, so doing something more stupid
 			String dumbKey = dumbKeyDerivation(periodedPassword);
-			log.debug("FOOO java k=" + dumbKey);
+//			log.debug("k=" + dumbKey);
 			key = new SecretKeySpec(dumbKey.getBytes(), "AES");
 			
 			CIPHER.init(cipherMode, key, INIT_VECTOR_PARAM_SPEC);

@@ -19,5 +19,5 @@ public interface AdAugmentDao {
 	
 	@SqlQuery("select id, url, blocked_abs_xpath, advert_rel_xpath, width_with_unit, height_with_unit from adverts "
 			+ "where id = :id")
-	AdvertMetadata getAdvert(int id);
+	AdvertMetadata getAdvert(@Bind("id") int id);
 }
