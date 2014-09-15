@@ -1,6 +1,7 @@
 package underad.blackbox.core.util;
 
 import java.nio.charset.Charset;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
@@ -66,11 +67,16 @@ public class Crypto {
 	public static String encrypt(String password, long publisherUnixTimeMillis, String plainText) {
 		byte[] plainTextBytes = plainText.getBytes(CHARSET);
 	    byte[] cipherTextBytes = crypt(password, publisherUnixTimeMillis, plainTextBytes, Cipher.ENCRYPT_MODE);
-	    return new String(Base64.encodeBase64(cipherTextBytes), CHARSET);
+	    byte[] forOpenSsl = concat(OPENSSL_MAGIC_BYTES, NULL_SALT, cipherTextBytes);
+	    return new String(Base64.encodeBase64(forOpenSsl), CHARSET);
 	}
 	
 	public static String decrypt(String password, long publisherUnixTimeMillis, String cipherText) {
-		byte[] cipherTextBytes = Base64.decodeBase64(cipherText.getBytes(CHARSET));
+		byte[] cipherTextBytesForOpenSsl = Base64.decodeBase64(cipherText.getBytes(CHARSET));
+		int len = cipherTextBytesForOpenSsl.length - OPENSSL_MAGIC_BYTES.length - NULL_SALT.length;
+		byte[] cipherTextBytes = new byte[len];
+		System.arraycopy(cipherTextBytesForOpenSsl, OPENSSL_MAGIC_BYTES.length + NULL_SALT.length, cipherTextBytes, 0,
+				len);
 		byte[] originalBytes = crypt(password, publisherUnixTimeMillis, cipherTextBytes, Cipher.DECRYPT_MODE);
 		return new String(originalBytes, CHARSET);
 	}
@@ -90,13 +96,13 @@ public class Crypto {
 			String dumbKey = dumbKeyDerivation(periodedPassword);
 			key = new SecretKeySpec(dumbKey.getBytes(), "AES");
 			
-			log.debug("FOOO java k=" + dumbKey);
-//			CIPHER.init(cipherMode, key, INIT_VECTOR_PARAM_SPEC);
-			CIPHER.init(cipherMode, key);
+			log.debug("FOOO java k=" + key);
+			CIPHER.init(cipherMode, key, INIT_VECTOR_PARAM_SPEC);
+//			CIPHER.init(cipherMode, key);
 			byte[] cipherTextBytes = CIPHER.doFinal(input);
 			
-			return concat(OPENSSL_MAGIC_BYTES, NULL_SALT, cipherTextBytes);
-		} catch (NoSuchAlgorithmException/* | InvalidAlgorithmParameterException*/ | IllegalBlockSizeException e) {
+			return cipherTextBytes;
+		} catch (NoSuchAlgorithmException | InvalidAlgorithmParameterException | IllegalBlockSizeException e) {
 			/*
 			 * NoSuchAlgorithmException/InvalidAlgorithmParameterException won't happen as values are hardcoded.
 			 * IllegalBlockSizeException can't happen with PKCS5Padding.
