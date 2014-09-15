@@ -6,7 +6,7 @@ database:
 
 chromeDriverPath: /opt/chromedriver/chromedriver
 
-hostUrl: http://rp.glassinsight.co.uk/
+hostUrl: http://rp.glassinsight.co.uk/blackbox
 
 minifyJs: true
 
@@ -21,11 +21,15 @@ server:
 #    enabled: false
 
 logging:
+  level: INFO
+  loggers:
+    "underad.blackbox": DEBUG
   appenders:
   - type: console
-    threshold: INFO
+    threshold: DEBUG
   - type: file
     threshold: DEBUG
     currentLogFilename: ./logs/blackbox.log
     archivedLogFilenamePattern: ./logs/blackbox-%d.log.gz
     archivedFileCount: 5
+
