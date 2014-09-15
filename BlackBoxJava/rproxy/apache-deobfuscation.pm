@@ -57,7 +57,11 @@ sub handler {
         -header      => 'none'
       );
       
-      my $plaintext = $cipher->decrypt(decode_base64($ciphertext));
+      my $rawCiphertext = decode_base64($ciphertext);
+      
+      warn("FOOO Perl raw ciphertext first 16 bytes: " . substr($rawCiphertext, 0, 16));
+      
+      my $plaintext = $cipher->decrypt($rawCiphertext);
 
       if ($plaintext =~ m/(.*)\?(.*)/) {
         my $path = $1;

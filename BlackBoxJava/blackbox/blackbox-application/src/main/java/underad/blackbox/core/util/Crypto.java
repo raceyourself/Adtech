@@ -67,16 +67,29 @@ public class Crypto {
 	public static String encrypt(String password, long publisherUnixTimeMillis, String plainText) {
 		byte[] plainTextBytes = plainText.getBytes(CHARSET);
 	    byte[] cipherTextBytes = crypt(password, publisherUnixTimeMillis, plainTextBytes, Cipher.ENCRYPT_MODE);
-	    byte[] forOpenSsl = concat(OPENSSL_MAGIC_BYTES, NULL_SALT, cipherTextBytes);
-	    return new String(Base64.encodeBase64(forOpenSsl), CHARSET);
+//	    byte[] forOpenSsl = concat(OPENSSL_MAGIC_BYTES, NULL_SALT, cipherTextBytes);
+//	    cipherTextBytes = forOpenSsl;
+	    return new String(Base64.encodeBase64(cipherTextBytes), CHARSET);
 	}
 	
 	public static String decrypt(String password, long publisherUnixTimeMillis, String cipherText) {
-		byte[] cipherTextBytesForOpenSsl = Base64.decodeBase64(cipherText.getBytes(CHARSET));
-		int len = cipherTextBytesForOpenSsl.length - OPENSSL_MAGIC_BYTES.length - NULL_SALT.length;
-		byte[] cipherTextBytes = new byte[len];
-		System.arraycopy(cipherTextBytesForOpenSsl, OPENSSL_MAGIC_BYTES.length + NULL_SALT.length, cipherTextBytes, 0,
-				len);
+		byte[] cipherTextBytes = Base64.decodeBase64(cipherText.getBytes(CHARSET));
+		
+		// Sanity-check input contains magic and (fixed) salt.
+//		for (int i = 0; i < OPENSSL_MAGIC_BYTES.length; i++) {
+//			if (cipherTextBytes[i] != OPENSSL_MAGIC_BYTES[i])
+//				throw new IllegalArgumentException("Invalid ciphertext: once base64 decoded, first eight bytes are not 'Salted__'.");
+//		}
+//		for (int i = 0; i < NULL_SALT.length; i++) {
+//			if (cipherTextBytes[OPENSSL_MAGIC_BYTES.length + i] != NULL_SALT[i])
+//				throw new IllegalArgumentException("Invalid ciphertext: once base64 decoded, second set of eight bytes aren't equal to our salt.");
+//		}
+		
+//		int len = cipherTextBytes.length - OPENSSL_MAGIC_BYTES.length - NULL_SALT.length;
+//		byte[] tmp = new byte[len];
+//		System.arraycopy(cipherTextBytes, OPENSSL_MAGIC_BYTES.length + NULL_SALT.length, tmp, 0, len);
+//		cipherTextBytes = tmp;
+		
 		byte[] originalBytes = crypt(password, publisherUnixTimeMillis, cipherTextBytes, Cipher.DECRYPT_MODE);
 		return new String(originalBytes, CHARSET);
 	}
@@ -94,9 +107,9 @@ public class Crypto {
 			
 			// FIXME HAXXX can't get PBKDF2-derived keys consistent across PHP and Perl, so doing something more stupid
 			String dumbKey = dumbKeyDerivation(periodedPassword);
+			log.debug("FOOO java k=" + dumbKey);
 			key = new SecretKeySpec(dumbKey.getBytes(), "AES");
 			
-			log.debug("FOOO java k=" + key);
 			CIPHER.init(cipherMode, key, INIT_VECTOR_PARAM_SPEC);
 //			CIPHER.init(cipherMode, key);
 			byte[] cipherTextBytes = CIPHER.doFinal(input);
