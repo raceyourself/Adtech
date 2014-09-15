@@ -40,26 +40,20 @@ public class JsIncludeResource {
 	private final AdAugmentDao adAugmentDao;
 	private final PublisherPasswordDao publisherKeyDao;
 	
-	private URI getReconstructionUrl(long id) {
-		try {
-			// TODO should use UriInfo.getBaseUriBuilder() as well I think
-			URI reconstructRelUrl = UriBuilder.fromResource(ReconstructResource.class).build(id);
-			URL hostUrl = configuration.getHostUrl();
-			StringBuilder path = new StringBuilder();
-			
-			String hPath = hostUrl.getPath();
-			String rPath = reconstructRelUrl.getPath();
-			
-			if (hPath != null)
-				path.append(hPath, 0, hPath.endsWith("/") ? hPath.length() - 1 : hPath.length());
-			if (rPath != null)
-				path.append(rPath);
-			
-			return new URL(hostUrl.getProtocol(), hostUrl.getHost(), hostUrl.getPort(),
-					path.toString(), null).toURI();
-		} catch (MalformedURLException | URISyntaxException e) {
-			throw new WebApplicationException(Status.INTERNAL_SERVER_ERROR);
-		}
+	private String getReconstructionPath(long id) {
+		// TODO should use UriInfo.getBaseUriBuilder() as well I think
+		URI reconstructRelUrl = UriBuilder.fromResource(ReconstructResource.class).build(id);
+		String hPath = configuration.getBlackBoxProxyPath();
+		StringBuilder path = new StringBuilder();
+		
+		String rPath = reconstructRelUrl.getPath();
+		
+		if (hPath != null)
+			path.append(hPath, 0, hPath.endsWith("/") ? hPath.length() - 1 : hPath.length());
+		if (rPath != null)
+			path.append(rPath);
+		
+		return path.toString();
 	}
 	
 	/**
@@ -92,7 +86,7 @@ public class JsIncludeResource {
 //		log.debug("TODO delete me once stuff works!!!! url={}nostril={}", url, password);
 		
 		for (AdvertMetadata advert : adverts) {
-			String reconstructUrl = getReconstructionUrl(advert.getId()).toString();
+			String reconstructUrl = getReconstructionPath(advert.getId());
 			// The only URL we need to encrypt in the blackbox is the reconstruct URL that provides adblock-proof ad
 			// HTML.
 			String reconstructUrlCipherText = Crypto.encrypt(password, publisherUnixTimeMillis, reconstructUrl);

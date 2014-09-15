@@ -6,7 +6,7 @@ database:
 
 chromeDriverPath: C:\Program Files (x86)\Google\chromedriver.exe
 
-hostUrl: https://www.unicorn.io:8080/
+blackBoxProxyPath: /blackbox
 
 minifyJs: true
 

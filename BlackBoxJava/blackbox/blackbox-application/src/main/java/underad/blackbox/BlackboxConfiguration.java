@@ -5,10 +5,6 @@ import io.dropwizard.client.HttpClientConfiguration;
 import io.dropwizard.db.DataSourceFactory;
 
 import java.io.File;
-import java.net.InetAddress;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.UnknownHostException;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -27,7 +23,7 @@ public class BlackboxConfiguration extends Configuration {
 	 * 'broken') for the sake of stricter validation.
 	 */
 	@JsonProperty
-	private URL hostUrl;
+	private String blackBoxProxyPath;
 	
 	@JsonProperty
 	/**
@@ -48,15 +44,4 @@ public class BlackboxConfiguration extends Configuration {
 	@NotNull
 	@JsonProperty
 	private HttpClientConfiguration httpClient = new HttpClientConfiguration();
-	
-	public URL getHostUrl() {
-		if (hostUrl == null) {
-			try {
-				hostUrl = new URL("http", InetAddress.getLocalHost().getHostName(), 80, null);
-			} catch (MalformedURLException | UnknownHostException e) {
-				throw new RuntimeException(e);
-			}
-		}
-		return hostUrl;
-	}
 }
