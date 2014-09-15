@@ -6,7 +6,7 @@ database:
 
 chromeDriverPath: /opt/chromedriver/chromedriver
 
-hostUrl: http://rp.glassinsight.co.uk/blackbox
+hostUrl: /blackbox
 
 minifyJs: true
 
