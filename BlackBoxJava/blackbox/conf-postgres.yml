@@ -6,7 +6,7 @@ database:
 
 chromeDriverPath: /opt/chromedriver/chromedriver
 
-blackBoxProxyPath: /blackbox
+blackBoxProxyPath: blackbox
 
 minifyJs: true
 
