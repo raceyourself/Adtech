@@ -9,7 +9,9 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-FROM="UnderAd Analytics <underad@glassinsight.co.uk"
+import re
+
+FROM='"UnderAd Analytics" <underad@glassinsight.co.uk>'
 
 def main():
     db = db_connection()
@@ -49,9 +51,9 @@ def create_report(redis, id, name, email):
 
 def send_report(name, email, hits, hps):
     msg = MIMEMultipart('alternative')
-    msg['Subject'] = "UnderAd report fo %s" % time.strftime("%Y-%m-%d")
+    msg['Subject'] = "UnderAd report for %s" % time.strftime("%Y-%m-%d")
     msg['From'] = FROM
-    msg['To'] = "%s <%s>" % (name, email)
+    msg['To'] = "\"%s\" <%s>" % (name.replace('"', ''), re.sub('[><]', '', email))
 
     html = """\
 <h1>%d%% of your ad revenue is blocked!</h1>
