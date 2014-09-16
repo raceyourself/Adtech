@@ -97,10 +97,6 @@ public class ReconstructResource {
 		try {
 			driver = newWebDriver();
 			
-			// The statements below should be redundant given the startup arg --start-maximized.
-			driver.manage().window().setSize(new Dimension(1920, 1200));
-			driver.manage().window().maximize();
-			
 			// No wait for readystate:
 			// http://stackoverflow.com/questions/15122864/selenium-wait-until-document-is-ready suggests that
 			// WebDriver.get() already waits for document.readyState==complete, and then some.
@@ -138,6 +134,10 @@ public class ReconstructResource {
 				"--disable-web-security",
 				"user-data-dir=" + userDataDir.getAbsolutePath()));
 		RemoteWebDriver driver = new RemoteWebDriver(cds.getUrl(), capabilities);
+		
+		// The statements below should be redundant given the startup arg --start-maximized.
+		driver.manage().window().setSize(new Dimension(1920, 1200));
+		driver.manage().window().maximize();
 		
 		return driver;
 	}
