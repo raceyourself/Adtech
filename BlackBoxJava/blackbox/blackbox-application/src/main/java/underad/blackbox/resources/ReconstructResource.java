@@ -15,11 +15,8 @@ import javax.ws.rs.core.Response.Status;
 import lombok.extern.slf4j.Slf4j;
 
 import org.openqa.selenium.Dimension;
-import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeDriverService;
-import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
@@ -101,10 +98,12 @@ public class ReconstructResource {
 			// http://stackoverflow.com/questions/15122864/selenium-wait-until-document-is-ready suggests that
 			// WebDriver.get() already waits for document.readyState==complete, and then some.
 			driver.get(advert.getUrl());
-
+			
 			URL url = Resources.getResource("underad/blackbox/resources/chrome_resolve_styling.js");
 			String scriptContent = Resources.toString(url, Charsets.UTF_8);
 			
+//			return (String) driver.executeScript(
+//					scriptContent, advert.getBlockedAbsXpath(), advert.getAdvertRelXpath());
 			WebElement htmlFragment = (WebElement) driver.executeScript(
 					scriptContent, advert.getBlockedAbsXpath(), advert.getAdvertRelXpath());
 			return htmlFragment.getAttribute("outerHTML"); // outerHTML doesn't work in FF apparently

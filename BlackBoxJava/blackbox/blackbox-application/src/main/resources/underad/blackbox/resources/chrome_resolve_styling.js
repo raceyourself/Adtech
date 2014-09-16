@@ -35,12 +35,11 @@ function getInlineStyle(blockedAbsXpath, advertRelXpath) {
         }
         else {
             var advertPathElem = advertPathElems[i];
-            var pathElem = advertPathElems[i];
             currentElem = document.evaluate(advertPathElem, currentElem, null, XPathResult.ANY_TYPE, null);
         }
     }
     
-    return blockedAbsElement;
+    return blockedElem;
 }
 
 function getStyle(elem) {
@@ -55,7 +54,8 @@ function getStyle(elem) {
             var key = css[j];
             if (isApplicable(key))
                 style[key] = css[key];
-            if (css[key] !== '') style[key] = css[key];
+            if (css[key] !== '')
+            	style[key] = css[key];
         }
     }
 }
