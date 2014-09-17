@@ -25,12 +25,12 @@ function getInlineStyle(blockedAbsXpath, advertRelXpath) {
     // Retrieve associated CSS styling and inline it so it can be returned as a flat HTML.
     var advertXpathElems = advertRelXpath.split('/');
     var currentElem = blockedElem;
-    for (var i = 0; i < advertXpathElems.length; i++) {
+    for (var i = 0; i <= advertXpathElems.length; i++) {
         var style = getStyle(currentElem);
         
         currentElem.removeAttribute('style');
         for (var key in style) { 
-            node.style.setProperty(key, style[key]); 
+        	currentElem.style.setProperty(key, style[key]); 
         }
         
         if (currentElem == advertElem) {
