@@ -1,11 +1,25 @@
+if (typeof String.prototype.startsWith != 'function') {
+    String.prototype.startsWith = function (str) {
+        return this.indexOf(str) == 0;
+    };
+}
+if (typeof String.prototype.endsWith != 'function') {
+    String.prototype.endsWith = function (str) {
+    	return this.indexOf(str, this.length - str.length) !== -1;
+    };
+}
+
 try {
     var blockedAbsXpath = arguments[0];
     var advertRelXpath = arguments[1];
     
-    return getInlineStyle(blockedAbsXpath, advertRelXpath);
+    var out = getInlineStyle(blockedAbsXpath, advertRelXpath);
+    console.log("Got inline style. Out=" + out);
+    return out;
 } catch (e) {
+	console.log("Failed to get inline style. Error=" + e);
 //    throw e;
-    var comment = document.createComment('Error: ' + e);
+    var comment = document.createComment('Failed to get inline style. Error=' + e);
     return comment;
 }
 
@@ -15,22 +29,30 @@ function getInlineStyle(blockedAbsXpath, advertRelXpath) {
     	.singleNodeValue;
     var advertElem = document.evaluate(advertAbsXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null)
     	.singleNodeValue;
+    console.log("blockedElem="+blockedElem+";advertElem="+advertElem);
     
     var advertAbsXpath = blockedAbsXpath;
-    if (!endsWith(blockedAbsXpath, '/'))
+    if (!blockedAbsXpath.endsWith('/'))
         advertAbsXpath = advertAbsXpath + '/';
+    if (advertRelXpath.startsWith('/'))
+    	advertRelXpath = advertRelXpath.substring(1);
     advertAbsXpath = advertAbsXpath + advertRelXpath;
+    console.log("advertAbsXpath="+advertAbsXpath);
     
     // Go through every element between blockedAbsXpath (inclusive) and advertAbsXpath (inclusive).
     // Retrieve associated CSS styling and inline it so it can be returned as a flat HTML.
     var advertXpathElems = advertRelXpath.split('/');
+    console.log("advertXpathElems="+advertXpathElems);
     var currentElem = blockedElem;
     for (var i = 0; i <= advertXpathElems.length; i++) {
-        var style = getStyle(currentElem);
-        
+    	console.log("["+i+"] currentElem="+currentElem);
+    	var style = getStyle(currentElem);
+        console.log("["+i+"] style for "+currentElem+" is "+style);
+    	
         currentElem.removeAttribute('style');
-        for (var key in style) { 
-        	currentElem.style.setProperty(key, style[key]); 
+        for (var key in style) {
+        	currentElem.style.setProperty(key, style[key]);
+        	console.log("["+i+"] property set");
         }
         
         if (currentElem == advertElem) {
@@ -38,8 +60,10 @@ function getInlineStyle(blockedAbsXpath, advertRelXpath) {
         }
         else {
             var advertPathElem = advertXpathElems[i];
+            console.log("["+i+"] pre xpath lookup. advertPathElem="+advertPathElem+";currentElem="+currentElem);
             currentElem = document
             	.evaluate(advertPathElem, currentElem, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+            console.log("["+i+"] post xpath lookup. advertPathElem="+advertPathElem+";currentElem="+currentElem);
         }
     }
     return blockedElem;
@@ -47,9 +71,11 @@ function getInlineStyle(blockedAbsXpath, advertRelXpath) {
 
 function getStyle(elem) {
     var rules = window.getMatchedCSSRules(elem);
-    if (rules === null)
-        throw {name: 'Custom Exception', message: 'Could not find rules for ' + elem};
     var style = {};
+    if (rules === null)    	
+//        throw {name: 'Custom Exception', message: 'Could not find rules for ' + elem};
+    	return style; // sadly if zero styles are matched, getMatchedCSSRules returns null, not an empty list. 
+    
     // Extract all CSS into a single inline style
     for (var i = 0, il = rules.length; i < il; i++) {
         var css = rules[i].style;
@@ -73,8 +99,4 @@ function isApplicable(key) {
         return false;
     // TODO: Correct CSS specificity order?
     return true;
-}
-
-function endsWith(str, suffix) {
-    return str.indexOf(suffix, str.length - suffix.length) !== -1;
 }

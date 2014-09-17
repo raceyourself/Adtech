@@ -3,6 +3,7 @@ package underad.blackbox.resources;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.util.List;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -102,8 +103,6 @@ public class ReconstructResource {
 			URL url = Resources.getResource("underad/blackbox/resources/chrome_resolve_styling.js");
 			String scriptContent = Resources.toString(url, Charsets.UTF_8);
 			
-//			return (String) driver.executeScript(
-//					scriptContent, advert.getBlockedAbsXpath(), advert.getAdvertRelXpath());
 			WebElement htmlFragment = (WebElement) driver.executeScript(
 					scriptContent, advert.getBlockedAbsXpath(), advert.getAdvertRelXpath());
 			return htmlFragment.getAttribute("outerHTML"); // outerHTML doesn't work in FF apparently
