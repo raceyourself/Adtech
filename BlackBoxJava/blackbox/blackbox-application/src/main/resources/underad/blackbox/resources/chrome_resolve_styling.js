@@ -11,8 +11,10 @@ try {
 
 // returns blockedAbsElement : WebElement - element found at blockedAbsXpath, but with flattened CSS style info.
 function getInlineStyle(blockedAbsXpath, advertRelXpath) {
-    var blockedElem = document.evaluate(blockedAbsXpath, document, null, XPathResult.ANY_TYPE, null);
-    var advertElem = document.evaluate(advertAbsXpath, document, null, XPathResult.ANY_TYPE, null);
+    var blockedElem = document.evaluate(blockedAbsXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null)
+    	.singleNodeValue;
+    var advertElem = document.evaluate(advertAbsXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null)
+    	.singleNodeValue;
     
     var advertAbsXpath = blockedAbsXpath;
     if (!endsWith(blockedAbsXpath, '/'))
@@ -23,7 +25,7 @@ function getInlineStyle(blockedAbsXpath, advertRelXpath) {
     // Retrieve associated CSS styling and inline it so it can be returned as a flat HTML.
     var advertXpathElems = advertRelXpath.split('/');
     var currentElem = blockedElem;
-    for (var i = 0; i < advertPathElems.length; i++) {
+    for (var i = 0; i < advertXpathElems.length; i++) {
         var style = getStyle(currentElem);
         
         currentElem.removeAttribute('style');
@@ -35,11 +37,11 @@ function getInlineStyle(blockedAbsXpath, advertRelXpath) {
             // Advert injected later (this function is done 'offline', prior to the browser requesting it)
         }
         else {
-            var advertPathElem = advertPathElems[i];
-            currentElem = document.evaluate(advertPathElem, currentElem, null, XPathResult.ANY_TYPE, null);
+            var advertPathElem = advertXpathElems[i];
+            currentElem = document
+            	.evaluate(advertPathElem, currentElem, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
         }
     }
-    
     return blockedElem;
 }
 
@@ -53,12 +55,11 @@ function getStyle(elem) {
         var css = rules[i].style;
         for (var j = 0, jl = css.length; j < jl; j++) {
             var key = css[j];
-            if (isApplicable(key))
+            if (isApplicable(key) && css[key] !== '')
                 style[key] = css[key];
-            if (css[key] !== '')
-            	style[key] = css[key];
         }
     }
+    return style;
 }
 
 function isApplicable(key) {
@@ -71,7 +72,7 @@ function isApplicable(key) {
     if (key.indexOf('webkit') !== -1) // ignore expermental properties. TODO why?
         return false;
     // TODO: Correct CSS specificity order?
-    return css[key] !== '';
+    return true;
 }
 
 function endsWith(str, suffix) {
