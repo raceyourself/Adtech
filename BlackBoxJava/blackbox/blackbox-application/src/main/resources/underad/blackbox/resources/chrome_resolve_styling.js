@@ -4,8 +4,9 @@ try {
     
     return getInlineStyle(blockedAbsXpath, advertRelXpath);
 } catch (e) {
-    throw e;
-    return "<!-- Error: " + e + " -->";
+//    throw e;
+    var comment = document.createComment('Error: ' + e);
+    return comment;
 }
 
 // returns blockedAbsElement : WebElement - element found at blockedAbsXpath, but with flattened CSS style info.
@@ -14,7 +15,7 @@ function getInlineStyle(blockedAbsXpath, advertRelXpath) {
     var advertElem = document.evaluate(advertAbsXpath, document, null, XPathResult.ANY_TYPE, null);
     
     var advertAbsXpath = blockedAbsXpath;
-    if (!endsWith(blockedAbsXpath, '/')
+    if (!endsWith(blockedAbsXpath, '/'))
         advertAbsXpath = advertAbsXpath + '/';
     advertAbsXpath = advertAbsXpath + advertRelXpath;
     
@@ -68,7 +69,7 @@ function isApplicable(key) {
     if (key === 'length')
         return false;
     if (key.indexOf('webkit') !== -1) // ignore expermental properties. TODO why?
-        continue;
+        return false;
     // TODO: Correct CSS specificity order?
     return css[key] !== '';
 }
