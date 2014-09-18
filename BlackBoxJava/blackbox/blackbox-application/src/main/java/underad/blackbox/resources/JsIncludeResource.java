@@ -74,10 +74,12 @@ public class JsIncludeResource {
 	    
 	    // Determine what adverts need obfuscating.
 		List<AdvertMetadata> adverts = ImmutableList.copyOf(adAugmentDao.getAdverts(url.toString(), publisherTs));
-		if (adverts.isEmpty())
+		log.debug("Adverts for URL {}: {}", url, adverts);
+		if (adverts.isEmpty()) {
+			log.debug("No adverts configured.");
 			// probably means that the URL isn't owned by one of our publisher clients at present. That or config error.
 			throw new WebApplicationException(Status.BAD_REQUEST);
-		log.debug("Adverts for URL {}: {}", url, adverts);
+		}
 		
 		// Get appropriate key for encrypting paths.
 		String password = publisherKeyDao.getPassword(url.toString(), publisherTs);

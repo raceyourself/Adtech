@@ -1,8 +1,10 @@
 function underad(reconstructUrl, blockedAbsXpath) {
   console.log("Reconstruct URL: " + reconstructUrl + "; blocked xpath: " + blockedAbsXpath);
   var e = document.evaluate(blockedAbsXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-  if (e === null || e.singleNodeValue === null)
+  if (e === null || e.singleNodeValue === null) {
+    console.log("xpath lookup returned null result. TODO: Recreate from server-side template");
     return; // TODO: Recreate from server-side template
+  }
   if (hidden(e.singleNodeValue))
     recreate(reconstructUrl, e.singleNodeValue);
 };
@@ -15,7 +17,6 @@ function newHttpObject() {
   catch (error) {}
   try {return new ActiveXObject("Microsoft.XMLHTTP");}
   catch (error) {}
-
   throw new Error("Could not create HTTP request object.");
 }
 
@@ -24,13 +25,18 @@ function recreate(reconstructUrl, e) {
   var url = '/assets/' + reconstructUrl + '?{{timestamp}}';
   console.log("Recreating. URL: " + url);
   
-  var request = newHttpObject();
-  request.open('GET', url, true);
-  request.send(null);
-  request.onreadystatechange = function() {
-    if (request.readyState == 4) {
-      console.log("Got recreation response: " + request.responseText);
-      e.innerHTML = request.responseText;
+  var httpObj = newHttpObject();
+  httpObj.open('GET', url, true);
+  httpObj.send(null);
+  httpObj.onreadystatechange = function() {
+    if (httpObj.readyState == 4) { // 4 == complete.
+      console.log("Got recreation response with code " + httpObj.status + ": " + httpObj.responseText);
+      if (httpObj.status >= 200 && httpObj.status < 400) {
+        e.innerHTML = httpObj.responseText;
+      }
+      else {
+        console.log("Ignoring response as it's an error.");
+      }
     }
   };
 }

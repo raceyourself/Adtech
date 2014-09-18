@@ -17,6 +17,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.joda.time.DateTime;
 import org.openqa.selenium.Dimension;
+import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriverService;
 import org.openqa.selenium.logging.LogEntries;
@@ -26,6 +28,8 @@ import org.openqa.selenium.logging.LoggingPreferences;
 import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
+import org.openqa.selenium.support.ui.ExpectedCondition;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 import underad.blackbox.BlackboxConfiguration;
 import underad.blackbox.core.AdvertMetadata;
@@ -105,9 +109,7 @@ public class ReconstructResource {
 			
 			driver.get(advert.getUrl());
 			
-			// No wait for readystate:
-			// http://stackoverflow.com/questions/15122864/selenium-wait-until-document-is-ready suggests that
-			// WebDriver.get() already waits for document.readyState==complete, and then some. Proof of pudding:
+			waitForReadyStateComplete(driver);
 			if (log.isDebugEnabled()) // as the next line's executeScript is probably not so cheap.
 				log.debug("document.readyState={}", driver.executeScript("return document.readyState;"));
 			
@@ -181,5 +183,15 @@ public class ReconstructResource {
 		driver.manage().window().maximize();
 		
 		return driver;
+	}
+	
+	void waitForReadyStateComplete(WebDriver driver) {
+	    ExpectedCondition<Boolean> pageLoadCondition = new ExpectedCondition<Boolean>() {
+            public Boolean apply(WebDriver driver) {
+                return ((JavascriptExecutor) driver).executeScript("return document.readyState").equals("complete");
+            }
+        };
+	    WebDriverWait wait = new WebDriverWait(driver, 45);
+	    wait.until(pageLoadCondition);
 	}
 }
