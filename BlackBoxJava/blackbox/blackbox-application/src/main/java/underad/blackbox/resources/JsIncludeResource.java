@@ -38,22 +38,6 @@ public class JsIncludeResource {
 	private final AdAugmentDao adAugmentDao;
 	private final PublisherPasswordDao publisherKeyDao;
 	
-	private String getReconstructionPath(long id) {
-		// TODO should use UriInfo.getBaseUriBuilder() as well I think
-		URI reconstructRelUrl = UriBuilder.fromResource(ReconstructResource.class).build(id);
-		String hPath = configuration.getBlackBoxProxyPath();
-		StringBuilder path = new StringBuilder();
-		
-		String rPath = reconstructRelUrl.getPath();
-		
-		if (hPath != null)
-			path.append(hPath, 0, hPath.endsWith("/") ? hPath.length() - 1 : hPath.length());
-		if (rPath != null)
-			path.append(rPath);
-		
-		return path.toString();
-	}
-	
 	/**
 	 * Returns JavaScript code required to:
 	 * 
@@ -95,5 +79,21 @@ public class JsIncludeResource {
 		}
 		
 		return new JsIncludeView(adverts, publisherUnixTimeSecs);
+	}
+
+	private String getReconstructionPath(long id) {
+		// TODO should use UriInfo.getBaseUriBuilder() as well I think
+		URI reconstructRelUrl = UriBuilder.fromResource(ReconstructResource.class).build(id);
+		String hPath = configuration.getBlackBoxProxyPath();
+		StringBuilder path = new StringBuilder();
+		
+		String rPath = reconstructRelUrl.getPath();
+		
+		if (hPath != null)
+			path.append(hPath, 0, hPath.endsWith("/") ? hPath.length() - 1 : hPath.length());
+		if (rPath != null)
+			path.append(rPath);
+		
+		return path.toString();
 	}
 }

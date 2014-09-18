@@ -12,8 +12,10 @@ if (typeof String.prototype.endsWith != 'function') {
 try {
     var blockedAbsXpath = arguments[0];
     var advertRelXpath = arguments[1];
+    var widthWithUnit = arguments[2];
+    var heightWithUnit = arguments[3];
     
-    var out = getInlineStyle(blockedAbsXpath, advertRelXpath);
+    var out = getInlineStyle(blockedAbsXpath, advertRelXpath, widthWithUnit, heightWithUnit);
     console.log("Got inline style. Out=" + out);
     return out;
 } catch (e) {
@@ -24,12 +26,9 @@ try {
 }
 
 // returns blockedAbsElement : WebElement - element found at blockedAbsXpath, but with flattened CSS style info.
-function getInlineStyle(blockedAbsXpath, advertRelXpath) {
+function getInlineStyle(blockedAbsXpath, advertRelXpath, widthWithUnit, heightWithUnit) {
     var blockedElemResult = document.evaluate(blockedAbsXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
     var blockedElem = blockedElemResult.singleNodeValue;
-    var advertElemResult = document.evaluate(advertAbsXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null)
-    var advertElem = advertElemResult.singleNodeValue;
-    console.log("blockedElem="+blockedElem+";advertElem="+advertElem);
     
     var advertAbsXpath = blockedAbsXpath;
     if (!blockedAbsXpath.endsWith('/'))
@@ -38,6 +37,10 @@ function getInlineStyle(blockedAbsXpath, advertRelXpath) {
     	advertRelXpath = advertRelXpath.substring(1);
     advertAbsXpath = advertAbsXpath + advertRelXpath;
     console.log("advertAbsXpath="+advertAbsXpath);
+    
+    var advertElemResult = document.evaluate(advertAbsXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null)
+    var advertElem = advertElemResult.singleNodeValue;
+    console.log("blockedElem="+blockedElem+";advertElem="+advertElem);
     
     // Go through every element between blockedAbsXpath (inclusive) and advertAbsXpath (inclusive).
     // Retrieve associated CSS styling and inline it so it can be returned as a flat HTML.
@@ -56,8 +59,18 @@ function getInlineStyle(blockedAbsXpath, advertRelXpath) {
         	console.log("["+i+"] property set");
         }
         
+        console.log("currentElem="+currentElem+";advertElem="+advertElem);
         if (currentElem == advertElem) {
-            // Advert injected later (all this is to be executed 'offline', prior to the browser requesting the page)
+        	console.log("At advert element. Adding Yoshi.");
+        	// TODO Advert injected later (all this is to be executed 'offline', prior to the browser requesting the page).
+            // Should use /adbrain
+            currentElem.style.width = widthWithUnit;
+        	currentElem.style.height = heightWithUnit;
+        	currentElem.style.backgroundImage = "url('http://img3.wikia.nocookie.net/__cb20130809134512/mario/fr/images/7/75/Yoshi-gymnasticd-yoshi-31522962-900-1203.png')";
+        	currentElem.style.cursor = 'pointer';
+        	currentElem.addEventListener('click', function() {
+              window.location = 'http://en.wikipedia.org/wiki/Yoshi';
+            });
         }
         else {
             var advertPathElem = advertXpathElems[i];

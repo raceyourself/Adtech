@@ -100,13 +100,10 @@ public class ReconstructResource {
 	@GET
 	@Timed
 	public String reconstructAdvert(@PathParam("id") int id) {
-		
 		AdvertMetadata advert = adAugmentDao.getAdvert(id);
-		
 		RemoteWebDriver driver = null;
 		try {
 			driver = newWebDriver();
-			
 			driver.get(advert.getUrl());
 			
 			waitForReadyStateComplete(driver);
@@ -117,12 +114,12 @@ public class ReconstructResource {
 			String scriptContent = Resources.toString(url, Charsets.UTF_8);
 			
 			WebElement htmlFragment = (WebElement) driver.executeScript(
-					scriptContent, advert.getBlockedAbsXpath(), advert.getAdvertRelXpath());
+					scriptContent, advert.getBlockedAbsXpath(), advert.getAdvertRelXpath(),
+					advert.getWidthWithUnit(), advert.getHeightWithUnit());
 			return htmlFragment.getAttribute("outerHTML"); // outerHTML doesn't work in FF apparently
 		} catch (IOException e) {
 			throw new WebApplicationException(Status.INTERNAL_SERVER_ERROR);
-		}
-		finally {
+		} finally {
 			if (driver != null) {
 				propagateLogMessages(driver);
 		        driver.quit();
