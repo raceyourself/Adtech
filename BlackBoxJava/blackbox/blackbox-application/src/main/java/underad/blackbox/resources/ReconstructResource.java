@@ -3,7 +3,8 @@ package underad.blackbox.resources;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.util.List;
+import java.util.Date;
+import java.util.logging.Level;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -15,11 +16,18 @@ import javax.ws.rs.core.Response.Status;
 
 import lombok.extern.slf4j.Slf4j;
 
+import org.joda.time.DateTime;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriverService;
+import org.openqa.selenium.logging.LogEntries;
+import org.openqa.selenium.logging.LogEntry;
+import org.openqa.selenium.logging.LogType;
+import org.openqa.selenium.logging.LoggingPreferences;
+import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
+import org.openqa.selenium.remote.SessionId;
 
 import underad.blackbox.BlackboxConfiguration;
 import underad.blackbox.core.AdvertMetadata;
@@ -110,9 +118,38 @@ public class ReconstructResource {
 			throw new WebApplicationException(Status.INTERNAL_SERVER_ERROR);
 		}
 		finally {
-			if (driver != null)
-				driver.quit();
+			if (driver != null) {
+				propagateLogMessages(driver);
+		        driver.quit();
+			}
 		}
+	}
+	
+	/**
+	 * Propagate messages written to chromedriver's console log to server log.
+	 */
+	private void propagateLogMessages(RemoteWebDriver webDriver) {
+		LogEntries logEntries = webDriver.manage().logs().get(LogType.BROWSER);
+		for (LogEntry entry : logEntries) {
+        	propagateLogMessage(entry);
+        }
+	}
+	
+	private void propagateLogMessage(LogEntry entry) {
+		Level level = entry.getLevel();
+    	DateTime ts = new DateTime(entry.getTimestamp());
+    	if (Level.SEVERE.equals(level)) {
+    		log.error("From Selenium/chromedriver at {}: {}", ts, entry.getMessage());
+    	}
+    	else if (Level.WARNING.equals(level)) {
+    		log.warn("From Selenium/chromedriver at {}: {}", ts, entry.getMessage());
+    	}
+    	else if (Level.INFO.equals(level)) {
+    		log.warn("From Selenium/chromedriver at {}: {}", ts, entry.getMessage());
+    	}
+    	else {
+    		log.debug("From Selenium/chromedriver at {}, {}: {}", ts, level, entry.getMessage());
+    	}
 	}
 	
 	private RemoteWebDriver newWebDriver() {
@@ -120,6 +157,10 @@ public class ReconstructResource {
 		log.debug("Chrome profile dir: {}", userDataDir.getAbsolutePath());
 		
 		DesiredCapabilities capabilities = DesiredCapabilities.chrome();
+		LoggingPreferences logPrefs = new LoggingPreferences();
+		logPrefs.enable(LogType.BROWSER, Level.ALL);
+		logPrefs.enable(LogType.DRIVER, Level.WARNING);
+		capabilities.setCapability(CapabilityType.LOGGING_PREFS, logPrefs);
 		
 		// TODO add ad detector plugin; use it to determine advert positioning.
 		//options.addExtensions(new File("/path/to/extension.crx"));
@@ -131,7 +172,14 @@ public class ReconstructResource {
 				"--use-mock-keychain",
 				"--disable-web-security",
 				"user-data-dir=" + userDataDir.getAbsolutePath()));
-		RemoteWebDriver driver = new RemoteWebDriver(cds.getUrl(), capabilities);
+		RemoteWebDriver driver = new RemoteWebDriver(cds.getUrl(), capabilities)/* {
+			@Override
+			public void log(SessionId sessionId, String commandName, Object toLog, RemoteWebDriver.When when) {
+				log.info("From Selenium: sessionId={}, commandName={}, toLog={}, when={}",
+						sessionId, commandName, toLog, when);
+				super.log(sessionId, commandName, toLog, when);
+			}
+		}*/;
 		
 		// The statements below should be redundant given the startup arg --start-maximized.
 		driver.manage().window().setSize(new Dimension(1920, 1200));

@@ -25,10 +25,10 @@ try {
 
 // returns blockedAbsElement : WebElement - element found at blockedAbsXpath, but with flattened CSS style info.
 function getInlineStyle(blockedAbsXpath, advertRelXpath) {
-    var blockedElem = document.evaluate(blockedAbsXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null)
-    	.singleNodeValue;
-    var advertElem = document.evaluate(advertAbsXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null)
-    	.singleNodeValue;
+    var blockedElemResult = document.evaluate(blockedAbsXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+    var blockedElem = blockedElemResult.singleNodeValue;
+    var advertElemResult = document.evaluate(advertAbsXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null)
+    var advertElem = advertElemResult.singleNodeValue;
     console.log("blockedElem="+blockedElem+";advertElem="+advertElem);
     
     var advertAbsXpath = blockedAbsXpath;
@@ -61,8 +61,9 @@ function getInlineStyle(blockedAbsXpath, advertRelXpath) {
         else {
             var advertPathElem = advertXpathElems[i];
             console.log("["+i+"] pre xpath lookup. advertPathElem="+advertPathElem+";currentElem="+currentElem);
-            currentElem = document
-            	.evaluate(advertPathElem, currentElem, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+            var currentElemResult = document
+            	.evaluate(advertPathElem, currentElem, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+            currentElem = currentElemResult.singleNodeValue;
             console.log("["+i+"] post xpath lookup. advertPathElem="+advertPathElem+";currentElem="+currentElem);
         }
     }
