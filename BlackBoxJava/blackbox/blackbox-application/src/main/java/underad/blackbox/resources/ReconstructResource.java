@@ -134,8 +134,8 @@ public class ReconstructResource {
 			String newUrl = Crypto.encrypt(password, currentTs, "/yoshi.png");
 			output = output.replace("31415em", advert.getWidthWithUnit());
 			output = output.replace("926535em", advert.getHeightWithUnit());
-//			output = output.replace(advert.getUrl() + "___REPLACEME_URL___", newUrl);
-			output = output.replace(advert.getUrl() + "___REPLACEME_URL___", "http://img3.wikia.nocookie.net/__cb20130809134512/mario/fr/images/7/75/Yoshi-gymnasticd-yoshi-31522962-900-1203.png");
+			output = output.replace(advert.getUrl() + "___REPLACEME_URL___", newUrl);
+//			output = output.replace(advert.getUrl() + "___REPLACEME_URL___", "http://img3.wikia.nocookie.net/__cb20130809134512/mario/fr/images/7/75/Yoshi-gymnasticd-yoshi-31522962-900-1203.png");
 			
 			return output;
 		} catch (IOException e) {

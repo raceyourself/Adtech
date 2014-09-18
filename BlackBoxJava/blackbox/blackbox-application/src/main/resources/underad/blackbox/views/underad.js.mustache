@@ -33,6 +33,7 @@ function recreate(reconstructUrl, e) {
       console.log("Got recreation response with code " + httpObj.status + ": " + httpObj.responseText);
       if (httpObj.status >= 200 && httpObj.status < 400) {
         e.innerHTML = httpObj.responseText;
+        // hide the evidence of this once being an ad
         e.id = '';
         e.className = '';
       }
