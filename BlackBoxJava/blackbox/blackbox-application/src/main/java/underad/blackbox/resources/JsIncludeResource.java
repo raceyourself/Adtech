@@ -81,7 +81,6 @@ public class JsIncludeResource {
 		
 		// Get appropriate key for encrypting paths.
 		String password = publisherKeyDao.getPassword(url.toString(), publisherTs);
-//		log.debug("TODO delete me once stuff works!!!! url={}nostril={}", url, password);
 		
 		for (AdvertMetadata advert : adverts) {
 			String reconstructUrl = getReconstructionPath(advert.getId());

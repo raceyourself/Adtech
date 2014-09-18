@@ -3,7 +3,6 @@ package underad.blackbox.resources;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.util.Date;
 import java.util.logging.Level;
 
 import javax.ws.rs.GET;
@@ -27,7 +26,6 @@ import org.openqa.selenium.logging.LoggingPreferences;
 import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
-import org.openqa.selenium.remote.SessionId;
 
 import underad.blackbox.BlackboxConfiguration;
 import underad.blackbox.core.AdvertMetadata;
@@ -52,11 +50,17 @@ public class ReconstructResource {
 	public ReconstructResource(BlackboxConfiguration configuration, AdAugmentDao adAugmentDao) throws IOException {
 		this.configuration = configuration;
 		this.adAugmentDao = adAugmentDao;
-				
+		
 		File chromeDriverPath = configuration.getChromeDriverPath();
 		if (chromeDriverPath != null) // not required as may be set in path
 			System.setProperty("webdriver.chrome.driver", chromeDriverPath.getAbsolutePath());
 		
+		// TODO instantiate Xvfb or similar directly. Currently this relies on manually running this from
+		// command line:
+		// /usr/bin/Xvfb :1 -screen 5 1920x1200x24 &
+		// Xvfb may fail and need restarting - so not a production-ready solution as-is.
+		// http://stackoverflow.com/questions/13127291/running-selenium-tests-with-chrome-on-ubuntu-in-a-headless-environment
+		// https://code.google.com/p/selenium/issues/detail?id=2673
 		cds = new ChromeDriverService.Builder()
 			.usingDriverExecutable(chromeDriverPath)
 			.usingAnyFreePort()
@@ -95,18 +99,17 @@ public class ReconstructResource {
 		
 		AdvertMetadata advert = adAugmentDao.getAdvert(id);
 		
-		// TODO use virtual framebuffer rather than popping up a browser each time.
-		// http://stackoverflow.com/questions/13127291/running-selenium-tests-with-chrome-on-ubuntu-in-a-headless-environment
-		// https://code.google.com/p/selenium/issues/detail?id=2673
-		
 		RemoteWebDriver driver = null;
 		try {
 			driver = newWebDriver();
 			
+			driver.get(advert.getUrl());
+			
 			// No wait for readystate:
 			// http://stackoverflow.com/questions/15122864/selenium-wait-until-document-is-ready suggests that
-			// WebDriver.get() already waits for document.readyState==complete, and then some.
-			driver.get(advert.getUrl());
+			// WebDriver.get() already waits for document.readyState==complete, and then some. Proof of pudding:
+			if (log.isDebugEnabled()) // as the next line's executeScript is probably not so cheap.
+				log.debug("document.readyState={}", driver.executeScript("return document.readyState;"));
 			
 			URL url = Resources.getResource("underad/blackbox/resources/chrome_resolve_styling.js");
 			String scriptContent = Resources.toString(url, Charsets.UTF_8);
@@ -165,21 +168,13 @@ public class ReconstructResource {
 		// TODO add ad detector plugin; use it to determine advert positioning.
 		//options.addExtensions(new File("/path/to/extension.crx"));
 		capabilities.setCapability("chrome.switches", ImmutableList.of(
-				"--start-maximized",
 				"--disable-java",
 				"--incognito",
 				"--disable-extensions", // TODO when linking in Ad Detector extension, work out how to disable the others
 				"--use-mock-keychain",
 				"--disable-web-security",
 				"user-data-dir=" + userDataDir.getAbsolutePath()));
-		RemoteWebDriver driver = new RemoteWebDriver(cds.getUrl(), capabilities)/* {
-			@Override
-			public void log(SessionId sessionId, String commandName, Object toLog, RemoteWebDriver.When when) {
-				log.info("From Selenium: sessionId={}, commandName={}, toLog={}, when={}",
-						sessionId, commandName, toLog, when);
-				super.log(sessionId, commandName, toLog, when);
-			}
-		}*/;
+		RemoteWebDriver driver = new RemoteWebDriver(cds.getUrl(), capabilities);
 		
 		// The statements below should be redundant given the startup arg --start-maximized.
 		driver.manage().window().setSize(new Dimension(1920, 1200));

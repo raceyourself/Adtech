@@ -35,8 +35,6 @@ public class Crypto {
 	private static final IvParameterSpec INIT_VECTOR_PARAM_SPEC;
 	// 600,000ms = 600s = 10 mins
 	private static final Duration KEY_DURATION = new Duration(600000);
-	
-	private static final byte[] OPENSSL_MAGIC_BYTES = "Salted__".getBytes();
 	/**
 	 * Salt is mandatory, but we don't want it to be dynamic as that would break caching. We're changing the keys
 	 * anyway over time - see KEY_DURATION.
@@ -88,13 +86,12 @@ public class Crypto {
 			// Need key to have algorithm set to AES, hence one SecretKey (from generateSecret()) being used to make another
 			key = new SecretKeySpec(factory.generateSecret(spec).getEncoded(), "AES");
 			
-			// FIXME HAXXX can't get PBKDF2-derived keys consistent across PHP and Perl, so doing something more stupid
+			// FIXME HAXXX can't get PBKDF2-derived keys consistent across Java/PHP/Perl, so doing something more stupid
 			String dumbKey = dumbKeyDerivation(periodedPassword);
 //			log.debug("k=" + dumbKey);
 			key = new SecretKeySpec(dumbKey.getBytes(), "AES");
 			
 			CIPHER.init(cipherMode, key, INIT_VECTOR_PARAM_SPEC);
-//			CIPHER.init(cipherMode, key);
 			byte[] cipherTextBytes = CIPHER.doFinal(input);
 			
 			return cipherTextBytes;
