@@ -21,6 +21,7 @@ import javax.crypto.spec.SecretKeySpec;
 import lombok.extern.slf4j.Slf4j;
 
 import org.apache.commons.codec.binary.Base64;
+import org.joda.time.DateTime;
 import org.joda.time.Duration;
 
 @Slf4j
@@ -62,21 +63,21 @@ public class Crypto {
 		}
 	}
 	
-	public static String encrypt(String password, long publisherUnixTimeMillis, String plainText) {
+	public static String encrypt(String password, DateTime publisherTs, String plainText) {
 		byte[] plainTextBytes = plainText.getBytes(CHARSET);
-	    byte[] cipherTextBytes = crypt(password, publisherUnixTimeMillis, plainTextBytes, Cipher.ENCRYPT_MODE);
+	    byte[] cipherTextBytes = crypt(password, publisherTs, plainTextBytes, Cipher.ENCRYPT_MODE);
 	    return new String(Base64.encodeBase64(cipherTextBytes), CHARSET);
 	}
 	
-	public static String decrypt(String password, long publisherUnixTimeMillis, String cipherText) {
+	public static String decrypt(String password, DateTime publisherTs, String cipherText) {
 		byte[] cipherTextBytes = Base64.decodeBase64(cipherText.getBytes(CHARSET));
 		
-		byte[] originalBytes = crypt(password, publisherUnixTimeMillis, cipherTextBytes, Cipher.DECRYPT_MODE);
+		byte[] originalBytes = crypt(password, publisherTs, cipherTextBytes, Cipher.DECRYPT_MODE);
 		return new String(originalBytes, CHARSET);
 	}
 	
-	private static byte[] crypt(String password, long publisherUnixTimeMillis, byte[] input, int cipherMode) {
-		long period = publisherUnixTimeMillis / KEY_DURATION.getMillis();
+	private static byte[] crypt(String password, DateTime publisherTs, byte[] input, int cipherMode) {
+		long period = publisherTs.getMillis() / KEY_DURATION.getMillis();
 		String periodedPassword = period + password;
 		SecretKey key = null;
 		try {

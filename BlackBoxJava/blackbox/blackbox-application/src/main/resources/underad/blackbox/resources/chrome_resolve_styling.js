@@ -14,8 +14,9 @@ try {
     var advertRelXpath = arguments[1];
     var widthWithUnit = arguments[2];
     var heightWithUnit = arguments[3];
+    var url = arguments[4];
     
-    var out = getInlineStyle(blockedAbsXpath, advertRelXpath, widthWithUnit, heightWithUnit);
+    var out = getInlineStyle(blockedAbsXpath, advertRelXpath, widthWithUnit, heightWithUnit, url);
     console.log("Got inline style. Out=" + out);
     return out;
 } catch (e) {
@@ -26,7 +27,7 @@ try {
 }
 
 // returns blockedAbsElement : WebElement - element found at blockedAbsXpath, but with flattened CSS style info.
-function getInlineStyle(blockedAbsXpath, advertRelXpath, widthWithUnit, heightWithUnit) {
+function getInlineStyle(blockedAbsXpath, advertRelXpath, widthWithUnit, heightWithUnit, url) {
     var blockedElemResult = document.evaluate(blockedAbsXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
     var blockedElem = blockedElemResult.singleNodeValue;
     
@@ -50,14 +51,18 @@ function getInlineStyle(blockedAbsXpath, advertRelXpath, widthWithUnit, heightWi
     var currentElem = blockedElem;
     for (var i = 0; i <= advertXpathElems.length; i++) {
     	console.log("["+i+"] currentElem="+currentElem);
+    	
+    	// Inline all style information - can't use id/className as they're used by adblock.
     	var style = getStyle(currentElem);
         console.log("["+i+"] style for "+currentElem+" is "+style);
-    	
-        currentElem.removeAttribute('style');
+    	currentElem.removeAttribute('style');
         for (var key in style) {
         	currentElem.style.setProperty(key, style[key]);
         	console.log("["+i+"] property set");
         }
+        // Now remove the id/className to stop adblock from being able to block these elements.
+        currentElem.id = '';
+        currentElem.className = '';
         
         console.log("currentElem="+currentElem+";advertElem="+advertElem);
         if (currentElem == advertElem) {
@@ -66,7 +71,8 @@ function getInlineStyle(blockedAbsXpath, advertRelXpath, widthWithUnit, heightWi
             // Should use /adbrain
             currentElem.style.width = widthWithUnit;
         	currentElem.style.height = heightWithUnit;
-        	currentElem.style.backgroundImage = "url('http://img3.wikia.nocookie.net/__cb20130809134512/mario/fr/images/7/75/Yoshi-gymnasticd-yoshi-31522962-900-1203.png')";
+        	currentElem.style.backgroundColor = '#a0a000';
+        	currentElem.style.backgroundImage = "url('" + url + "')";
         	currentElem.style.cursor = 'pointer';
         	currentElem.addEventListener('click', function() {
               window.location = 'http://en.wikipedia.org/wiki/Yoshi';

@@ -33,6 +33,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 
 import underad.blackbox.BlackboxConfiguration;
 import underad.blackbox.core.AdvertMetadata;
+import underad.blackbox.core.util.Crypto;
 import underad.blackbox.jdbi.AdAugmentDao;
 
 import com.codahale.metrics.annotation.Timed;
@@ -113,9 +114,14 @@ public class ReconstructResource {
 			URL url = Resources.getResource("underad/blackbox/resources/chrome_resolve_styling.js");
 			String scriptContent = Resources.toString(url, Charsets.UTF_8);
 			
+			DateTime currentTs = new DateTime();
+//			String password = publisherKeyDao.getPassword(advert.getUrl().toString(), currentTs);
+//			String newUrl = Crypto.encrypt(password, currentTs, "");
+			String newUrl = "http://img3.wikia.nocookie.net/__cb20130809134512/mario/fr/images/7/75/Yoshi-gymnasticd-yoshi-31522962-900-1203.png";
+			
 			WebElement htmlFragment = (WebElement) driver.executeScript(
 					scriptContent, advert.getBlockedAbsXpath(), advert.getAdvertRelXpath(),
-					advert.getWidthWithUnit(), advert.getHeightWithUnit());
+					advert.getWidthWithUnit(), advert.getHeightWithUnit(), newUrl);
 			return htmlFragment.getAttribute("outerHTML"); // outerHTML doesn't work in FF apparently
 		} catch (IOException e) {
 			throw new WebApplicationException(Status.INTERNAL_SERVER_ERROR);

@@ -53,8 +53,7 @@ public class JsIncludeResource {
 	@Timed
 	public JsIncludeView getInclude(@QueryParam("url") URL url, @QueryParam("unixtime") long publisherUnixTimeSecs) {
 		// DateTime(long) expects millis since Unix epoch, not seconds.
-		long publisherUnixTimeMillis = publisherUnixTimeSecs * 1000;
-		DateTime publisherTs = new DateTime(publisherUnixTimeMillis);
+		DateTime publisherTs = new DateTime(publisherUnixTimeSecs * 1000);
 	    
 	    // Determine what adverts need obfuscating.
 		List<AdvertMetadata> adverts = ImmutableList.copyOf(adAugmentDao.getAdverts(url.toString(), publisherTs));
@@ -72,7 +71,7 @@ public class JsIncludeResource {
 			String reconstructUrl = getReconstructionPath(advert.getId());
 			// The only URL we need to encrypt in the blackbox is the reconstruct URL that provides adblock-proof ad
 			// HTML.
-			String reconstructUrlCipherText = Crypto.encrypt(password, publisherUnixTimeMillis, reconstructUrl);
+			String reconstructUrlCipherText = Crypto.encrypt(password, publisherTs, reconstructUrl);
 			log.debug("Reconstruction URL for ad ID {}: {} => {}", advert.getId(), reconstructUrl,
 					reconstructUrlCipherText);
 			advert.setEncryptedReconstructUrl(reconstructUrlCipherText);
