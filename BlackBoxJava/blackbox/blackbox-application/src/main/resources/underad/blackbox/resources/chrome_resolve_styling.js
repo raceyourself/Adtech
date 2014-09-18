@@ -12,11 +12,8 @@ if (typeof String.prototype.endsWith != 'function') {
 try {
     var blockedAbsXpath = arguments[0];
     var advertRelXpath = arguments[1];
-    var widthWithUnit = arguments[2];
-    var heightWithUnit = arguments[3];
-    var url = arguments[4];
     
-    var out = getInlineStyle(blockedAbsXpath, advertRelXpath, widthWithUnit, heightWithUnit, url);
+    var out = getInlineStyle(blockedAbsXpath, advertRelXpath);
     console.log("Got inline style. Out=" + out);
     return out;
 } catch (e) {
@@ -27,7 +24,7 @@ try {
 }
 
 // returns blockedAbsElement : WebElement - element found at blockedAbsXpath, but with flattened CSS style info.
-function getInlineStyle(blockedAbsXpath, advertRelXpath, widthWithUnit, heightWithUnit, url) {
+function getInlineStyle(blockedAbsXpath, advertRelXpath) {
     var blockedElemResult = document.evaluate(blockedAbsXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
     var blockedElem = blockedElemResult.singleNodeValue;
     
@@ -69,14 +66,17 @@ function getInlineStyle(blockedAbsXpath, advertRelXpath, widthWithUnit, heightWi
         	console.log("At advert element. Adding Yoshi.");
         	// TODO Advert injected later (all this is to be executed 'offline', prior to the browser requesting the page).
             // Should use /adbrain
-            currentElem.style.width = widthWithUnit;
-        	currentElem.style.height = heightWithUnit;
-        	currentElem.style.backgroundColor = '#a0a000';
-        	currentElem.style.backgroundImage = "url('" + url + "')";
+            currentElem.style.width = '31415em'; // placeholder value (pi)
+        	currentElem.style.height = '926535em'; // placeholder value (pi)
+        	currentElem.style.backgroundColor = '#a0a000'; // TODO temporary for visibility; remove me
+        	currentElem.style.backgroundImage = "url('___REPLACEME_URL___')";
         	currentElem.style.cursor = 'pointer';
-        	currentElem.addEventListener('click', function() {
-              window.location = 'http://en.wikipedia.org/wiki/Yoshi';
-            });
+//        	currentElem.addEventListener('click', function() {
+//              window.location = 'http://en.wikipedia.org/wiki/Yoshi';
+//            });
+        	currentElem.onclick = function() {
+        		window.location = 'http://en.wikipedia.org/wiki/Yoshi';
+        	}
         }
         else {
             var advertPathElem = advertXpathElems[i];

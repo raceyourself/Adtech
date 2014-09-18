@@ -49,12 +49,12 @@ public class BlackboxApplication extends Application<BlackboxConfiguration> {
 	    DBI jdbi = factory.build(env, config.getDataSourceFactory(), "database");
 	    
 		AdAugmentDao adAugmentDao = jdbi.onDemand(AdAugmentDao.class);
-		PublisherPasswordDao publisherKeyDao = jdbi.onDemand(PublisherPasswordDao.class);
+		PublisherPasswordDao publisherPasswordDao = jdbi.onDemand(PublisherPasswordDao.class);
 		
-		ReconstructResource reconstructResource = new ReconstructResource(config, adAugmentDao);
+		ReconstructResource reconstructResource = new ReconstructResource(config, adAugmentDao, publisherPasswordDao);
 		env.jersey().register(reconstructResource);
 
-		JsIncludeResource jsIncludeResource = new JsIncludeResource(config, adAugmentDao, publisherKeyDao);
+		JsIncludeResource jsIncludeResource = new JsIncludeResource(config, adAugmentDao, publisherPasswordDao);
 		env.jersey().register(jsIncludeResource);
 		
 		IncludeJsHealthCheck includeJsHealthCheck = new IncludeJsHealthCheck();

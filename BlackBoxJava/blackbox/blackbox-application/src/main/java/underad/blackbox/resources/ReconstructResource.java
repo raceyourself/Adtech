@@ -35,6 +35,7 @@ import underad.blackbox.BlackboxConfiguration;
 import underad.blackbox.core.AdvertMetadata;
 import underad.blackbox.core.util.Crypto;
 import underad.blackbox.jdbi.AdAugmentDao;
+import underad.blackbox.jdbi.PublisherPasswordDao;
 
 import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Charsets;
@@ -51,10 +52,13 @@ public class ReconstructResource {
 	private final BlackboxConfiguration configuration;
 	private final AdAugmentDao adAugmentDao;
 	private final ChromeDriverService cds;
+	private final PublisherPasswordDao publisherPasswordDao;
 
-	public ReconstructResource(BlackboxConfiguration configuration, AdAugmentDao adAugmentDao) throws IOException {
+	public ReconstructResource(BlackboxConfiguration configuration, AdAugmentDao adAugmentDao,
+			PublisherPasswordDao publisherPasswordDao) throws IOException {
 		this.configuration = configuration;
 		this.adAugmentDao = adAugmentDao;
+		this.publisherPasswordDao = publisherPasswordDao;
 		
 		File chromeDriverPath = configuration.getChromeDriverPath();
 		if (chromeDriverPath != null) // not required as may be set in path
@@ -104,6 +108,8 @@ public class ReconstructResource {
 		AdvertMetadata advert = adAugmentDao.getAdvert(id);
 		RemoteWebDriver driver = null;
 		try {
+			// START OF EXPENSIVE BIT THAT SHOULD BE CACHED
+			
 			driver = newWebDriver();
 			driver.get(advert.getUrl());
 			
@@ -114,15 +120,24 @@ public class ReconstructResource {
 			URL url = Resources.getResource("underad/blackbox/resources/chrome_resolve_styling.js");
 			String scriptContent = Resources.toString(url, Charsets.UTF_8);
 			
-			DateTime currentTs = new DateTime();
-//			String password = publisherKeyDao.getPassword(advert.getUrl().toString(), currentTs);
-//			String newUrl = Crypto.encrypt(password, currentTs, "");
-			String newUrl = "http://img3.wikia.nocookie.net/__cb20130809134512/mario/fr/images/7/75/Yoshi-gymnasticd-yoshi-31522962-900-1203.png";
 			
 			WebElement htmlFragment = (WebElement) driver.executeScript(
-					scriptContent, advert.getBlockedAbsXpath(), advert.getAdvertRelXpath(),
-					advert.getWidthWithUnit(), advert.getHeightWithUnit(), newUrl);
-			return htmlFragment.getAttribute("outerHTML"); // outerHTML doesn't work in FF apparently
+					scriptContent, advert.getBlockedAbsXpath(), advert.getAdvertRelXpath());
+			String output = htmlFragment.getAttribute("outerHTML"); // outerHTML doesn't work in FF apparently
+			
+			// END OF EXPENSIVE BIT
+			
+			// Inserting advert image needs to be done outside of the expensive reconstruction work, so that we can
+			// cache the reconstructed HTML and overlay it with a freshly-retrieved advert (cheap).
+			DateTime currentTs = new DateTime();
+			String password = publisherPasswordDao.getPassword(advert.getUrl().toString(), currentTs);
+			String newUrl = Crypto.encrypt(password, currentTs, "/yoshi.png");
+			output = output.replace("31415em", advert.getWidthWithUnit());
+			output = output.replace("926535em", advert.getHeightWithUnit());
+//			output = output.replace(advert.getUrl() + "___REPLACEME_URL___", newUrl);
+			output = output.replace(advert.getUrl() + "___REPLACEME_URL___", "http://img3.wikia.nocookie.net/__cb20130809134512/mario/fr/images/7/75/Yoshi-gymnasticd-yoshi-31522962-900-1203.png");
+			
+			return output;
 		} catch (IOException e) {
 			throw new WebApplicationException(Status.INTERNAL_SERVER_ERROR);
 		} finally {

@@ -36,7 +36,7 @@ public class JsIncludeResource {
 	
 	private final BlackboxConfiguration configuration;
 	private final AdAugmentDao adAugmentDao;
-	private final PublisherPasswordDao publisherKeyDao;
+	private final PublisherPasswordDao publisherPasswordDao;
 	
 	/**
 	 * Returns JavaScript code required to:
@@ -65,7 +65,7 @@ public class JsIncludeResource {
 		}
 		
 		// Get appropriate key for encrypting paths.
-		String password = publisherKeyDao.getPassword(url.toString(), publisherTs);
+		String password = publisherPasswordDao.getPassword(url.toString(), publisherTs);
 		
 		for (AdvertMetadata advert : adverts) {
 			String reconstructUrl = getReconstructionPath(advert.getId());
