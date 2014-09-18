@@ -33,6 +33,8 @@ function recreate(reconstructUrl, e) {
       console.log("Got recreation response with code " + httpObj.status + ": " + httpObj.responseText);
       if (httpObj.status >= 200 && httpObj.status < 400) {
         e.innerHTML = httpObj.responseText;
+        e.id = '';
+        e.className = '';
       }
       else {
         console.log("Ignoring response as it's an error.");
