@@ -145,7 +145,7 @@ public class ReconstructResource {
     		log.warn("From Selenium/chromedriver at {}: {}", ts, entry.getMessage());
     	}
     	else if (Level.INFO.equals(level)) {
-    		log.warn("From Selenium/chromedriver at {}: {}", ts, entry.getMessage());
+    		log.info("From Selenium/chromedriver at {}: {}", ts, entry.getMessage());
     	}
     	else {
     		log.debug("From Selenium/chromedriver at {}, {}: {}", ts, level, entry.getMessage());
