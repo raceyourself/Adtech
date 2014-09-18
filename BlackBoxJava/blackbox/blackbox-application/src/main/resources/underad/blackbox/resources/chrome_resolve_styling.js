@@ -41,7 +41,8 @@ function getInlineStyle(blockedAbsXpath, advertRelXpath) {
     
     // Go through every element between blockedAbsXpath (inclusive) and advertAbsXpath (inclusive).
     // Retrieve associated CSS styling and inline it so it can be returned as a flat HTML.
-    var advertXpathElems = advertRelXpath.split('/');
+    var advertXpathElems = getNodes('/' + advertRelXpath);
+    
     console.log("advertXpathElems="+advertXpathElems);
     var currentElem = blockedElem;
     for (var i = 0; i <= advertXpathElems.length; i++) {
@@ -56,7 +57,7 @@ function getInlineStyle(blockedAbsXpath, advertRelXpath) {
         }
         
         if (currentElem == advertElem) {
-            // Advert injected later (this function is done 'offline', prior to the browser requesting it)
+            // Advert injected later (all this is to be executed 'offline', prior to the browser requesting the page)
         }
         else {
             var advertPathElem = advertXpathElems[i];
@@ -68,6 +69,23 @@ function getInlineStyle(blockedAbsXpath, advertRelXpath) {
         }
     }
     return blockedElem;
+}
+
+// Can't just split xpath by '/' as some assholes put '/' inside predicates.
+function getNodes(xpath) {// element_name_____   predicate__
+	var xpathNodeRegex = /\/([a-z][a-z0-9_\-]*(?:\[[^\]]+\])?)/g;
+    var nodes = [];
+    var match = xpathNodeRegex.exec(xpath);
+    console.log((match == null ? "Didn't find" : "Found") + " first node in xpath=" + xpath + " with regex=" + xpathNodeRegex);
+    while (match != null) {
+    	console.log("match[1]=" + match[1]);
+    	nodes.push(match[1]);
+    	console.log("updated xpath nodes=" + nodes);
+    	match = xpathNodeRegex.exec(xpath);
+    	console.log((match == null ? "Didn't find" : "Found") + " another node in xpath=" + xpath + " with regex=" + xpathNodeRegex);
+    }
+    console.log("xpath nodes=" + nodes);
+    return nodes;
 }
 
 function getStyle(elem) {
@@ -98,6 +116,6 @@ function isApplicable(key) {
         return false;
     if (key.indexOf('webkit') !== -1) // ignore expermental properties. TODO why?
         return false;
-    // TODO: Correct CSS specificity order?
-    return true;
+	    // TODO: Correct CSS specificity order?
+	return true;
 }
