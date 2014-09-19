@@ -128,22 +128,22 @@ public class ReconstructResource {
 			
 			// Inserting advert image needs to be done outside of the expensive reconstruction work, so that we can
 			// cache the reconstructed HTML and overlay it with a freshly-retrieved advert (cheap).
+			// TODO what if the advert comes from a third party?
 			DateTime currentTs = new DateTime();
 			String password = publisherPasswordDao.getPassword(advert.getUrl().toString(), currentTs);
 			String newUrl = Crypto.encrypt(password, currentTs, "/yoshi.png");
 			output = output.replace("31415em", advert.getWidthWithUnit());
 			output = output.replace("926535em", advert.getHeightWithUnit());
-			output = output.replace(
-					advert.getUrl() + "___REPLACEME_URL___",
+			output = output.replace("___REPLACEME_IMGURL___",
 					"/assets/" + newUrl + "?" + (currentTs.getMillis() / 1000));
-//			output = output.replace(advert.getUrl() + "___REPLACEME_URL___", "http://img3.wikia.nocookie.net/__cb20130809134512/mario/fr/images/7/75/Yoshi-gymnasticd-yoshi-31522962-900-1203.png");
+			output = output.replace("http://replace.me/linkurl", "http://en.wikipedia.org/wiki/Yoshi");
 			
 			return output;
 		} catch (IOException e) {
 			throw new WebApplicationException(Status.INTERNAL_SERVER_ERROR);
 		} finally {
 			if (driver != null) {
-				propagateLogMessages(driver);
+				propagateBrowserLogMessagesToServerLog(driver);
 		        driver.quit();
 			}
 		}
@@ -152,7 +152,7 @@ public class ReconstructResource {
 	/**
 	 * Propagate messages written to chromedriver's console log to server log.
 	 */
-	private void propagateLogMessages(RemoteWebDriver webDriver) {
+	private void propagateBrowserLogMessagesToServerLog(RemoteWebDriver webDriver) {
 		LogEntries logEntries = webDriver.manage().logs().get(LogType.BROWSER);
 		for (LogEntry entry : logEntries) {
         	propagateLogMessage(entry);

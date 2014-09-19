@@ -64,19 +64,25 @@ function getInlineStyle(blockedAbsXpath, advertRelXpath) {
         console.log("currentElem="+currentElem+";advertElem="+advertElem);
         if (currentElem == advertElem) {
         	console.log("At advert element. Adding Yoshi.");
-        	// TODO Advert injected later (all this is to be executed 'offline', prior to the browser requesting the page).
-            // Should use /adbrain
-            currentElem.style.width = '31415em'; // placeholder value (pi)
-        	currentElem.style.height = '926535em'; // placeholder value (pi)
-        	currentElem.style.backgroundColor = '#a0a000'; // TODO temporary for visibility; remove me
-        	currentElem.style.backgroundImage = "url('___REPLACEME_URL___')";
-        	currentElem.style.cursor = 'pointer';
-//        	currentElem.addEventListener('click', function() {
-//              window.location = 'http://en.wikipedia.org/wiki/Yoshi';
-//            });
-        	currentElem.onclick = function() {
-        		window.location = 'http://en.wikipedia.org/wiki/Yoshi';
-        	}
+        	// Advert injected later (all this is to be executed 'offline', prior to the browser requesting the page).
+            // So instead, we put some placeholders for easy replacement.
+        	
+        	currentElem.style.width = 0;
+        	currentElem.style.height = 0;
+        	
+        	// Make a fresh div as a sibling of the existing element, as existing ad element might not be of the right
+        	// type (e.g. can't give iframe an onclick listener).
+        	var newA = document.createElement("a");
+        	currentElem.parentNode.insertBefore(newA, currentElem.nextSibling);
+        	newA.href = 'http://replace.me/linkurl';
+        	
+        	var newImg = document.createElement("img");
+        	newImg.src = "___REPLACEME_IMGURL___";
+        	newImg.style.width = "31415em"; // placeholder value (pi)
+        	newImg.style.height = '926535em'; // placeholder value (pi)
+        	newA.appendChild(newImg);
+        	
+        	newImg.style.backgroundColor = '#a0a000'; // TODO temporary bodge for visibility; remove me
         }
         else {
             var advertPathElem = advertXpathElems[i];
