@@ -120,7 +120,6 @@ public class ReconstructResource {
 			URL url = Resources.getResource("underad/blackbox/resources/chrome_resolve_styling.js");
 			String scriptContent = Resources.toString(url, Charsets.UTF_8);
 			
-			
 			WebElement htmlFragment = (WebElement) driver.executeScript(
 					scriptContent, advert.getBlockedAbsXpath(), advert.getAdvertRelXpath());
 			String output = htmlFragment.getAttribute("outerHTML"); // outerHTML doesn't work in FF apparently
@@ -134,7 +133,9 @@ public class ReconstructResource {
 			String newUrl = Crypto.encrypt(password, currentTs, "/yoshi.png");
 			output = output.replace("31415em", advert.getWidthWithUnit());
 			output = output.replace("926535em", advert.getHeightWithUnit());
-			output = output.replace(advert.getUrl() + "___REPLACEME_URL___", newUrl + "?" + currentTs.getMillis());
+			output = output.replace(
+					advert.getUrl() + "___REPLACEME_URL___",
+					"/assets/" + newUrl + "?" + (currentTs.getMillis() / 1000));
 //			output = output.replace(advert.getUrl() + "___REPLACEME_URL___", "http://img3.wikia.nocookie.net/__cb20130809134512/mario/fr/images/7/75/Yoshi-gymnasticd-yoshi-31522962-900-1203.png");
 			
 			return output;
