@@ -26,7 +26,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 	}
 });
 
-var confUrl = "http://www.glassinsight.co.uk/api/display_conf";
+var confUrl = "http://demo-staging.haystackplatform.com/workspaces/donkDR/display_conf"; // TODO put somewhere sensible?
 
 // Hashes of reference adverts. Set<hash>
 // TODO: Cache locally?
