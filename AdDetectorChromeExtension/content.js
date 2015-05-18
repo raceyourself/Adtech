@@ -1,9 +1,39 @@
 // TODO: Generate unique ids for each element as src+hashCode may not be unique. 
 
+var eventQueue = [];
+var DEFAULT_SEND_DELAY = 1000; // milliseconds
+var sendDelay = DEFAULT_SEND_DELAY;
+var sendTimeout = false; // setTimeout reference
+var eventUrl = "https://www.glassinsight.co.uk/api/display_events";
+
+var recordVisibility = false;
+var recordImpressions = true;
+var recordInteractions = true;
+
+// Hashes of reference adverts. Set<hash>
+var refHashList = {};
+
+// All image hashes in page. Map<image,hash>
+var pageHashes = new WeakMap();
+var pageHashKeys = []; // WeakMap keys required for iteration
+
+// Images currently at least partially visible on-screen. Set<image>
+var visibleImages = new WeakSet();
+var visibleImageKeys = []; // WeakSet keys required for iteration
+
+// Required for callbacks from background script.
+var tabId;
+
+var imagesInPage;
+
+var hashesCalculated = false;
+
 $(document).ready(function() {
+    imagesInPage = $(document).find("img");
+    
 	// Request reference hashes from background.js (callback starts hashing of page images)
 	chrome.runtime.sendMessage({action: "hashReferences"});
-
+	
 	MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
 	var observer = new MutationObserver(function(mutations, observer) {
 		// fired when a mutation occurs
@@ -64,34 +94,6 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 	}
 });
 
-var eventQueue = [];
-var DEFAULT_SEND_DELAY = 1000; // milliseconds
-var sendDelay = DEFAULT_SEND_DELAY;
-var sendTimeout = false; // setTimeout reference
-var eventUrl = "https://www.glassinsight.co.uk/api/display_events";
-
-var recordVisibility = false;
-var recordImpressions = true;
-var recordInteractions = true;
-
-// Hashes of reference adverts. Set<hash>
-var refHashList = {};
-
-// All image hashes in page. Map<image,hash>
-var pageHashes = new WeakMap();
-var pageHashKeys = []; // WeakMap keys required for iteration
-
-// Images currently at least partially visible on-screen. Set<image>
-var visibleImages = new WeakSet();
-var visibleImageKeys = []; // WeakSet keys required for iteration
-
-// Required for callbacks from background script.
-var tabId;
-
-var imagesInPage;
-
-var hashesCalculated = false;
-
 function onReferenceHashList(hashList) {
 	refHashList = {};
 	// Convert array to set/hash for faster lookup
@@ -135,12 +137,12 @@ function onDataUrlCalculated(dataUrl, index, type) {
 // Calc hashes of all instances of the reference images on the page.
 // Populates pageHashesBySrc:Map<img.src,hashCode>.
 function hashImagesInPage() {
-	imagesInPage = $(document).find("img");
 	console.log("hashing " + imagesInPage.length + " images");
 	hashImageInPage(0);
 }
 
 var debugLastLogTimestamp = new Date().getTime();
+
 function hashImageInPage(index) {
 	var pageImage = imagesInPage[index];
 	

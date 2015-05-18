@@ -53,6 +53,7 @@ function hashReferenceImages() {
 				}
 			}).fail(function() {
 				console.log("Could not fetch reference hashes: network error");
+                hashesFetching = false;
 			});
 		}
 	} else {
