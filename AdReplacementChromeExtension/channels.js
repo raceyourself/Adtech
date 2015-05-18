@@ -1,3 +1,5 @@
+// Adapted from CatBlock.
+
 // Must run on background page
 
 // TODO: make google search results ALWAYS show photos.  Special case it.
