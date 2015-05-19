@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
 
-  "name": "Advert Detector",
+  "name": "We See Through: Advert Detector",
   "description": "Determines whether an advert has been scrolled into view.",
   "version": "1.1",
 
@@ -15,6 +15,7 @@
       "matches": ["<all_urls>"],
       "js": [
       	"jquery-1.11.1.js",
+        "lodash.min.js",
 		"util.js",
       	"content.js"
   	  ]

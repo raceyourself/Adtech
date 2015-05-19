@@ -13,9 +13,12 @@ var recordInteractions = true;
 // Hashes of reference adverts. Set<hash>
 var refHashList = {};
 
-// All image hashes in page. Map<image,hash>
-var pageHashes = new WeakMap();
-var pageHashKeys = []; // WeakMap keys required for iteration
+// For each image that occurs in the page, this contains a mapping to its hash.
+var imageOccurrenceHashes = new WeakMap();
+var imageOccurrenceHashKeys = []; // WeakMap keys required for iteration
+
+// Set<Image> - all reference image occurrences in the page.
+var refImageOccurrenceHashKeys = [];
 
 // Images currently at least partially visible on-screen. Set<image>
 var visibleImages = new WeakSet();
@@ -62,7 +65,7 @@ $(document).ready(function() {
 		var windowY = window.screenY;
 		setInterval(function() {
 			if (hashesCalculated && windowX !== window.screenX || windowY !== window.screenY) {
-					checkVisibilityChange();
+					recordVisibilityChanges();
 			}
 			windowX = window.screenX;
 			windowY = window.screenY;
@@ -71,11 +74,11 @@ $(document).ready(function() {
 });
 $(window).scroll(function() {
 	if (hashesCalculated === true)
-		checkVisibilityChange();
+		recordVisibilityChanges();
 });
 $(window).resize(function() {
 	if (hashesCalculated === true)
-		checkVisibilityChange();
+		recordVisibilityChanges();
 });
 $(window).unload(function() {
 	if (hashesCalculated === true)
@@ -109,27 +112,31 @@ function onDataUrlCalculated(dataUrl, index, type) {
 	var nextIndex = index + 1;
 	
 	if (type === "page") {
-		// only add if this in-page image matches one of our reference images.
+        // record mouseEnter/mouseLeave for this image (TODO: use AdBlock blacklist to distinguish adverts from other images)
+        var pageImage = imagesInPage[index];
+        $(pageImage).mouseleave(function(event) {
+            // NOTE: This does not fire until the mouse moves, if we need perfect accuracy
+            //       we would need to do our own visibility tracking.
+            recordInteractionInfo(pageImage, hashCode, false)
+        });
+        $(pageImage).mouseenter(function(event) {
+            recordInteractionInfo(pageImage, hashCode, true)
+        });
+        imageOccurrenceHashes.set(pageImage, hashCode);
+        imageOccurrenceHashKeys.push(pageImage);
+        
+        // only add if this in-page image matches one of our reference images.
 		if (hashCode in refHashList) {
-			var pageImage = imagesInPage[index];
-			pageHashes.set(pageImage, hashCode);
-			pageHashKeys.push(pageImage);
-			$(pageImage).mouseleave(function(event) {
-				// NOTE: This does not fire until the mouse moves, if we need perfect accuracy
-				//       we would need to do our own visibility tracking.
-				recordInteractionInfo(pageImage, hashCode, false)
-			});
-			$(pageImage).mouseenter(function(event) {
-				recordInteractionInfo(pageImage, hashCode, true)
-			});
-		} 
+			refImageOccurrenceHashKeys.push(pageImage);
+		}
+        
 		var limit = imagesInPage.length;
 		if (nextIndex < limit)
 			hashImageInPage(nextIndex);
 		else {
 			hashesCalculated = true;
-			console.log(pageHashKeys.length + " images tracked");
-			checkVisibilityChange();
+			console.log(imageOccurrenceHashKeys.length + " images tracked, of which " + refImageOccurrenceHashKeys.length + " are ref images");
+			recordVisibilityChanges();
 		}
 	}
 }
@@ -170,16 +177,18 @@ function hashImageInPage(index) {
 // Record "not_visible" entries for everything currently visible before navigating to next page to clean up.
 function clearVisible() {
 	visibleImageKeys.forEach(function(image, index, visibleImageKeys) {
-		var hashCode = pageHashes.get(image);
+		var hashCode = imageOccurrenceHashes.get(image);
 		
 		recordVisibilityInfo(image, hashCode, false);
 		recordImpressionInfo(image, hashCode, false);
 	});
 }
 
-function checkVisibilityChange() {
-	pageHashKeys.forEach(function(image, index, pageHashKeys) {
-		var hashCode = pageHashes.get(image);
+function recordVisibilityChanges() {
+	imageOccurrenceHashKeys.forEach(function(image, index, imageOccurrenceHashKeys) {
+		var hashCode = imageOccurrenceHashes.get(image);
+        var isReference = _.includes(refImageOccurrenceHashKeys, image);
+        
 		if (visibleImages.has(image)) {
 			if (checkVisible(image)) { // image still in viewport
 				recordVisibilityInfo(image, hashCode, true);
@@ -187,15 +196,17 @@ function checkVisibilityChange() {
 			else { // image has left viewport
 				recordVisibilityInfo(image, hashCode, false);				
 				recordImpressionInfo(image, hashCode, false);
+              
 				visibleImages.delete(image);
 				var index = visibleImageKeys.indexOf(image);
-				if (index > -1) visibleImageKeys.splice(index, 1);
+				if (index > -1) visibleImageKeys.splice(index, 1); // remove from visibleImageKeys
 			}
 		}
 		else { // not previously visible.
 			if (checkVisible(image)) { // has image entered viewport?
 				recordVisibilityInfo(image, hashCode, true);
 				recordImpressionInfo(image, hashCode, true);
+              
 				visibleImages.add(image);
 				var index = visibleImageKeys.indexOf(image);
 				if (index < 0) visibleImageKeys.push(image);
@@ -225,26 +236,9 @@ function checkVisible(element) {
 	return withinBottomBound && withinTopBound && withinLeftBound && withinRightBound;
 }
 
-function trackEvent(event) {
-	eventQueue.push(event);
-	if (!sendTimeout) setTimeout(sendEvents, sendDelay);
-}
+////////////////////////////////// RECORDING //////////////////////////////////
 
-function sendEvents() {
-	var queue = eventQueue;
-	eventQueue = [];
-	$.post(eventUrl, queue, function() {
-		console.log("Sent " + queue.length + " events");		
-		sendDelay = DEFAULT_SEND_DELAY;
-		sendTimeout = false;
-	}).fail(function() {
-		eventQueue.concat(queue);
-		sendDelay *= 4;
-		sendTimeout = setTimeout(sendEvents, sendDelay);
-	});
-}
-
-// Produce the output - visibility information.
+/** Record dimensions of image in viewport. */
 function recordVisibilityInfo(image, hashCode, isVisible) {
 	if (!recordVisibility) return;
 	var timestamp = (new Date()).getTime();
@@ -318,92 +312,74 @@ function recordVisibilityInfo(image, hashCode, isVisible) {
 	sLeft = Math.max(0, sLeft);
 	sRight = Math.min(screen.width - 1, sRight);
 	
-	logVisibilityInfo(timestamp, source, hashCode, sLeft, sRight, sTop, sBottom, isVisible);
-	sendVisibilityInfoToNative(timestamp, source, hashCode, sLeft, sRight, sTop, sBottom, isVisible);
+    var event = {
+        type: "visibility",
+        timestamp: timestamp,
+        source: source,
+        hash: hashCode,
+        visible: isVisible
+    };
+    
+	if (isVisible) {
+      _.extend(event, {
+        left: sLeft,
+        right: sRight,
+        top: sTop,
+        bottom: sBottom
+      });
+    }
+	
+	trackEvent(event);
 }
 
-function logVisibilityInfo(timestamp, source, hashCode, sLeft, sRight, sTop, sBottom, isVisible) {
-	var out = "[ADVERT VISIBILITY] " +
-	"ts=" + timestamp +
-	",src=" + source +
-	",hash=" + hashCode;
-
-	if (isVisible)
-		out += ",left=" + sLeft +
-			",right=" + sRight +
-			",top=" + sTop +
-			",bottom=" + sBottom;
-	
-	out += ",visible=" + isVisible;
-	
-	console.log(out);
-}
-
-// Produce the output - interaction information.
+/** Record mouse movement in/out of image. */
 function recordInteractionInfo(image, hashCode, isOver) {
 	if (!recordInteractions) return;
-	var timestamp = (new Date()).getTime();
-	var source = image.src;
 	
-	var type = isVisible ? 'mouse_enter' : 'mouse_leave';
-	trackEvent({
-		type: type,
-		timestamp: timestamp,
-		source: image.src,
-		hash: hashCode
-	});
-	logInteractionInfo(timestamp, source, hashCode, isOver);
+    var type = isOver ? 'mouse_enter' : 'mouse_leave';
+	
+    record(type, image.src, hashCode);
 }
 
-function logInteractionInfo(timestamp, source, hashCode, isOver) {
-	var out = "[ADVERT INTERACTION] " +
-	"ts=" + timestamp +
-	",src=" + source +
-	",hash=" + hashCode;
-	
-	out += ",over=" + isOver;
-	
-	console.log(out);
-}
-
-// Produce the output - impression information.
+/** Record whether image is in viewport at all or not (binary). */
 function recordImpressionInfo(image, hashCode, isVisible) {
 	if (!recordImpressions) return;
-	var timestamp = (new Date()).getTime();
-	var source = image.src;
 	
 	var type = isVisible ? 'viewport_enter' : 'viewport_leave';
-	trackEvent({
+	
+    record(type, image.src, hashCode);
+}
+
+function record(type, source, hashCode) {
+	var timestamp = (new Date()).getTime();
+    var event = {
 		type: type,
 		timestamp: timestamp,
-		source: image.src,
+		source: source,
 		hash: hashCode
-	});
-	logImpressionInfo(timestamp, source, hashCode, isVisible);
+	};
+    
+    trackEvent(event);
+  
+    console.log(JSON.stringify(event));
 }
 
-function logImpressionInfo(timestamp, source, hashCode, isVisible) {
-	var out = "[ADVERT IMPRESSION] " +
-	"ts=" + timestamp +
-	",src=" + source +
-	",hash=" + hashCode;
-	
-	out += ",visible=" + isVisible;
-	
-	console.log(out);
+function trackEvent(event) {
+	eventQueue.push(event);
+	if (!sendTimeout) setTimeout(sendEvents, sendDelay);
 }
 
-function sendVisibilityInfoToNative(timestamp, source, hashCode, sLeft, sRight, sTop, sBottom, isVisible) {
-	// Content scripts can't directly send to native - must go via background script.
-	chrome.runtime.sendMessage({
-		action: "sendToNative",
-		timestamp: timestamp,
-		url: source,
-		hashCode: hashCode,
-		absPosLeft: sLeft,
-		absPosRight: sRight,
-		absPosTop: sTop,
-		absPosBottom: sBottom,
-		visible: isVisible
+/** Sends queue of events to API. */
+function sendEvents() {
+	var queue = eventQueue;
+	eventQueue = [];
+	$.post(eventUrl, queue, function() {
+		console.log("Sent " + queue.length + " events");		
+		sendDelay = DEFAULT_SEND_DELAY;
+		sendTimeout = false;
+	}).fail(function() {
+		eventQueue.concat(queue);
+		sendDelay *= 4;
+		sendTimeout = setTimeout(sendEvents, sendDelay);
 	});
 }

@@ -10,8 +10,6 @@
  * https://code.google.com/p/chromium/issues/detail?id=161471
  */
 
-var nativePort;
-
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 	if (request.action === "hashReferences") {
 		refHashListeners.push(sender.tab.id);
@@ -20,9 +18,6 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 		calcDataUrl(request.src, function(dataUrl) {			
 			chrome.tabs.sendMessage(sender.tab.id, {action: "dataUrlCalculated", dataUrl: dataUrl, index: request.index, type: request.type});
 		});
-	} else if (request.action === "sendToNative") {
-		sendVisibilityInfoToNative(request.timestamp, request.url, request.hashCode, request.absPosLeft,
-				request.absPosRight, request.absPosTop, request.absPosBottom, request.visible);
 	}
 });
 
@@ -67,37 +62,6 @@ function onReferenceImagesHashed() {
 		chrome.tabs.sendMessage(tabId, {action: "referenceHashList", hashList: refHashList});
 	});
 	refHashListeners = [];
-}
-
-function sendVisibilityInfoToNative(
-		timestamp, url, hashCode, absPosLeft, absPosRight, absPosTop, absPosBottom, visible) {
-	if (nativePort === null) {
-		nativePort = chrome.runtime.connectNative('com.glassinsight.addetector');
-		nativePort.onDisconnect.addListener(onNativeDisconnect);
-		nativePort.onMessage.addListener(onNativeMessage);
-	}
-	
-	if (nativePort) {
-		nativePort.postMessage({
-			timestamp: timestamp,
-			url: url,
-			hashCode: hashCode,
-			absPosLeft: absPosLeft,
-			absPosRight: absPosRight,
-			absPosTop: absPosTop,
-			absPosBottom: absPosBottom,
-			visible: visible
-		});
-	}
-}
-
-function onNativeDisconnect() {
-	console.log("Native app has disconnected");
-	nativePort = null;
-}
-
-function onNativeMessage(msg) { // debug only
-	console.log("[FROM NATIVE] Received echoed message back from native app: " + JSON.stringify(msg));
 }
 
 function calcDataUrl(src, callback) {
