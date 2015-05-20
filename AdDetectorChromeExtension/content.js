@@ -6,6 +6,8 @@ var sendDelay = DEFAULT_SEND_DELAY;
 var sendTimeout = false; // setTimeout reference
 var eventUrl = "https://www.glassinsight.co.uk/api/display_events";
 
+var pageProcessed = false;
+
 var recordVisibility = false;
 var recordImpressions = true;
 var recordInteractions = true;
@@ -31,8 +33,15 @@ function inIframe() {
 
 function processPage() {
     documentUrl = document.URL;
-    
     imagesInPage = $(document).find("img");
+  
+    /*if (!inIframe()) {
+        console.log("Number of iframes: " + window.frames.length);
+    }
+    else {
+        console.log("In an iframe. document.URL=" + documentUrl +";#imagesInPage=" + imagesInPage.length);
+    }*/
+    
     imagesInPage.each(function(index, pageImage) {
         var jPageImage = $(pageImage);
         jPageImage.mouseleave(function(event) {
@@ -44,9 +53,9 @@ function processPage() {
             recordInteractionInfo(pageImage, true)
         });
       
-        if (inIframe()) {
+        /*if (inIframe()) {
             console.log("Document:" + documentUrl + "=img.src>" + pageImage.src);
-        }
+        }*/
     });
     
 	MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
@@ -80,12 +89,14 @@ function processPage() {
 			windowY = window.screenY;
 		}, 1000);
 	}());
+  
+    pageProcessed = true;
 }
 
 if (inIframe()) {
 //if (false) {
     $(document).ready(function() {
-        setTimeout(processPage, 2000);
+        setTimeout(processPage, 5000);
     });
     //$(document).load();
 }
@@ -94,10 +105,12 @@ else {
 }
 
 $(window).scroll(function() {
-	recordVisibilityChanges();
+    if (pageProcessed)
+        recordVisibilityChanges();
 });
 $(window).resize(function() {
-	recordVisibilityChanges();
+	if (pageProcessed)
+        recordVisibilityChanges();
 });
 $(window).unload(function() {
 	clearVisible();
