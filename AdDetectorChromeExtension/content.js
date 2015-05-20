@@ -197,7 +197,7 @@ function elementToDataObj(element) {
         data.source = videoSource.src;
         data.attr = 'video/source[0]/@src';
     }
-    else if (element.nodeName === 'IMAGE') {
+    else if (element.nodeName.toUpperCase() === 'IMAGE') { // toUpperCase() necessary here because this is an SVG element, not an HTML element.
         data.source = element.getAttribute('xlink:href');
         data.attr = 'image/@xlink:href';
         if (!data.source) {
