@@ -13,13 +13,12 @@ var recordImpressions = true;
 var recordInteractions = true;
 
 // Images currently at least partially visible on-screen. Set<image>
-var visibleImages = new WeakSet();
-var visibleImageKeys = []; // WeakSet keys required for iteration
+var visibleImages = new Set();
 
 // Required for callbacks from background script.
 var tabId;
 
-var imagesInPage;
+var resourcesInPage;
 
 var documentUrl;
 
@@ -33,24 +32,29 @@ function inIframe() {
 
 function processPage() {
     documentUrl = document.URL;
-    imagesInPage = $(document).find("img");
+    resourcesInPage = $(document).find("img");
+    resourcesInPage = resourcesInPage.add("video");
+    resourcesInPage = resourcesInPage.add("object"); // Flash
+    resourcesInPage = resourcesInPage.add("image"); // SVG
   
     /*if (!inIframe()) {
         console.log("Number of iframes: " + window.frames.length);
     }
     else {
-        console.log("In an iframe. document.URL=" + documentUrl +";#imagesInPage=" + imagesInPage.length);
+        console.log("In an iframe. document.URL=" + documentUrl +";#resourcesInPage=" + resourcesInPage.length);
     }*/
     
-    imagesInPage.each(function(index, pageImage) {
+    resourcesInPage.each(function(index, pageImage) {
         var jPageImage = $(pageImage);
+        var data = elementToDataObj(pageImage);
+        
         jPageImage.mouseleave(function(event) {
             // NOTE: This does not fire until the mouse moves, if we need perfect accuracy
             //       we would need to do our own visibility tracking.
-            recordInteractionInfo(pageImage, false)
+            recordInteractionInfo(pageImage, data, false);
         });
         jPageImage.mouseenter(function(event) {
-            recordInteractionInfo(pageImage, true)
+            recordInteractionInfo(pageImage, data, true);
         });
       
         /*if (inIframe()) {
@@ -66,7 +70,7 @@ function processPage() {
 			for (var i = 0; i < nodeList.length; ++i) {
 				var node = nodeList[i];
 				if (node.nodeName == 'IMG') {
-					imagesInPage.push(node);
+					resourcesInPage.push(node);
 				}
 			}
 		});
@@ -94,7 +98,6 @@ function processPage() {
 }
 
 if (inIframe()) {
-//if (false) {
     $(document).ready(function() {
         setTimeout(processPage, 5000);
     });
@@ -123,35 +126,35 @@ $(window).unload(function() {
 
 // Record "not_visible" entries for everything currently visible before navigating to next page to clean up.
 function clearVisible() {
-	visibleImageKeys.forEach(function(image, index, visibleImageKeys) {
-		recordVisibilityInfo(image, false);
-		recordImpressionInfo(image, false);
+	visibleImages.forEach(function(image) {
+		var data = elementToDataObj(image);
+        
+        recordVisibilityInfo(image, data, false);
+		recordImpressionInfo(image, data, false);
 	});
 }
 
 function recordVisibilityChanges() {
-	imagesInPage.each(function(index, image) {
+	resourcesInPage.each(function(index, image) {
+        var data = elementToDataObj(image);
+        
         if (visibleImages.has(image)) {
 			if (checkVisible(image)) { // image still in viewport
-				recordVisibilityInfo(image, true);
+				recordVisibilityInfo(image, data, true);
 			}
 			else { // image has left viewport
-				recordVisibilityInfo(image, false);				
-				recordImpressionInfo(image, false);
+				recordVisibilityInfo(image, data, false);				
+				recordImpressionInfo(image, data, false);
               
 				visibleImages.delete(image);
-				var index = visibleImageKeys.indexOf(image);
-				if (index > -1) visibleImageKeys.splice(index, 1); // remove from visibleImageKeys
 			}
 		}
 		else { // not previously visible.
 			if (checkVisible(image)) { // has image entered viewport?
-				recordVisibilityInfo(image, true);
-				recordImpressionInfo(image, true);
+				recordVisibilityInfo(image, data, true);
+				recordImpressionInfo(image, data, true);
               
 				visibleImages.add(image);
-				var index = visibleImageKeys.indexOf(image);
-				if (index < 0) visibleImageKeys.push(image);
 			}
 		}
 	});
@@ -178,13 +181,63 @@ function checkVisible(element) {
 	return withinBottomBound && withinTopBound && withinLeftBound && withinRightBound;
 }
 
+function elementToDataObj(element) {
+    var data = {};
+    
+    if (element.nodeName === 'IMG') {
+        data.source = element.src;
+        data.attr = 'img/@src';
+        if (!data.source) {
+          data.source = element.srcset;
+          data.attr = 'img/@srcset';
+        }
+    }
+    else if (element.nodeName === 'VIDEO') {
+        var videoSource = $('source', $(element)).first()[0];
+        data.source = videoSource.src;
+        data.attr = 'video/source[0]/@src';
+    }
+    else if (element.nodeName === 'IMAGE') {
+        data.source = element.getAttribute('xlink:href');
+        data.attr = 'image/@xlink:href';
+        if (!data.source) {
+            data.source = element.src;
+            data.attr = 'image/@src';
+        }
+    }
+    else if (element.nodeName === 'OBJECT') { // flash (/oldschool video?)
+        data.source = element.data;
+        data.attr = 'object/@data';
+        
+        if (!data.source) {
+            var objectParam;
+            objectParam = $("param[name='movie']", $(element)).first()[0];
+            data.attr = "object/param[name='movie']/@value";
+            if (!objectParam) {
+                objectParam = $("param[name='src']", $(element)).first()[0];
+                data.attr = "object/param[name='src']/@value";
+            }
+
+            if (objectParam) {
+                data.source = objectParam.value;
+            }
+            else {
+                var objectEmbed = $("embed", $(element))[0];
+                data.source = objectEmbed.src;
+                data.attr = "object/embed[src]/@value";
+            }
+        }
+    }
+    return data;
+}
+
 ////////////////////////////////// RECORDING //////////////////////////////////
 
 /** Record dimensions of image in viewport. */
-function recordVisibilityInfo(image, isVisible) {
+function recordVisibilityInfo(element, data, isVisible) {
 	if (!recordVisibility) return;
 	var timestamp = (new Date()).getTime();
-	var source = image.src;
+	var source = data.source;
 
 	var vpDocOffsetTop = $(window).scrollTop();
 	var vpDocOffsetBottom = vpDocOffsetTop + $(window).height();
@@ -192,11 +245,11 @@ function recordVisibilityInfo(image, isVisible) {
 	var vpDocOffsetRight = vpDocOffsetLeft + $(window).width();
 	
 	// Position of element within document.
-	var offset = $(image).offset();
+	var offset = $(element).offset();
 	var dLeft = offset.left;
-	var dRight = dLeft + $(image).width();
+	var dRight = dLeft + $(element).width();
 	var dTop = offset.top;
-	var dBottom = dTop + $(image).height();
+	var dBottom = dTop + $(element).height();
 	
 	// Account for partial visibility.
 	dLeft = Math.max(dLeft, vpDocOffsetLeft);
@@ -273,22 +326,22 @@ function recordVisibilityInfo(image, isVisible) {
 	trackEvent(event);
 }
 
-/** Record mouse movement in/out of image. */
-function recordInteractionInfo(image, isOver) {
+/** Record mouse movement in/out of element. */
+function recordInteractionInfo(element, data, isOver) {
 	if (!recordInteractions) return;
 	
     var type = isOver ? 'mouse_enter' : 'mouse_leave';
 	
-    record(type, image.src);
+    record(type, data.source);
 }
 
-/** Record whether image is in viewport at all or not (binary). */
-function recordImpressionInfo(image, isVisible) {
+/** Record whether element is in viewport at all or not (binary). */
+function recordImpressionInfo(element, data, isVisible) {
 	if (!recordImpressions) return;
 	
 	var type = isVisible ? 'viewport_enter' : 'viewport_leave';
 	
-    record(type, image.src);
+    record(type, data.source);
 }
 
 function record(type, source) {
