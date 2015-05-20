@@ -194,8 +194,15 @@ function elementToDataObj(element) {
     }
     else if (element.nodeName === 'VIDEO') {
         var videoSource = $('source', $(element)).first()[0];
-        data.source = videoSource.src;
-        data.attr = 'video/source[0]/@src';
+        if (videoSource) {
+            data.source = videoSource.src;
+            data.attr = 'video/source[0]/@src';
+        }
+        else {
+            // TODO deal with cases like these. Maybe it's dynamically loaded after the fact?
+            // <video class="video-stream html5-main-video" style="width: 300px; height: 167px; left: 0px; top: -167px; transform: none;"></video>
+            data.source = 'unknown';
+        }
     }
     else if (element.nodeName.toUpperCase() === 'IMAGE') { // toUpperCase() necessary here because this is an SVG element, not an HTML element.
         data.source = element.getAttribute('xlink:href');
