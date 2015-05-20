@@ -31,8 +31,40 @@ var imagesInPage;
 
 var hashesCalculated = false;
 
-$(document).ready(function() {
+var documentUrl;
+
+function inIframe() {
+    try {
+        return window.self !== window.top;
+    } catch (e) {
+        return true;
+    }
+}
+/*
+window.addEventListener('message', function(event) {
+    imagesInPage = imagesInPage.concat(event.data);
+});*/
+
+function processPage() {
+    documentUrl = document.URL;
+    
     imagesInPage = $(document).find("img");
+    
+    /*
+    if (inIframe()) { // in an iframe.
+        window.parent.postMessage(imagesInPage);
+        return;
+    }
+    */
+    
+    /*var frame;
+    for (var i = 0; i < window.frames.length; i++) {
+        frame = window.frames[i];
+    //window.frames.forEach(function(frame) {
+        var imagesInIframe = $(frame).find("img");
+        imagesInPage = imagesInPage.concat(imagesInIframe);
+//    });
+    }*/
     
 	// Request reference hashes from background.js (callback starts hashing of page images)
 	chrome.runtime.sendMessage({action: "hashReferences"});
@@ -71,7 +103,16 @@ $(document).ready(function() {
 			windowY = window.screenY;
 		}, 1000);
 	}());
-});
+}
+
+if (inIframe()) {
+    setTimeout(processPage, 2000);
+    //$(document).load();
+}
+else {
+    $(document).ready(processPage);
+}
+
 $(window).scroll(function() {
 	if (hashesCalculated === true)
 		recordVisibilityChanges();
@@ -110,34 +151,44 @@ function onReferenceHashList(hashList) {
 function onDataUrlCalculated(dataUrl, index, type) {
 	var hashCode = dataUrl === null ? null : dataUrl2hashCode(dataUrl);
 	var nextIndex = index + 1;
+    var pageImage;
 	
 	if (type === "page") {
-        // record mouseEnter/mouseLeave for this image (TODO: use AdBlock blacklist to distinguish adverts from other images)
-        var pageImage = imagesInPage[index];
-        $(pageImage).mouseleave(function(event) {
-            // NOTE: This does not fire until the mouse moves, if we need perfect accuracy
-            //       we would need to do our own visibility tracking.
-            recordInteractionInfo(pageImage, hashCode, false)
-        });
-        $(pageImage).mouseenter(function(event) {
-            recordInteractionInfo(pageImage, hashCode, true)
-        });
-        imageOccurrenceHashes.set(pageImage, hashCode);
-        imageOccurrenceHashKeys.push(pageImage);
-        
-        // only add if this in-page image matches one of our reference images.
-		if (hashCode in refHashList) {
-			refImageOccurrenceHashKeys.push(pageImage);
-		}
-        
-		var limit = imagesInPage.length;
-		if (nextIndex < limit)
-			hashImageInPage(nextIndex);
-		else {
-			hashesCalculated = true;
-			console.log(imageOccurrenceHashKeys.length + " images tracked, of which " + refImageOccurrenceHashKeys.length + " are ref images");
-			recordVisibilityChanges();
-		}
+        try {
+            // record mouseEnter/mouseLeave for this image (TODO: use AdBlock blacklist to distinguish adverts from other images)
+            pageImage = imagesInPage[index];
+            $(pageImage).mouseleave(function(event) {
+                // NOTE: This does not fire until the mouse moves, if we need perfect accuracy
+                //       we would need to do our own visibility tracking.
+                recordInteractionInfo(pageImage, hashCode, false)
+            });
+            $(pageImage).mouseenter(function(event) {
+                recordInteractionInfo(pageImage, hashCode, true)
+            });
+            imageOccurrenceHashes.set(pageImage, hashCode);
+            imageOccurrenceHashKeys.push(pageImage);
+
+            // only add if this in-page image matches one of our reference images.
+            if (hashCode in refHashList) {
+                refImageOccurrenceHashKeys.push(pageImage);
+            }
+
+            var limit = imagesInPage.length;
+            if (nextIndex < limit)
+                hashImageInPage(nextIndex);
+            else {
+                hashesCalculated = true;
+                console.log(imageOccurrenceHashKeys.length + " images tracked, of which " + refImageOccurrenceHashKeys.length + " are ref images");
+                recordVisibilityChanges();
+            }
+        } catch (err) {
+          var bar = documentUrl;
+          var foo = $(document).find("img");
+          console.log("onDataUrlCalculated() error:" + err + 
+                    ";imagesInPage:" + imagesInPage +
+                    ";index:" + index +
+                    ";documentUrl:" + documentUrl);
+        }
 	}
 }
 
@@ -166,6 +217,8 @@ function hashImageInPage(index) {
 	}
 
 	var timestamp = new Date().getTime();
+  
+    // condition stops console being flooded
 	if (index === 0 || timestamp > debugLastLogTimestamp + 1000 || (index+1) === imagesInPage.length) {
 		console.log("hashing image " + (index+1) + '/' + imagesInPage.length);
 		debugLastLogTimestamp = timestamp;
