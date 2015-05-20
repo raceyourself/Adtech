@@ -10,16 +10,6 @@ var recordVisibility = false;
 var recordImpressions = true;
 var recordInteractions = true;
 
-// Hashes of reference adverts. Set<hash>
-var refHashList = {};
-
-// For each image that occurs in the page, this contains a mapping to its hash.
-var imageOccurrenceHashes = new WeakMap();
-var imageOccurrenceHashKeys = []; // WeakMap keys required for iteration
-
-// Set<Image> - all reference image occurrences in the page.
-var refImageOccurrenceHashKeys = [];
-
 // Images currently at least partially visible on-screen. Set<image>
 var visibleImages = new WeakSet();
 var visibleImageKeys = []; // WeakSet keys required for iteration
@@ -28,8 +18,6 @@ var visibleImageKeys = []; // WeakSet keys required for iteration
 var tabId;
 
 var imagesInPage;
-
-var hashesCalculated = false;
 
 var documentUrl;
 
@@ -40,35 +28,27 @@ function inIframe() {
         return true;
     }
 }
-/*
-window.addEventListener('message', function(event) {
-    imagesInPage = imagesInPage.concat(event.data);
-});*/
 
 function processPage() {
     documentUrl = document.URL;
     
     imagesInPage = $(document).find("img");
+    imagesInPage.each(function(index, pageImage) {
+        var jPageImage = $(pageImage);
+        jPageImage.mouseleave(function(event) {
+            // NOTE: This does not fire until the mouse moves, if we need perfect accuracy
+            //       we would need to do our own visibility tracking.
+            recordInteractionInfo(pageImage, false)
+        });
+        jPageImage.mouseenter(function(event) {
+            recordInteractionInfo(pageImage, true)
+        });
+      
+        if (inIframe()) {
+            console.log("Document:" + documentUrl + "=img.src>" + pageImage.src);
+        }
+    });
     
-    /*
-    if (inIframe()) { // in an iframe.
-        window.parent.postMessage(imagesInPage);
-        return;
-    }
-    */
-    
-    /*var frame;
-    for (var i = 0; i < window.frames.length; i++) {
-        frame = window.frames[i];
-    //window.frames.forEach(function(frame) {
-        var imagesInIframe = $(frame).find("img");
-        imagesInPage = imagesInPage.concat(imagesInIframe);
-//    });
-    }*/
-    
-	// Request reference hashes from background.js (callback starts hashing of page images)
-	chrome.runtime.sendMessage({action: "hashReferences"});
-	
 	MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
 	var observer = new MutationObserver(function(mutations, observer) {
 		// fired when a mutation occurs
@@ -78,9 +58,6 @@ function processPage() {
 				var node = nodeList[i];
 				if (node.nodeName == 'IMG') {
 					imagesInPage.push(node);
-					if (hashesCalculated) {
-						hashImageInPage(imagesInPage.length-1);
-					}
 				}
 			}
 		});
@@ -96,7 +73,7 @@ function processPage() {
 		var windowX = window.screenX;
 		var windowY = window.screenY;
 		setInterval(function() {
-			if (hashesCalculated && windowX !== window.screenX || windowY !== window.screenY) {
+			if (windowX !== window.screenX || windowY !== window.screenY) {
 					recordVisibilityChanges();
 			}
 			windowX = window.screenX;
@@ -106,7 +83,10 @@ function processPage() {
 }
 
 if (inIframe()) {
-    setTimeout(processPage, 2000);
+//if (false) {
+    $(document).ready(function() {
+        setTimeout(processPage, 2000);
+    });
     //$(document).load();
 }
 else {
@@ -114,141 +94,37 @@ else {
 }
 
 $(window).scroll(function() {
-	if (hashesCalculated === true)
-		recordVisibilityChanges();
+	recordVisibilityChanges();
 });
 $(window).resize(function() {
-	if (hashesCalculated === true)
-		recordVisibilityChanges();
+	recordVisibilityChanges();
 });
 $(window).unload(function() {
-	if (hashesCalculated === true)
-		clearVisible();
+	clearVisible();
 	if (eventQueue.length > 0) {
 		// TODO: Move to background.js?
 		if (sendTimeout) clearTimeout(sendTimeout);
 		sendEvents();
 	}
 });
-chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-	if (request.action === "dataUrlCalculated") {
-		onDataUrlCalculated(request.dataUrl, request.index, request.type);
-	} else if (request.action === "referenceHashList") {
-		onReferenceHashList(request.hashList);
-	}
-});
 
-function onReferenceHashList(hashList) {
-	refHashList = {};
-	// Convert array to set/hash for faster lookup
-	hashList.forEach(function(hash, index, hashList) {
-		refHashList[hash] = true;
-	});
-	console.log("received " + Object.keys(refHashList).length + " reference hashes");
-	if (!hashesCalculated) hashImagesInPage();
-}
-
-function onDataUrlCalculated(dataUrl, index, type) {
-	var hashCode = dataUrl === null ? null : dataUrl2hashCode(dataUrl);
-	var nextIndex = index + 1;
-    var pageImage;
-	
-	if (type === "page") {
-        try {
-            // record mouseEnter/mouseLeave for this image (TODO: use AdBlock blacklist to distinguish adverts from other images)
-            pageImage = imagesInPage[index];
-            $(pageImage).mouseleave(function(event) {
-                // NOTE: This does not fire until the mouse moves, if we need perfect accuracy
-                //       we would need to do our own visibility tracking.
-                recordInteractionInfo(pageImage, hashCode, false)
-            });
-            $(pageImage).mouseenter(function(event) {
-                recordInteractionInfo(pageImage, hashCode, true)
-            });
-            imageOccurrenceHashes.set(pageImage, hashCode);
-            imageOccurrenceHashKeys.push(pageImage);
-
-            // only add if this in-page image matches one of our reference images.
-            if (hashCode in refHashList) {
-                refImageOccurrenceHashKeys.push(pageImage);
-            }
-
-            var limit = imagesInPage.length;
-            if (nextIndex < limit)
-                hashImageInPage(nextIndex);
-            else {
-                hashesCalculated = true;
-                console.log(imageOccurrenceHashKeys.length + " images tracked, of which " + refImageOccurrenceHashKeys.length + " are ref images");
-                recordVisibilityChanges();
-            }
-        } catch (err) {
-          var bar = documentUrl;
-          var foo = $(document).find("img");
-          console.log("onDataUrlCalculated() error:" + err + 
-                    ";imagesInPage:" + imagesInPage +
-                    ";index:" + index +
-                    ";documentUrl:" + documentUrl);
-        }
-	}
-}
-
-// Calc hashes of all instances of the reference images on the page.
-// Populates pageHashesBySrc:Map<img.src,hashCode>.
-function hashImagesInPage() {
-	console.log("hashing " + imagesInPage.length + " images");
-	hashImageInPage(0);
-}
-
-var debugLastLogTimestamp = new Date().getTime();
-
-function hashImageInPage(index) {
-	var pageImage = imagesInPage[index];
-	
-	var image = null;
-	if (pageImage.src) {
-		image = pageImage.src;
-	}
-	else {
-		var background = $(pageImage).css("background");
-		var urlRegex = /url\((.*)\)/g;
-		var match = urlRegex.exec(background);
-		if (match && match[1])
-			image = match[1];
-	}
-
-	var timestamp = new Date().getTime();
-  
-    // condition stops console being flooded
-	if (index === 0 || timestamp > debugLastLogTimestamp + 1000 || (index+1) === imagesInPage.length) {
-		console.log("hashing image " + (index+1) + '/' + imagesInPage.length);
-		debugLastLogTimestamp = timestamp;
-	}
-	
-	chrome.runtime.sendMessage({action: "dataUrl", type: "page", index: index, src: image});
-}
-	
 // Record "not_visible" entries for everything currently visible before navigating to next page to clean up.
 function clearVisible() {
 	visibleImageKeys.forEach(function(image, index, visibleImageKeys) {
-		var hashCode = imageOccurrenceHashes.get(image);
-		
-		recordVisibilityInfo(image, hashCode, false);
-		recordImpressionInfo(image, hashCode, false);
+		recordVisibilityInfo(image, false);
+		recordImpressionInfo(image, false);
 	});
 }
 
 function recordVisibilityChanges() {
-	imageOccurrenceHashKeys.forEach(function(image, index, imageOccurrenceHashKeys) {
-		var hashCode = imageOccurrenceHashes.get(image);
-        var isReference = _.includes(refImageOccurrenceHashKeys, image);
-        
-		if (visibleImages.has(image)) {
+	imagesInPage.each(function(index, image) {
+        if (visibleImages.has(image)) {
 			if (checkVisible(image)) { // image still in viewport
-				recordVisibilityInfo(image, hashCode, true);
+				recordVisibilityInfo(image, true);
 			}
 			else { // image has left viewport
-				recordVisibilityInfo(image, hashCode, false);				
-				recordImpressionInfo(image, hashCode, false);
+				recordVisibilityInfo(image, false);				
+				recordImpressionInfo(image, false);
               
 				visibleImages.delete(image);
 				var index = visibleImageKeys.indexOf(image);
@@ -257,8 +133,8 @@ function recordVisibilityChanges() {
 		}
 		else { // not previously visible.
 			if (checkVisible(image)) { // has image entered viewport?
-				recordVisibilityInfo(image, hashCode, true);
-				recordImpressionInfo(image, hashCode, true);
+				recordVisibilityInfo(image, true);
+				recordImpressionInfo(image, true);
               
 				visibleImages.add(image);
 				var index = visibleImageKeys.indexOf(image);
@@ -292,7 +168,7 @@ function checkVisible(element) {
 ////////////////////////////////// RECORDING //////////////////////////////////
 
 /** Record dimensions of image in viewport. */
-function recordVisibilityInfo(image, hashCode, isVisible) {
+function recordVisibilityInfo(image, isVisible) {
 	if (!recordVisibility) return;
 	var timestamp = (new Date()).getTime();
 	var source = image.src;
@@ -369,7 +245,6 @@ function recordVisibilityInfo(image, hashCode, isVisible) {
         type: "visibility",
         timestamp: timestamp,
         source: source,
-        hash: hashCode,
         visible: isVisible
     };
     
@@ -386,30 +261,29 @@ function recordVisibilityInfo(image, hashCode, isVisible) {
 }
 
 /** Record mouse movement in/out of image. */
-function recordInteractionInfo(image, hashCode, isOver) {
+function recordInteractionInfo(image, isOver) {
 	if (!recordInteractions) return;
 	
     var type = isOver ? 'mouse_enter' : 'mouse_leave';
 	
-    record(type, image.src, hashCode);
+    record(type, image.src);
 }
 
 /** Record whether image is in viewport at all or not (binary). */
-function recordImpressionInfo(image, hashCode, isVisible) {
+function recordImpressionInfo(image, isVisible) {
 	if (!recordImpressions) return;
 	
 	var type = isVisible ? 'viewport_enter' : 'viewport_leave';
 	
-    record(type, image.src, hashCode);
+    record(type, image.src);
 }
 
-function record(type, source, hashCode) {
+function record(type, source) {
 	var timestamp = (new Date()).getTime();
     var event = {
 		type: type,
 		timestamp: timestamp,
-		source: source,
-		hash: hashCode
+		source: source
 	};
     
     trackEvent(event);
@@ -423,7 +297,7 @@ function trackEvent(event) {
 }
 
 /** Sends queue of events to API. */
-function sendEvents() {
+function sendEvents() {/*
 	var queue = eventQueue;
 	eventQueue = [];
 	$.post(eventUrl, queue, function() {
@@ -434,5 +308,5 @@ function sendEvents() {
 		eventQueue.concat(queue);
 		sendDelay *= 4;
 		sendTimeout = setTimeout(sendEvents, sendDelay);
-	});
+	});*/
 }
