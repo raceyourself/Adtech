@@ -1,7 +1,14 @@
 // TODO: Generate unique ids for each element as src+hashCode may not be unique. 
 
-var eventQueue = [];
 var DEFAULT_SEND_DELAY = 1000; // milliseconds
+var RESOURCE_TAGS = [
+  'IMG',
+  'IMAGE',
+  'OBJECT',
+  'VIDEO'
+];
+
+var eventQueue = [];
 var sendDelay = DEFAULT_SEND_DELAY;
 var sendTimeout = false; // setTimeout reference
 var eventUrl = "https://www.glassinsight.co.uk/api/display_events";
@@ -13,10 +20,7 @@ var recordImpressions = true;
 var recordInteractions = true;
 
 // Images currently at least partially visible on-screen. Set<image>
-var visibleImages = new Set();
-
-// Required for callbacks from background script.
-var tabId;
+var visibleResources = new Set();
 
 var resourcesInPage;
 
@@ -32,17 +36,11 @@ function inIframe() {
 
 function processPage() {
     documentUrl = document.URL;
-    resourcesInPage = $(document).find("img");
-    resourcesInPage = resourcesInPage.add("video");
-    resourcesInPage = resourcesInPage.add("object"); // Flash
-    resourcesInPage = resourcesInPage.add("image"); // SVG
     
-    /*if (!inIframe()) {
-        console.log("Number of iframes: " + window.frames.length);
-    }
-    else {
-        console.log("In an iframe. document.URL=" + documentUrl +";#resourcesInPage=" + resourcesInPage.length);
-    }*/
+    var resourcesInPage = $();
+    RESOURCE_TAGS.forEach(function (tag) {
+        resourcesInPage = resourcesInPage.add(tag.toLowerCase());
+    });
     
     resourcesInPage.each(function(index, pageImage) {
         var jPageImage = $(pageImage);
@@ -56,10 +54,6 @@ function processPage() {
         jPageImage.mouseenter(function(event) {
             recordInteractionInfo(pageImage, data, true);
         });
-      
-        /*if (inIframe()) {
-            console.log("Document:" + documentUrl + "=img.src>" + pageImage.src);
-        }*/
     });
     
 	MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
@@ -69,17 +63,17 @@ function processPage() {
 			var addedNodes = mutation.addedNodes;
 			for (var i = 0; i < addedNodes.length; ++i) {
 				var node = addedNodes[i];
-				if (_.contains(['IMG', 'IMAGE', 'OBJECT', 'VIDEO'], node.nodeName)) {
-					resourcesInPage.push(node);
+				if (_.contains(RESOURCE_TAGS, node.nodeName)) {
+					resourcesInPage = resourcesInPage.add(node);
 				}
 			}
-            /*var removedNodes = mutation.removedNodes;
+            var removedNodes = mutation.removedNodes;
 			for (var i = 0; i < removedNodes.length; ++i) {
 				var node = removedNodes[i];
-				if (_.contains(['IMG', 'IMAGE', 'OBJECT', 'VIDEO'], node.nodeName)) {
-					resourcesInPage.push(node);
+				if (_.contains(RESOURCE_TAGS, node.nodeName)) {
+					resourcesInPage = resourcesInPage.not(node);
 				}
-			}*/
+			}
 		});
 	});
 	// define what element should be observed by the observer and what types of mutations trigger the callback
@@ -133,7 +127,7 @@ $(window).unload(function() {
 
 // Record "not_visible" entries for everything currently visible before navigating to next page to clean up.
 function clearVisible() {
-	visibleImages.forEach(function(image) {
+	visibleResources.forEach(function(image) {
 		var data = elementToDataObj(image);
         
         recordVisibilityInfo(image, data, false);
@@ -145,7 +139,7 @@ function recordVisibilityChanges() {
 	resourcesInPage.each(function(index, image) {
         var data = elementToDataObj(image);
         
-        if (visibleImages.has(image)) {
+        if (visibleResources.has(image)) {
 			if (checkVisible(image)) { // image still in viewport
 				recordVisibilityInfo(image, data, true);
 			}
@@ -153,7 +147,7 @@ function recordVisibilityChanges() {
 				recordVisibilityInfo(image, data, false);				
 				recordImpressionInfo(image, data, false);
               
-				visibleImages.delete(image);
+				visibleResources.delete(image);
 			}
 		}
 		else { // not previously visible.
@@ -161,11 +155,11 @@ function recordVisibilityChanges() {
 				recordVisibilityInfo(image, data, true);
 				recordImpressionInfo(image, data, true);
               
-				visibleImages.add(image);
+				visibleResources.add(image);
 			}
 		}
 	});
-};
+}
 
 // Determines whether an element is within the browser viewport.
 function checkVisible(element) {
