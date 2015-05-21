@@ -44,14 +44,15 @@ function processPage() {
     
     resourcesInPage.each(function(index, pageImage) {
         var jPageImage = $(pageImage);
-        var data = elementToDataObj(pageImage);
         
         jPageImage.mouseleave(function(event) {
             // NOTE: This does not fire until the mouse moves, if we need perfect accuracy
             //       we would need to do our own visibility tracking.
+            var data = elementToDataObj(pageImage);
             recordInteractionInfo(pageImage, data, false);
         });
         jPageImage.mouseenter(function(event) {
+            var data = elementToDataObj(pageImage);
             recordInteractionInfo(pageImage, data, true);
         });
     });
@@ -194,16 +195,20 @@ function elementToDataObj(element) {
         }
     }
     else if (element.nodeName === 'VIDEO') {
-        var videoSource = $('source', $(element)).first()[0];
-        if (videoSource) {
-            data.source = videoSource.src;
-            data.attr = 'video/source[0]/@src';
-        }
-        else {
-            // TODO deal with cases like these. Maybe it's dynamically loaded after the fact?
-            // <video class="video-stream html5-main-video" style="width: 300px; height: 167px; left: 0px; top: -167px; transform: none;"></video>
-            data.source = 'unknown';
-            data.attr = 'video/unknown';
+        data.source = element.src;
+        data.attr = 'video/@src';
+        if (!data.source) {
+            var videoSource = $('source', $(element)).first()[0];
+            if (videoSource) {
+                data.source = videoSource.src;
+                data.attr = 'video/source[0]/@src';
+            }
+            else {
+                // TODO deal with cases like these. Maybe it's dynamically loaded after the fact?
+                // <video class="video-stream html5-main-video" style="width: 300px; height: 167px; left: 0px; top: -167px; transform: none;"></video>
+                data.source = 'unknown';
+                data.attr = 'video/unknown';
+            }
         }
     }
     else if (element.nodeName.toUpperCase() === 'IMAGE') { // toUpperCase() necessary here because this is an SVG element, not an HTML element.
