@@ -42,7 +42,7 @@ function processPage() {
     
     resourcesInPage = $();
     RESOURCE_TAGS_UNWRAPPED.forEach(function (tag) {
-        resourcesInPage = resourcesInPage.add(tag);
+        resourcesInPage = resourcesInPage.add(tag.toLowerCase());
     });
     RESOURCE_TAGS_WRAPPED.forEach(function (tag) {
         // we wrap tags like Flash objects because they can't have mouse listeners on them directly.
