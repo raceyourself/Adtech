@@ -40,7 +40,7 @@ function inIframe() {
 function processPage() {
     documentUrl = document.URL;
     
-    var resourcesInPage = $();
+    resourcesInPage = $();
     RESOURCE_TAGS_UNWRAPPED.forEach(function (tag) {
         resourcesInPage = resourcesInPage.add(tag);
     });
