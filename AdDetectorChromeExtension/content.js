@@ -1,12 +1,15 @@
 // TODO: Generate unique ids for each element as src+hashCode may not be unique. 
 
 var DEFAULT_SEND_DELAY = 1000; // milliseconds
-var RESOURCE_TAGS = [
+var RESOURCE_TAGS_UNWRAPPED = [
   'IMG',
   'IMAGE',
-  'OBJECT',
   'VIDEO'
 ];
+var RESOURCE_TAGS_WRAPPED = [
+  'OBJECT'
+];
+var RESOURCE_TAGS = RESOURCE_TAGS_UNWRAPPED.concat(RESOURCE_TAGS_WRAPPED);
 
 var eventQueue = [];
 var sendDelay = DEFAULT_SEND_DELAY;
@@ -38,8 +41,19 @@ function processPage() {
     documentUrl = document.URL;
     
     var resourcesInPage = $();
-    RESOURCE_TAGS.forEach(function (tag) {
-        resourcesInPage = resourcesInPage.add(tag.toLowerCase());
+    RESOURCE_TAGS_UNWRAPPED.forEach(function (tag) {
+        resourcesInPage = resourcesInPage.add(tag);
+    });
+    RESOURCE_TAGS_WRAPPED.forEach(function (tag) {
+        // we wrap tags like Flash objects because they can't have mouse listeners on them directly.
+        var tagInstances = $(tag.toLowerCase());
+        
+        var wrappedTagInstances = $();
+        tagInstances.each(function(index, tagInstance) {
+            wrappedTagInstances = wrappedTagInstances.add($(tagInstance).wrap('<div></div>'));
+        });
+        
+        resourcesInPage = resourcesInPage.add(wrappedTagInstances);
     });
     
     resourcesInPage.each(function(index, pageImage) {
@@ -64,15 +78,21 @@ function processPage() {
 			var addedNodes = mutation.addedNodes;
 			for (var i = 0; i < addedNodes.length; ++i) {
 				var node = addedNodes[i];
-				if (_.contains(RESOURCE_TAGS, node.nodeName)) {
+				if (_.contains(RESOURCE_TAGS_UNWRAPPED, node.nodeName)) {
 					resourcesInPage = resourcesInPage.add(node);
+				}
+                else if (_.contains(RESOURCE_TAGS_WRAPPED, node.nodeName)) {
+					resourcesInPage = resourcesInPage.add($(node).wrap('<div></div>'));
 				}
 			}
             var removedNodes = mutation.removedNodes;
 			for (var i = 0; i < removedNodes.length; ++i) {
 				var node = removedNodes[i];
-				if (_.contains(RESOURCE_TAGS, node.nodeName)) {
+				if (_.contains(RESOURCE_TAGS_UNWRAPPED, node.nodeName)) {
 					resourcesInPage = resourcesInPage.not(node);
+				}
+                else if (_.contains(RESOURCE_TAGS_WRAPPED, node.nodeName)) {
+					resourcesInPage = resourcesInPage.not($(node).wrap('<div></div>'));
 				}
 			}
 		});
@@ -220,15 +240,17 @@ function elementToDataObj(element) {
         }
     }
     else if (element.nodeName === 'OBJECT') { // flash (/oldschool video?)
-        data.source = element.data;
+        var unwrappedElement = $(element).children()[0];
+        
+        data.source = unwrappedElement.data;
         data.attr = 'object/@data';
         
         if (!data.source) {
             var objectParam;
-            objectParam = $("param[name='movie']", $(element)).first()[0];
+            objectParam = $("param[name='movie']", $(unwrappedElement)).first()[0];
             data.attr = "object/param[name='movie']/@value";
             if (!objectParam) {
-                objectParam = $("param[name='src']", $(element)).first()[0];
+                objectParam = $("param[name='src']", $(unwrappedElement)).first()[0];
                 data.attr = "object/param[name='src']/@value";
             }
 
@@ -236,7 +258,7 @@ function elementToDataObj(element) {
                 data.source = objectParam.value;
             }
             else {
-                var objectEmbed = $("embed", $(element))[0];
+                var objectEmbed = $("embed", $(unwrappedElement))[0];
                 if (objectEmbed) {
                     data.source = objectEmbed.src;
                     data.attr = "object/embed[src]/@value";
