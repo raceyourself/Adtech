@@ -36,7 +36,7 @@ function processPage() {
     resourcesInPage = resourcesInPage.add("video");
     resourcesInPage = resourcesInPage.add("object"); // Flash
     resourcesInPage = resourcesInPage.add("image"); // SVG
-  
+    
     /*if (!inIframe()) {
         console.log("Number of iframes: " + window.frames.length);
     }
@@ -66,13 +66,20 @@ function processPage() {
 	var observer = new MutationObserver(function(mutations, observer) {
 		// fired when a mutation occurs
 		mutations.forEach(function(mutation) {
-			var nodeList = mutation.addedNodes;
-			for (var i = 0; i < nodeList.length; ++i) {
-				var node = nodeList[i];
-				if (node.nodeName == 'IMG') {
+			var addedNodes = mutation.addedNodes;
+			for (var i = 0; i < addedNodes.length; ++i) {
+				var node = addedNodes[i];
+				if (_.contains(['IMG', 'IMAGE', 'OBJECT', 'VIDEO'], node.nodeName)) {
 					resourcesInPage.push(node);
 				}
 			}
+            /*var removedNodes = mutation.removedNodes;
+			for (var i = 0; i < removedNodes.length; ++i) {
+				var node = removedNodes[i];
+				if (_.contains(['IMG', 'IMAGE', 'OBJECT', 'VIDEO'], node.nodeName)) {
+					resourcesInPage.push(node);
+				}
+			}*/
 		});
 	});
 	// define what element should be observed by the observer and what types of mutations trigger the callback
@@ -202,6 +209,7 @@ function elementToDataObj(element) {
             // TODO deal with cases like these. Maybe it's dynamically loaded after the fact?
             // <video class="video-stream html5-main-video" style="width: 300px; height: 167px; left: 0px; top: -167px; transform: none;"></video>
             data.source = 'unknown';
+            data.attr = 'video/unknown';
         }
     }
     else if (element.nodeName.toUpperCase() === 'IMAGE') { // toUpperCase() necessary here because this is an SVG element, not an HTML element.
@@ -230,8 +238,14 @@ function elementToDataObj(element) {
             }
             else {
                 var objectEmbed = $("embed", $(element))[0];
-                data.source = objectEmbed.src;
-                data.attr = "object/embed[src]/@value";
+                if (objectEmbed) {
+                    data.source = objectEmbed.src;
+                    data.attr = "object/embed[src]/@value";
+                }
+                else {
+                    data.source = 'unknown';
+                    data.attr = 'object/unknown';
+                }
             }
         }
     }
