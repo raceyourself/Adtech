@@ -50,7 +50,8 @@ function processPage() {
         
         var wrappedTagInstances = $();
         tagInstances.each(function(index, tagInstance) {
-            wrappedTagInstances = wrappedTagInstances.add($(tagInstance).wrap('<div></div>'));
+            var wrapped = $(tagInstance).wrap('<div></div>');
+            wrappedTagInstances = wrappedTagInstances.add(wrapped);
         });
         
         resourcesInPage = resourcesInPage.add(wrappedTagInstances);
@@ -82,7 +83,8 @@ function processPage() {
 					resourcesInPage = resourcesInPage.add(node);
 				}
                 else if (_.contains(RESOURCE_TAGS_WRAPPED, node.nodeName)) {
-					resourcesInPage = resourcesInPage.add($(node).wrap('<div></div>'));
+                    var wrapper = $(node).wrap('<div class="weseethroughwrapper"></div>').parent();
+					resourcesInPage = resourcesInPage.add(wrapper);
 				}
 			}
             var removedNodes = mutation.removedNodes;
@@ -92,7 +94,8 @@ function processPage() {
 					resourcesInPage = resourcesInPage.not(node);
 				}
                 else if (_.contains(RESOURCE_TAGS_WRAPPED, node.nodeName)) {
-					resourcesInPage = resourcesInPage.not($(node).wrap('<div></div>'));
+                    var wrapper = $(node).parent();
+					resourcesInPage = resourcesInPage.not(wrapper);
 				}
 			}
 		});
@@ -239,7 +242,7 @@ function elementToDataObj(element) {
             data.attr = 'image/@src';
         }
     }
-    else if (element.nodeName === 'OBJECT') { // flash (/oldschool video?)
+    else if (element.nodeName === 'DIV') { // wrapped flash (/oldschool video?)
         var unwrappedElement = $(element).children()[0];
         
         data.source = unwrappedElement.data;
