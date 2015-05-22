@@ -9,15 +9,36 @@
   
   "web_accessible_resources": [
   ],
-  
+  "background": {
+    "scripts": [
+      // Libs
+      "jquery/jquery.min.js",
+      
+      // All of these have been lifted from AdBlock for Chrome
+      "functions.js",
+      "filtering/domainset.js",
+      "filtering/filteroptions.js",
+      "filtering/filtertypes.js",
+      "filtering/filterset.js",
+      "filtering/myfilters.js",
+      "filtering/filternormalizer.js",
+      "idlehandler.js"
+    ]
+  },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
+      "matches": ["http://*/*", "https://*/*"],
       "all_frames": true,
       "match_about_blank": true,
       "js": [
+        // Lifted from AdBlock for Chrome
+        "functions.js",
+        "filtering/filteroptions.js",
+        
+        // Libs
       	"jquery-1.11.1.js",
         "lodash.min.js",
+        
       	"content.js"
   	  ]
     }
