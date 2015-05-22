@@ -377,7 +377,7 @@ function recordInteractionInfo(element, data, isOver) {
 	
     var type = isOver ? 'mouse_enter' : 'mouse_leave';
 	
-    record(type, data.source);
+    record(type, data);
 }
 
 /** Record whether element is in viewport at all or not (binary). */
@@ -386,15 +386,16 @@ function recordImpressionInfo(element, data, isVisible) {
 	
 	var type = isVisible ? 'viewport_enter' : 'viewport_leave';
 	
-    record(type, data.source);
+    record(type, data);
 }
 
-function record(type, source) {
+function record(type, data) {
 	var timestamp = (new Date()).getTime();
     var event = {
 		type: type,
 		timestamp: timestamp,
-		source: source
+		source: data.source,
+        attribute: data.attr
 	};
     
     trackEvent(event);
