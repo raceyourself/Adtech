@@ -10,14 +10,16 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     
     var elType = ElementTypes.fromOnBeforeRequestType(request.frame);
     
-    var responses = {};
+    var advertUrls = [];
     request.urls.forEach(function(url) {
       
       var blacklisted = _myfilters.blocking.matches(url, elType, frameDomain);
       
-      responses[url] = blacklisted;
+      if (blacklisted) {
+        advertUrls.push(url);
+      }
     });
     
-    sendResponse(responses);
+    sendResponse(advertUrls);
   }
 });

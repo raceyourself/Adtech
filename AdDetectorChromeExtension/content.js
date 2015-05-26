@@ -67,11 +67,14 @@ function onAdvertsIdentified(advertUrls) {
   
   // TODO restrict tracked resources to ADVERTS ONLY by using advertUrls.
   
-  for (var [tagInstance, url] of resourcesInPage.entries()) {
-    
-  }
-  
-  
+  var toAdd = [];
+  //for (var [tagInstance, url] of resourcesInPage) {
+  resourcesInPage.forEach(function (url, tagInstance) {
+    if (!_.contains(advertUrls, url)) {
+      toAdd.push(tagInstance);
+    }
+  });
+  advertsInPage = advertsInPage.add(toAdd);
   
   
   
@@ -186,7 +189,9 @@ $(window).unload(function() {
   clearVisible();
   if (eventQueue.length > 0) {
     // TODO: Move to background.js?
-    if (sendTimeout) clearTimeout(sendTimeout);
+    if (sendTimeout) {
+      clearTimeout(sendTimeout);
+    }
     sendEvents();
   }
 });

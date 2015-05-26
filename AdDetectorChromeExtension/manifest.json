@@ -22,7 +22,10 @@
       "filtering/filterset.js",
       "filtering/myfilters.js",
       "filtering/filternormalizer.js",
-      "idlehandler.js"
+      "idlehandler.js",
+      
+      // Custom
+      "background.js"
     ]
   },
   "content_scripts": [
