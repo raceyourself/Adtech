@@ -48,7 +48,7 @@
       "js": [
         // Lifted from AdBlock for Chrome
         "functions.js",
-        "filtering/filteroptions.js",
+        "filtering/filteroptions.js", // TODO remove? unnecessary?
         
         // Libs
       	"jquery-1.11.1.js",
