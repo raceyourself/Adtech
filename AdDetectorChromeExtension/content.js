@@ -172,13 +172,15 @@ else {
   $(document).ready(processPage);
 }
 
+// Mostly useful in main frame:
+
 $(window).scroll(function() {
   if (pageProcessed)
-    recordVisibilityChanges();
+    notifyFramesToCheckVisibilityChanges();
 });
 $(window).resize(function() {
   if (pageProcessed)
-    recordVisibilityChanges();
+    notifyFramesToCheckVisibilityChanges();
 });
 $(window).unload(function() {
   clearVisible();
@@ -188,6 +190,21 @@ $(window).unload(function() {
       clearTimeout(sendTimeout);
     }
     sendEvents();
+  }
+});
+
+/** Possibly ugly way of communicating a resize/scroll event to frames within the page: bounce it off background.js. */
+function notifyFramesToCheckVisibilityChanges() {
+  var payload = {
+    action: 'check_visibility'
+  }
+  chrome.runtime.sendMessage(payload);
+}
+
+// called on ALL frames in page.
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+  if (request.action === 'check_visibility') {
+    recordVisibilityChanges();
   }
 });
 
