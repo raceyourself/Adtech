@@ -80,17 +80,7 @@ function onAdvertsIdentified(advertUrls) {
   });
   advertsInPage = advertsInPage.add(toAdd);
   
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
+  /*
   RESOURCE_TAGS_WRAPPED.forEach(function (tag) {
     // we wrap tags like Flash objects because they can't have mouse listeners on them directly.
     var tagInstances = $(tag.toLowerCase());
@@ -103,6 +93,7 @@ function onAdvertsIdentified(advertUrls) {
     
     resourcesInPage = resourcesInPage.add(wrappedTagInstances);
   });
+  */
   
   // Track mouse movement in/out of adverts.
   
@@ -211,6 +202,8 @@ function clearVisible() {
 }
 
 function recordVisibilityChanges() {
+  //console.log("recordVisibilityChanges - document.URL=" + document.URL + (!inIframe() ? " (top)" : " (frame)"));
+  
   advertsInPage.each(function(index, image) {
     var data = elementToDataObj(image);
     
