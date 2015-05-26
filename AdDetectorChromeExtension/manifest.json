@@ -25,16 +25,16 @@
       // Libs
       "lib/jquery-1.7.1.min.js", // the version that the forked AdBlock uses...
       
-      // All of these have been lifted from AdBlock for Chrome
-      "port.js",
-      "functions.js",
-      "filtering/domainset.js",
-      "filtering/filteroptions.js",
-      "filtering/filtertypes.js",
-      "filtering/filterset.js",
-      "filtering/myfilters.js",
-      "filtering/filternormalizer.js",
-      "idlehandler.js",
+      // All of these have been lifted from AdBlock for Chrome unmodified
+      "adblock/port.js",
+      "adblock/functions.js",
+      "adblock/filtering/domainset.js",
+      "adblock/filtering/filteroptions.js",
+      "adblock/filtering/filtertypes.js",
+      "adblock/filtering/filterset.js",
+      "adblock/filtering/myfilters.js",
+      "adblock/filtering/filternormalizer.js",
+      "adblock/idlehandler.js",
       
       // Custom
       "adblock_init.js",
@@ -47,13 +47,10 @@
       "all_frames": true,
       "match_about_blank": true,
       "js": [
-        // Lifted from AdBlock for Chrome
-        "functions.js",
-        "filtering/filteroptions.js",
-        
         // Libs
       	"lib/jquery-1.11.1.js",
         "lib/lodash-3.8.0.min.js",
+        "lib/jquery.viewport.min.js",
         
         // Custom
       	"content.js"
