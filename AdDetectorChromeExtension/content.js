@@ -172,31 +172,31 @@ else {
   $(document).ready(processPage);
 }
 
-// Mostly useful in main frame:
-
-$(window).scroll(function() {
-  if (pageProcessed)
-    notifyFramesToCheckVisibilityChanges();
-});
-$(window).resize(function() {
-  if (pageProcessed)
-    notifyFramesToCheckVisibilityChanges();
-});
-$(window).unload(function() {
-  clearVisible();
-  if (eventQueue.length > 0) {
-    // TODO: Move to background.js?
-    if (sendTimeout) {
-      clearTimeout(sendTimeout);
+if (!inIframe()) {
+  // TODO consider cases where child frames are scrollable
+  $(window).on('DOMContentLoaded load resize scroll', function() {
+    if (pageProcessed)
+      notifyFramesToCheckVisibilityChanges();
+  });
+  
+  $(window).unload(function() {
+    clearVisible();
+    if (eventQueue.length > 0) {
+      // TODO: Move to background.js?
+      if (sendTimeout) {
+        clearTimeout(sendTimeout);
+      }
+      sendEvents();
     }
-    sendEvents();
-  }
-});
+  });
+}
 
 /** Possibly ugly way of communicating a resize/scroll event to frames within the page: bounce it off background.js. */
 function notifyFramesToCheckVisibilityChanges() {
   var payload = {
-    action: 'check_visibility'
+    action: 'check_visibility',
+    topWindowWidth: $(window).width(),
+    topWindowHeight: $(window).height()
   }
   chrome.runtime.sendMessage(payload);
 }
@@ -247,24 +247,19 @@ function recordVisibilityChanges() {
 }
 
 // Determines whether an element is within the browser viewport.
-function checkVisible(element) {
-  var viewportHeight = $(window).height();
-  var scrollTop = $(window).scrollTop();
-  var elementTop = $(element).offset().top;
-  var elementHeight = $(element).height();
-  
-  var withinBottomBound = (elementTop < (viewportHeight + scrollTop));
-  var withinTopBound = (elementTop > (scrollTop - elementHeight));
-  
-  var viewportWidth = $(window).width();
-  var scrollLeft = $(window).scrollLeft();
-  var elementLeft = $(element).offset().left;
-  var elementWidth = $(element).width();
+function checkVisible(el) {
+    if (typeof jQuery === "function" && el instanceof jQuery) {
+        el = el[0];
+    }
 
-  var withinLeftBound = (elementLeft < (viewportWidth + scrollLeft));
-  var withinRightBound = (elementLeft > (scrollLeft - elementWidth));
-  
-  return withinBottomBound && withinTopBound && withinLeftBound && withinRightBound;
+    var rect = el.getBoundingClientRect();
+
+    return (
+        rect.top >= 0 &&
+        rect.left >= 0 &&
+        rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) && /*or $(window).height() */
+        rect.right <= (window.innerWidth || document.documentElement.clientWidth) /*or $(window).width() */
+    );
 }
 
 function elementToDataObj(element) {
