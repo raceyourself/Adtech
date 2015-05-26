@@ -3,21 +3,48 @@
 
   "name": "We See Through: Advert Detector",
   "description": "Determines whether an advert has been scrolled into view.",
-  "version": "1.1",
+  "version": "1.2",
 
-  "permissions": ["tabs", "<all_urls>", "nativeMessaging"],
-  
-  "web_accessible_resources": [
+  "permissions": [
+    "tabs",
+    "http://*/*",
+    "https://*/*",
+    "idle"
   ],
   
+  "background": {
+    "scripts": [
+      // Libs
+      "lib/jquery-1.7.1.min.js", // the version that the forked AdBlock uses...
+      
+      // All of these have been lifted from AdBlock for Chrome unmodified
+      "adblock/port.js",
+      "adblock/functions.js",
+      "adblock/filtering/domainset.js",
+      "adblock/filtering/filteroptions.js",
+      "adblock/filtering/filtertypes.js",
+      "adblock/filtering/filterset.js",
+      "adblock/filtering/myfilters.js",
+      "adblock/filtering/filternormalizer.js",
+      "adblock/idlehandler.js",
+      
+      // Custom
+      "adblock_init.js",
+      "background.js"
+    ]
+  },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
+      "matches": ["http://*/*", "https://*/*"],
       "all_frames": true,
       "match_about_blank": true,
       "js": [
-      	"jquery-1.11.1.js",
-        "lodash.min.js",
+        // Libs
+      	"lib/jquery-1.11.1.js",
+        "lib/lodash-3.8.0.min.js",
+        "lib/jquery.viewport.min.js",
+        
+        // Custom
       	"content.js"
   	  ]
     }
