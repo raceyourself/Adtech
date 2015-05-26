@@ -5,7 +5,18 @@
   "description": "Determines whether an advert has been scrolled into view.",
   "version": "1.1",
 
-  "permissions": ["tabs", "<all_urls>", "nativeMessaging"],
+  "permissions": [
+    "tabs",
+    "http://*/*",
+    "https://*/*",
+    "idle"
+    
+    // TODO determine if needed:
+    /*
+    "webRequest",
+    "webNavigation",
+    "alarms"*/
+  ],
   
   "web_accessible_resources": [
   ],
@@ -15,6 +26,7 @@
       "jquery/jquery.min.js",
       
       // All of these have been lifted from AdBlock for Chrome
+      "port.js",
       "functions.js",
       "filtering/domainset.js",
       "filtering/filteroptions.js",
