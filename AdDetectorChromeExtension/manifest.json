@@ -10,16 +10,8 @@
     "http://*/*",
     "https://*/*",
     "idle"
-    
-    // TODO determine if needed:
-    /*
-    "webRequest",
-    "webNavigation",
-    "alarms"*/
   ],
   
-  "web_accessible_resources": [
-  ],
   "background": {
     "scripts": [
       // Libs
