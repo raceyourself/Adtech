@@ -22,12 +22,14 @@ function handlerBehaviorChanged() {
   }
 }
 
+var STATS = {
+  version: '2.7.10'
+};
+
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   if (request.action === 'identify_adverts') {
     
-    var frameDomain;
-    if (sender.url)
-      frameDomain = parseUri(sender.url).hostname;
+    var frameDomain = sender.url ? parseUri(sender.url).hostname : '';
     
     var elType = ElementTypes.fromOnBeforeRequestType(request.frame);
     

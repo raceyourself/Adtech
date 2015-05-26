@@ -40,7 +40,7 @@ function inIframe() {
 }
 
 function processPage() {
-  var data = {
+  var payload = {
     action: "identify_adverts",
     frame: inIframe() ? "sub_frame" : "main_frame",
     urls: []
@@ -53,13 +53,13 @@ function processPage() {
   });
   unwrappedResourcesInPage.each(function(index, tagInstance) {
     var data = elementToDataObj(tagInstance);
-    data.urls.push(data.source);
+    payload.urls.push(data.source);
     resourcesInPage.set(tagInstance, data.source);
   });
   
   // TODO wrappedResourcesInPage... if supporting flash.
   
-  chrome.runtime.sendMessage(data, onAdvertsIdentified);
+  chrome.runtime.sendMessage(payload, onAdvertsIdentified);
 }
 
 function onAdvertsIdentified(advertUrls) {
@@ -70,8 +70,12 @@ function onAdvertsIdentified(advertUrls) {
   var toAdd = [];
   //for (var [tagInstance, url] of resourcesInPage) {
   resourcesInPage.forEach(function (url, tagInstance) {
-    if (!_.contains(advertUrls, url)) {
+    if (_.contains(advertUrls, url)) {
       toAdd.push(tagInstance);
+      console.log('Advert URL=' + url + ' found for elem ' + tagInstance.outerHTML);
+    }
+    else {
+      // not an advert resource.
     }
   });
   advertsInPage = advertsInPage.add(toAdd);
