@@ -146,7 +146,7 @@ function onAdvertsIdentified(advertUrls) {
     childList: true
   });  
   
-  (function() {
+  /*(function() {
       // Check visibility change when browser window has moved
       var windowX = window.screenX;
       var windowY = window.screenY;
@@ -157,7 +157,7 @@ function onAdvertsIdentified(advertUrls) {
         windowX = window.screenX;
         windowY = window.screenY;
       }, 1000);
-  }());
+  }());*/
   
   pageProcessed = true;
 }
@@ -194,17 +194,53 @@ if (!inIframe()) {
 /** Possibly ugly way of communicating a resize/scroll event to frames within the page: bounce it off background.js. */
 function notifyFramesToCheckVisibilityChanges() {
   var payload = {
-    action: 'check_visibility',
-    topWindowWidth: $(window).width(),
-    topWindowHeight: $(window).height()
+    action: 'check_visibility2',
+    topWindow: {
+      width: $(window).width(),
+      height: $(window).height()
+    }
   }
-  chrome.runtime.sendMessage(payload);
+  foo(payload);
+}
+
+function foo(payload) {
+  var iframes = $('iframe');
+  iframes.each(function(index, iframe) {
+    var iframePayload = Object.create(payload);//JSON.parse(JSON.stringify(jsonObject));
+    var rect = iframe.getBoundingClientRect();
+    
+    var iframePayload = {
+      action: payload.action,
+      topWindow: payload.topWindow,
+      frame: {
+        top:    rect.top,
+        bottom: rect.bottom,
+        left:   rect.left,
+        right:  rect.right
+      }
+    };
+    if (payload.frame) {
+      iframePayload.frame.top += payload.frame.top;
+      iframePayload.frame.bottom += payload.frame.bottom;
+      iframePayload.frame.left += payload.frame.left;
+      iframePayload.frame.right += payload.frame.right;
+    }
+    
+    iframe.contentWindow.postMessage(iframePayload, '*');
+  });
+  
+  //chrome.runtime.sendMessage(payload);
 }
 
 // called on ALL frames in page.
-chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-  if (request.action === 'check_visibility') {
-    recordVisibilityChanges();
+//chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+window.addEventListener('message', function(event) {
+  request = event.data;
+  
+  if (request.action === 'check_visibility2') {
+    recordVisibilityChanges(request.topWindow, request.frame);
+    
+    foo(request);
   }
 });
 
@@ -218,14 +254,14 @@ function clearVisible() {
   });
 }
 
-function recordVisibilityChanges() {
+function recordVisibilityChanges(topWindow, frame) {
   //console.log("recordVisibilityChanges - document.URL=" + document.URL + (!inIframe() ? " (top)" : " (frame)"));
   
   advertsInPage.each(function(index, image) {
     var data = elementToDataObj(image);
     
     if (visibleResources.has(image)) {
-      if (checkVisible(image)) { // image still in viewport
+      if (checkVisible(image, topWindow, frame)) { // image still in viewport
         recordVisibilityInfo(image, data, true);
       }
       else { // image has left viewport
@@ -236,7 +272,7 @@ function recordVisibilityChanges() {
       }
     }
     else { // not previously visible.
-      if (checkVisible(image)) { // has image entered viewport?
+      if (checkVisible(image, topWindow, frame)) { // has image entered viewport?
         recordVisibilityInfo(image, data, true);
         recordImpressionInfo(image, data, true);
         
@@ -247,18 +283,27 @@ function recordVisibilityChanges() {
 }
 
 // Determines whether an element is within the browser viewport.
-function checkVisible(el) {
+function checkVisible(el, topWindow, frame) {
     if (typeof jQuery === "function" && el instanceof jQuery) {
         el = el[0];
     }
 
     var rect = el.getBoundingClientRect();
+  
+    var rectInViewport = {
+      top: rect.top       + frame.top,
+      bottom: rect.bottom + frame.top,
+      left: rect.left     + frame.left,
+      right: rect.right   + frame.left
+    };
+  
+    console.log('checkVisible() for doc=' + document.URL + ';rect=' + JSON.stringify(rectInViewport) + ';el=' + el.outerHTML);
 
     return (
-        rect.top >= 0 &&
-        rect.left >= 0 &&
-        rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) && /*or $(window).height() */
-        rect.right <= (window.innerWidth || document.documentElement.clientWidth) /*or $(window).width() */
+        rectInViewport.top    >= 0                &&
+        rectInViewport.bottom <= topWindow.height &&
+        rectInViewport.left   >= 0                &&
+        rectInViewport.right  <= topWindow.width
     );
 }
 
@@ -456,7 +501,7 @@ function record(type, data) {
   
   trackEvent(event);
   
-  console.log(JSON.stringify(event));
+  console.log('Advert event: ' + JSON.stringify(event));
 }
 
 function trackEvent(event) {

@@ -18,9 +18,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   }
   else if (request.action === 'check_visibility') {
     // broadcast to all frames that they should check the visibility of tracked adverts.
-    var payload = {
-      action: "check_visibility"
-    };
+    var payload = _.pick(request, ['action', 'topWindowWidth', 'topWindowHeight']);
     chrome.tabs.sendMessage(sender.tab.id, payload);
   }
 });

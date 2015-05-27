@@ -16,6 +16,7 @@
     "scripts": [
       // Libs
       "lib/jquery-1.7.1.min.js", // the version that the forked AdBlock uses...
+      "lib/lodash-3.8.0.min.js", // used in own code only
       
       // All of these have been lifted from AdBlock for Chrome unmodified
       "adblock/port.js",
