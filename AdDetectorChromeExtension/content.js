@@ -176,7 +176,7 @@ if (!inIframe()) {
   // TODO consider cases where child frames are scrollable
   $(window).on('DOMContentLoaded load resize scroll', function() {
     if (pageProcessed)
-      notifyFramesToCheckVisibilityChanges();
+      notifyFramesToCheckVisibilityChangesFromTop();
   });
   
   $(window).unload(function() {
@@ -192,21 +192,20 @@ if (!inIframe()) {
 }
 
 /** Possibly ugly way of communicating a resize/scroll event to frames within the page: bounce it off background.js. */
-function notifyFramesToCheckVisibilityChanges() {
+function notifyFramesToCheckVisibilityChangesFromTop() {
   var payload = {
-    action: 'check_visibility2',
+    action: 'check_visibility',
     topWindow: {
       width: $(window).width(),
       height: $(window).height()
     }
   }
-  foo(payload);
+  notifyFramesToCheckVisibilityChanges(payload);
 }
 
-function foo(payload) {
+function notifyFramesToCheckVisibilityChanges(payload) {
   var iframes = $('iframe');
   iframes.each(function(index, iframe) {
-    var iframePayload = Object.create(payload);//JSON.parse(JSON.stringify(jsonObject));
     var rect = iframe.getBoundingClientRect();
     
     var iframePayload = {
@@ -228,19 +227,15 @@ function foo(payload) {
     
     iframe.contentWindow.postMessage(iframePayload, '*');
   });
-  
-  //chrome.runtime.sendMessage(payload);
 }
 
-// called on ALL frames in page.
-//chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 window.addEventListener('message', function(event) {
   request = event.data;
   
-  if (request.action === 'check_visibility2') {
+  if (request.action === 'check_visibility') {
     recordVisibilityChanges(request.topWindow, request.frame);
     
-    foo(request);
+    notifyFramesToCheckVisibilityChanges(request);
   }
 });
 
@@ -284,27 +279,33 @@ function recordVisibilityChanges(topWindow, frame) {
 
 // Determines whether an element is within the browser viewport.
 function checkVisible(el, topWindow, frame) {
-    if (typeof jQuery === "function" && el instanceof jQuery) {
-        el = el[0];
-    }
+  if (typeof jQuery === "function" && el instanceof jQuery) {
+      el = el[0];
+  }
 
-    var rect = el.getBoundingClientRect();
+  var rect = el.getBoundingClientRect();
+  var rectJ = {
+    top: rect.top,
+    bottom: rect.bottom,
+    left: rect.left,
+    right: rect.right
+  };
   
-    var rectInViewport = {
-      top: rect.top       + frame.top,
-      bottom: rect.bottom + frame.top,
-      left: rect.left     + frame.left,
-      right: rect.right   + frame.left
-    };
-  
-    console.log('checkVisible() for doc=' + document.URL + ';rect=' + JSON.stringify(rectInViewport) + ';el=' + el.outerHTML);
+  var rectInViewport = {
+    top: rect.top       + frame.top,
+    bottom: rect.bottom + frame.top,
+    left: rect.left     + frame.left,
+    right: rect.right   + frame.left
+  };
 
-    return (
-        rectInViewport.top    >= 0                &&
-        rectInViewport.bottom <= topWindow.height &&
-        rectInViewport.left   >= 0                &&
-        rectInViewport.right  <= topWindow.width
-    );
+  console.log('checkVisible() for doc=' + document.URL + ';rectInViewport=' + JSON.stringify(rectInViewport) + ';rectJ=' + JSON.stringify(rectJ) + ';frame=' + JSON.stringify(frame) + ';el=' + el.outerHTML);
+
+  return ( // FIXME returns false if only part of el is visible
+      rectInViewport.top    >= 0                &&
+      rectInViewport.bottom <= topWindow.height &&
+      rectInViewport.left   >= 0                &&
+      rectInViewport.right  <= topWindow.width
+  );
 }
 
 function elementToDataObj(element) {
