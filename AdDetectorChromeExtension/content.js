@@ -207,11 +207,6 @@ function notifyFramesToCheckVisibilityChanges(payload) {
   var iframes = $('iframe');
   iframes.each(function(index, iframe) {
     var rect = iframe.getBoundingClientRect();
-    var parentId = $(iframe).parent()[0].id;
-    if (parentId === 'TopRight') {
-      var foo = 'aaa';
-      foo = '';
-    }
     var iframePayload = {
       action: payload.action,
       topWindow: payload.topWindow,
@@ -303,26 +298,23 @@ function checkVisible(el, topWindow, frame) {
     left: rect.left     + frame.left,
     right: rect.right   + frame.left
   };
+  
+  var topVisible = rectInViewport.top >= 0       && rectInViewport.top <= topWindow.height;
+  var bottomVisible = rectInViewport.bottom >= 0 && rectInViewport.bottom <= topWindow.height;
+  var leftVisible = rectInViewport.left >= 0     && rectInViewport.right <= topWindow.width;
+  var rightVisible = rectInViewport.right >= 0   && rectInViewport.right <= topWindow.width;
+  
+  var visible = (topVisible || bottomVisible) && (leftVisible || rightVisible);
 
-  console.log('checkVisible() for doc=' + document.URL + ';rectJ=' + JSON.stringify(rectJ) + ';frame=' + JSON.stringify(frame) + ';rectInViewport=' + JSON.stringify(rectInViewport) + ';el=' + el.outerHTML);
-
+  console.log('checkVisible() for doc=' + document.URL + ' ;visible=' + visible + ';rectJ=' + JSON.stringify(rectJ) + ';frame=' + JSON.stringify(frame) + ';rectInViewport=' + JSON.stringify(rectInViewport) + ';el=' + el.outerHTML);
+  
   if (frame.top === 0 && frame.bottom === 0 && frame.left === 0 && frame.right === 0) {
     // values all go to zero when it's off screen.
     // possibly due to a bug, the values are ALSO zero when right at the top of the page. so some underreporting of adverts.
     return false;
   }
-  return (
-    rectInViewport.top    >= 0                &&
-    rectInViewport.bottom <= topWindow.height &&
-    rectInViewport.left   >= 0                &&
-    rectInViewport.right  <= topWindow.width
-  );
-  /*return (
-    (rectInViewport.top    >= 0                 ||
-     rectInViewport.bottom <= topWindow.height) &&
-    (rectInViewport.left   >= 0                 ||
-     rectInViewport.right  <= topWindow.width)
-  );*/
+  
+  return visible;
 }
 
 function elementToDataObj(element) {
