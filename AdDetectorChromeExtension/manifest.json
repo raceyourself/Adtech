@@ -29,7 +29,7 @@
       "adblock/idlehandler.js",
       
       // Custom
-      "adblock_init.js",
+      "adblock_init.js", // custom stub methods/vars for adblock code
       "background.js"
     ]
   },
@@ -42,7 +42,6 @@
         // Libs
       	"lib/jquery-1.11.1.js",
         "lib/lodash-3.8.0.min.js",
-        "lib/jquery.viewport.min.js",
         
         // Custom
       	"content.js"

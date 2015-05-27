@@ -146,7 +146,7 @@ function onAdvertsIdentified(advertUrls) {
     childList: true
   });  
   
-  (function() {
+  /*(function() {
       // Check visibility change when browser window has moved
       var windowX = window.screenX;
       var windowY = window.screenY;
@@ -157,7 +157,7 @@ function onAdvertsIdentified(advertUrls) {
         windowX = window.screenX;
         windowY = window.screenY;
       }, 1000);
-  }());
+  }());*/
   
   pageProcessed = true;
 }
@@ -176,7 +176,7 @@ if (!inIframe()) {
   // TODO consider cases where child frames are scrollable
   $(window).on('DOMContentLoaded load resize scroll', function() {
     if (pageProcessed)
-      notifyFramesToCheckVisibilityChanges();
+      notifyFramesToCheckVisibilityChangesFromTop();
   });
   
   $(window).unload(function() {
@@ -192,19 +192,49 @@ if (!inIframe()) {
 }
 
 /** Possibly ugly way of communicating a resize/scroll event to frames within the page: bounce it off background.js. */
-function notifyFramesToCheckVisibilityChanges() {
+function notifyFramesToCheckVisibilityChangesFromTop() {
   var payload = {
     action: 'check_visibility',
-    topWindowWidth: $(window).width(),
-    topWindowHeight: $(window).height()
+    topWindow: {
+      width: $(window).width(),
+      height: $(window).height()
+    }
   }
-  chrome.runtime.sendMessage(payload);
+  notifyFramesToCheckVisibilityChanges(payload);
 }
 
-// called on ALL frames in page.
-chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+function notifyFramesToCheckVisibilityChanges(payload) {
+  var iframes = $('iframe');
+  iframes.each(function(index, iframe) {
+    var rect = iframe.getBoundingClientRect();
+    var iframePayload = {
+      action: payload.action,
+      topWindow: payload.topWindow,
+      frame: {
+        top:    rect.top,
+        bottom: rect.bottom,
+        left:   rect.left,
+        right:  rect.right
+      }
+    };
+    if (payload.frame) {
+      iframePayload.frame.top += payload.frame.top;
+      iframePayload.frame.bottom += payload.frame.bottom;
+      iframePayload.frame.left += payload.frame.left;
+      iframePayload.frame.right += payload.frame.right;
+    }
+    
+    iframe.contentWindow.postMessage(iframePayload, '*');
+  });
+}
+
+window.addEventListener('message', function(event) {
+  request = event.data;
+  
   if (request.action === 'check_visibility') {
-    recordVisibilityChanges();
+    recordVisibilityChanges(request.topWindow, request.frame);
+    
+    notifyFramesToCheckVisibilityChanges(request);
   }
 });
 
@@ -218,14 +248,14 @@ function clearVisible() {
   });
 }
 
-function recordVisibilityChanges() {
+function recordVisibilityChanges(topWindow, frame) {
   //console.log("recordVisibilityChanges - document.URL=" + document.URL + (!inIframe() ? " (top)" : " (frame)"));
   
   advertsInPage.each(function(index, image) {
     var data = elementToDataObj(image);
     
     if (visibleResources.has(image)) {
-      if (checkVisible(image)) { // image still in viewport
+      if (checkVisible(image, topWindow, frame)) { // image still in viewport
         recordVisibilityInfo(image, data, true);
       }
       else { // image has left viewport
@@ -236,7 +266,7 @@ function recordVisibilityChanges() {
       }
     }
     else { // not previously visible.
-      if (checkVisible(image)) { // has image entered viewport?
+      if (checkVisible(image, topWindow, frame)) { // has image entered viewport?
         recordVisibilityInfo(image, data, true);
         recordImpressionInfo(image, data, true);
         
@@ -247,19 +277,44 @@ function recordVisibilityChanges() {
 }
 
 // Determines whether an element is within the browser viewport.
-function checkVisible(el) {
-    if (typeof jQuery === "function" && el instanceof jQuery) {
-        el = el[0];
-    }
+function checkVisible(el, topWindow, frame) {
+  if (typeof jQuery === "function" && el instanceof jQuery) {
+      el = el[0];
+  }
 
-    var rect = el.getBoundingClientRect();
+  var rect = el.getBoundingClientRect();
+  var rectJ = {
+    top: rect.top,
+    bottom: rect.bottom,
+    left: rect.left,
+    right: rect.right,
+    height: rect.height,
+    width: rect.width
+  };
+  
+  var rectInViewport = {
+    top: rect.top       + frame.top,
+    bottom: rect.bottom + frame.top,
+    left: rect.left     + frame.left,
+    right: rect.right   + frame.left
+  };
+  
+  var topVisible = rectInViewport.top >= 0       && rectInViewport.top <= topWindow.height;
+  var bottomVisible = rectInViewport.bottom >= 0 && rectInViewport.bottom <= topWindow.height;
+  var leftVisible = rectInViewport.left >= 0     && rectInViewport.right <= topWindow.width;
+  var rightVisible = rectInViewport.right >= 0   && rectInViewport.right <= topWindow.width;
+  
+  var visible = (topVisible || bottomVisible) && (leftVisible || rightVisible);
 
-    return (
-        rect.top >= 0 &&
-        rect.left >= 0 &&
-        rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) && /*or $(window).height() */
-        rect.right <= (window.innerWidth || document.documentElement.clientWidth) /*or $(window).width() */
-    );
+  console.log('checkVisible() for doc=' + document.URL + ' ;visible=' + visible + ';rectJ=' + JSON.stringify(rectJ) + ';frame=' + JSON.stringify(frame) + ';rectInViewport=' + JSON.stringify(rectInViewport) + ';el=' + el.outerHTML);
+  
+  if (frame.top === 0 && frame.bottom === 0 && frame.left === 0 && frame.right === 0) {
+    // values all go to zero when it's off screen.
+    // possibly due to a bug, the values are ALSO zero when right at the top of the page. so some underreporting of adverts.
+    return false;
+  }
+  
+  return visible;
 }
 
 function elementToDataObj(element) {
@@ -456,7 +511,7 @@ function record(type, data) {
   
   trackEvent(event);
   
-  console.log(JSON.stringify(event));
+  console.log('Advert event: ' + JSON.stringify(event));
 }
 
 function trackEvent(event) {
