@@ -33,13 +33,16 @@ var documentUrl;
 
 function inIframe() {
   try {
-    return window.self !== window.top;
+    var isTop = window.self === window.top;
+    return !isTop;
   } catch (e) {
     return true;
   }
 }
 
 function processPage() {
+  documentUrl = document.URL;
+  
   var payload = {
     action: "identify_adverts",
     frame: inIframe() ? "sub_frame" : "main_frame",
@@ -53,8 +56,11 @@ function processPage() {
   });
   unwrappedResourcesInPage.each(function(index, tagInstance) {
     var data = elementToDataObj(tagInstance);
-    payload.urls.push(data.source);
-    resourcesInPage.set(tagInstance, data.source);
+    
+    if (data.source && data.source.indexOf('data:') !== 0) {
+      payload.urls.push(data.source);
+      resourcesInPage.set(tagInstance, data.source);
+    }
   });
   
   // TODO wrappedResourcesInPage... if supporting flash.
@@ -63,8 +69,6 @@ function processPage() {
 }
 
 function onAdvertsIdentified(advertUrls) {
-  documentUrl = document.URL;
-  
   // TODO restrict tracked resources to ADVERTS ONLY by using advertUrls.
   
   var toAdd = [];
@@ -163,16 +167,18 @@ function onAdvertsIdentified(advertUrls) {
 }
 
 if (inIframe()) {
+  console.log('Prepping frame.');
+  
   $(document).ready(function() {
     setTimeout(processPage, 5000);
   });
   //$(document).load();
 }
-else {
+else { // main frame
+  console.log('Prepping main page.');
+  
   $(document).ready(processPage);
-}
 
-if (!inIframe()) {
   // TODO consider cases where child frames are scrollable
   $(window).on('DOMContentLoaded load resize scroll', function() {
     if (pageProcessed)

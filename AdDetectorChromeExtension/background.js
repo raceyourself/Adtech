@@ -7,10 +7,14 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     
     var advertUrls = [];
     request.urls.forEach(function(url) {
-      var blacklisted = _myfilters.blocking.matches(url, elType, frameDomain);
-      
-      if (blacklisted) {
-        advertUrls.push(url);
+      try {
+        var blacklisted = _myfilters.blocking.matches(url, elType, frameDomain);
+
+        if (blacklisted) {
+          advertUrls.push(url);
+        }
+      } catch (e) {
+        console.log('Error checking blacklist for url=' + url + ' ; elType=' + elType + ' ; frameDomain=' + frameDomain + ': ' + e);
       }
     });
     
