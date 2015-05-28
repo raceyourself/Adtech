@@ -14,7 +14,7 @@ var RESOURCE_TAGS = RESOURCE_TAGS_UNWRAPPED.concat(RESOURCE_TAGS_WRAPPED);
 var eventQueue = [];
 var sendDelay = DEFAULT_SEND_DELAY;
 var sendTimeout = false; // setTimeout reference
-var eventUrl = "http://insight-staging.glassinsight.co.uk/log_advert_urls";
+var eventUrl = "http://insight-staging.glassinsight.co.uk/advert_events";
 
 var pageProcessed = false;
 

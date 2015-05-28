@@ -1,5 +1,6 @@
 /*jshint node: true, devel: true, sub: true*/
 'use strict';
+
 var express = require('express');
 //var path = require('path');
 var util = require("util"); 
@@ -54,7 +55,7 @@ app.all('*', function(req, res, next) {
 
 app.use(bodyParser.json());
 
-app.post('/log_advert_urls', function(request, response) {
+app.post('/advert_events', function(request, response) {
   var multi = redisClient.multi();
   
   // caress_advert_events is a log of advert interactions - viewport entry/exit, mouse enter/leave.
