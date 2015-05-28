@@ -57,6 +57,7 @@ app.use(bodyParser.json());
 app.post('/log_advert_urls', function(request, response) {
   var multi = redisClient.multi();
   
+  // caress_advert_events is a log of advert interactions - viewport entry/exit, mouse enter/leave.
   request.body.events.forEach(function (event) {
     multi.lpush("caress_advert_events", JSON.stringify(event));
   });

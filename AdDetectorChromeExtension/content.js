@@ -534,12 +534,12 @@ function sendEvents() {
     events: queue
   };
   
-  /*
   $.ajax({
     type: 'POST',
     url:  eventUrl,
-    data: payload,
-    contentType: 'application/json'
+    data: JSON.stringify(payload),
+    contentType: 'application/json',
+    processData: false
   }).done(function() {
     console.log("Sent " + queue.length + " events");    
     sendDelay = DEFAULT_SEND_DELAY;
@@ -549,5 +549,4 @@ function sendEvents() {
     sendDelay *= 4;
     sendTimeout = setTimeout(sendEvents, sendDelay);
   });
-  */
 }
