@@ -1,3 +1,13 @@
+////////////// INITIAL SETUP //////////////
+
+var firstRun = false;
+if (!localStorage['ran_before']) {
+  firstRun = true;
+  localStorage['ran_before'] = '1';
+}
+
+////////////// COMMS WITH CONTENT SCRIPT //////////////
+
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   if (request.action === 'identify_adverts') {
     
@@ -22,8 +32,10 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   }
 });
 
+////////////// KILL SWITCH //////////////
+
 var KILL_SWITCH_URL = 'https://demo.haystackplatform.com/workspaces/demo/_kill_';
-var KILL_SWITCH_POLL_INTERVAL = 0.5 * 60 * 1000; // every .5 minutes.
+var KILL_SWITCH_POLL_INTERVAL = 10 * 60 * 1000; // every .5 minutes.
 
 /** Check a URL to determine whether the extension should be uninstalled. */
 setInterval(function checkKillSwitch() {
