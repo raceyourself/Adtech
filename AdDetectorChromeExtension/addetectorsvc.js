@@ -57,7 +57,13 @@ app.use(bodyParser.json());
 app.post('/log_advert_urls', function(request, response) {
   var multi = redisClient.multi();
   
-  request.body.urls.forEach(function (url) {
+  request.body.events.forEach(function (event) {
+    multi.lpush("caress_advert_events", JSON.stringify(event));
+  });
+  
+  var urls = _.uniq(_.map(request.body.events, function(event) {return event.source}));
+  
+  urls.forEach(function (url) {
     multi.hsetnx("caress_advert_urls", url, '');
   });
   

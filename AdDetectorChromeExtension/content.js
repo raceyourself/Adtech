@@ -531,10 +531,15 @@ function sendEvents() {
   eventQueue = [];
   
   var payload = {
-    urls: queue
+    events: queue
   };
   
-  $.post(eventUrl, payload, function() {
+  $.ajax({
+    type: 'POST',
+    url:  eventUrl,
+    data: payload,
+    contentType: 'application/json'
+  }).done(function() {
     console.log("Sent " + queue.length + " events");    
     sendDelay = DEFAULT_SEND_DELAY;
     sendTimeout = false;
