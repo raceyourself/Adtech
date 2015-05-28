@@ -31,6 +31,8 @@ var resourcesInPage = new Map();
 
 var documentUrl;
 
+var respondent;
+
 function inIframe() {
   try {
     var isTop = window.self === window.top;
@@ -65,10 +67,12 @@ function processPage() {
   
   // TODO wrappedResourcesInPage... if supporting flash.
   
-  chrome.runtime.sendMessage(payload, onAdvertsIdentified);
+  chrome.runtime.sendMessage(payload, onAdvertsAndRespondentIdentified);
 }
 
-function onAdvertsIdentified(advertUrls) {
+function onAdvertsAndRespondentIdentified(response) {
+  var advertUrls = response.advertUrls;
+  respondent = response.respondent;
   // TODO restrict tracked resources to ADVERTS ONLY by using advertUrls.
   
   var toAdd = [];
@@ -152,6 +156,7 @@ function onAdvertsIdentified(advertUrls) {
   
   /*(function() {
       // Check visibility change when browser window has moved
+      // TODO add args to recordVisibilityChanges() call
       var windowX = window.screenX;
       var windowY = window.screenY;
       setInterval(function() {
@@ -473,7 +478,8 @@ function recordVisibilityInfo(element, data, isVisible) {
     type: "visibility",
     timestamp: timestamp,
     source: source,
-    visible: isVisible
+    visible: isVisible,
+    respondent: respondent
   };
   
   if (isVisible) {
@@ -512,7 +518,8 @@ function record(type, data) {
     type: type,
     timestamp: timestamp,
     source: data.source,
-    attribute: data.attr
+    attribute: data.attr,
+    respondent: respondent
   };
   
   trackEvent(event);
@@ -527,6 +534,9 @@ function trackEvent(event) {
 
 /** Sends queue of events to API. */
 function sendEvents() {
+  if (eventQueue.length === 0)
+    return;
+  
   var queue = eventQueue;
   eventQueue = [];
   

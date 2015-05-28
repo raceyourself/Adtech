@@ -1,9 +1,16 @@
+var KILL_SWITCH_URL = 'https://demo.haystackplatform.com/workspaces/demo/_kill_';
+var KILL_SWITCH_POLL_INTERVAL = 10 * 60 * 1000; // every .5 minutes.
+
+var respondent;
+
 ////////////// INITIAL SETUP //////////////
 
 var firstRun = false;
-if (!localStorage['ran_before']) {
+if (!localStorage['first_launch']) {
   firstRun = true;
-  localStorage['ran_before'] = '1';
+  localStorage['first_launch'] = '1';
+  
+  chrome.tabs.create({url: "options.html"});
 }
 
 ////////////// COMMS WITH CONTENT SCRIPT //////////////
@@ -15,34 +22,39 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     
     var elType = ElementTypes.fromOnBeforeRequestType(request.frame);
     
-    var advertUrls = [];
+    var payload = {};
+    payload.respondent = respondent;
+    payload.advertUrls = [];
     request.urls.forEach(function(url) {
       try {
         var blacklisted = _myfilters.blocking.matches(url, elType, frameDomain);
 
         if (blacklisted) {
-          advertUrls.push(url);
+          payload.advertUrls.push(url);
         }
       } catch (e) {
         console.log('Error checking blacklist for url=' + url + ' ; elType=' + elType + ' ; frameDomain=' + frameDomain + ': ' + e);
       }
     });
     
-    sendResponse(advertUrls);
+    sendResponse(payload);
   }
 });
 
-////////////// KILL SWITCH //////////////
-
-var KILL_SWITCH_URL = 'https://demo.haystackplatform.com/workspaces/demo/_kill_';
-var KILL_SWITCH_POLL_INTERVAL = 10 * 60 * 1000; // every .5 minutes.
-
-/** Check a URL to determine whether the extension should be uninstalled. */
-setInterval(function checkKillSwitch() {
+function performChecks() {
+  chrome.storage.sync.get('respondent', function(items) {
+    respondent = items.respondent;
+  });
+  
+  ////////////// KILL SWITCH //////////////
+  
   $.get(KILL_SWITCH_URL, function success(data) {
     console.log('Kill switch on.');
     chrome.management.uninstallSelf(); // will not prompt user.
   }).fail(function() {
     //console.log('Kill switch off.');
   });
-}, KILL_SWITCH_POLL_INTERVAL);
+}
+
+performChecks();
+setInterval(performChecks, KILL_SWITCH_POLL_INTERVAL);
