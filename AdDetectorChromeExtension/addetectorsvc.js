@@ -55,15 +55,21 @@ app.all('*', function(req, res, next) {
 app.use(bodyParser.json());
 
 app.post('/log_advert_urls', function(request, response) {
-  var urls = request.body.urls;
+  var multi = redisClient.multi();
   
-  // add to set caress_advert_urls if not present.
-  redisClient.sadd("caress_advert_urls", urls, function(error, results) {
-    if (error)
-      response.status(500).send('Cannot add URLs to set caress_adverts in Redis: ' + err);
-    else
-      response.status(200).send('Logged URLs');
+  request.body.urls.forEach(function (url) {
+    multi.hsetnx("caress_advert_urls", url, '');
   });
+  
+  multi.exec(function(error, results) {
+    if (error) {
+      response.status(500).send('Cannot add URLs to set caress_adverts in Redis: ' + error);
+    }
+    else {
+      response.status(200).send('Logged ' + results.length + ' URLs');
+    }
+  });
+  
 });
 
 config.app = config.app || {};

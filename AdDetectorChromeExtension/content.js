@@ -14,7 +14,7 @@ var RESOURCE_TAGS = RESOURCE_TAGS_UNWRAPPED.concat(RESOURCE_TAGS_WRAPPED);
 var eventQueue = [];
 var sendDelay = DEFAULT_SEND_DELAY;
 var sendTimeout = false; // setTimeout reference
-var eventUrl = "https://www.glassinsight.co.uk/api/display_events";
+var eventUrl = "http://insight-staging.glassinsight.co.uk/log_advert_urls";
 
 var pageProcessed = false;
 
@@ -526,10 +526,15 @@ function trackEvent(event) {
 }
 
 /** Sends queue of events to API. */
-function sendEvents() {/*
+function sendEvents() {
   var queue = eventQueue;
   eventQueue = [];
-  $.post(eventUrl, queue, function() {
+  
+  var payload = {
+    urls: queue
+  };
+  
+  $.post(eventUrl, payload, function() {
     console.log("Sent " + queue.length + " events");    
     sendDelay = DEFAULT_SEND_DELAY;
     sendTimeout = false;
@@ -537,5 +542,5 @@ function sendEvents() {/*
     eventQueue.concat(queue);
     sendDelay *= 4;
     sendTimeout = setTimeout(sendEvents, sendDelay);
-  });*/
+  });
 }
