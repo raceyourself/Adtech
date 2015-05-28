@@ -34,16 +34,16 @@ var elementPurger = {
         var random = Math.random();
         
         if (results.length) {
-          if (random < advertInjectionPct) {
+          //if (random < advertInjectionPct) {
             for (var j=0; j < results.length; j++) {
               destroyElement(results[j], elType);
             }
-            var externalId = "bembpjcmomcfiajbaangljhhfhdoocab"; // Set to Advert Replacer Chrome extension ID
+            var externalId = "ffabfmjkgipjchmgoijenfpmboojalmi"; // Set to Advert Replacer Chrome extension ID
             request.selector = selector;
             chrome.extension.sendRequest(externalId, request);
             
             return; // I doubt the same URL was loaded via 2 different src attrs.
-          }
+          //}
         }
       }
     }

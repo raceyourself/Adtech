@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
 
-  "name": "We See Through: Advert Detector",
+  "name": "We See Through",
   "description": "Determines whether an advert has been scrolled into view.",
   "version": "1.2",
 
@@ -21,10 +21,8 @@
   
   "background": {
     "scripts": [
-      // Libs
-      "lib/jquery-1.7.1.min.js", // the version that the forked AdBlock uses...
+      "lib/jquery-1.7.1.min.js",
       
-      // All of these have been lifted from AdBlock for Chrome unmodified
       "adblock/port.js",
       "adblock/functions.js",
       "adblock/filtering/domainset.js",
@@ -35,8 +33,8 @@
       "adblock/filtering/filternormalizer.js",
       "adblock/idlehandler.js",
       
-      // Custom
-      "adblock_init.js", // custom stub methods/vars for adblock code
+      "adblock_init.js",
+      
       "background.js"
     ]
   },
@@ -46,11 +44,9 @@
       "all_frames": true,
       "match_about_blank": true,
       "js": [
-        // Libs
       	"lib/jquery-1.11.1.js",
         "lib/lodash-3.8.0.min.js",
         
-        // Custom
       	"content.js"
   	  ]
     }
