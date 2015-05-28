@@ -534,6 +534,7 @@ function sendEvents() {
     events: queue
   };
   
+  /*
   $.ajax({
     type: 'POST',
     url:  eventUrl,
@@ -548,4 +549,5 @@ function sendEvents() {
     sendDelay *= 4;
     sendTimeout = setTimeout(sendEvents, sendDelay);
   });
+  */
 }
