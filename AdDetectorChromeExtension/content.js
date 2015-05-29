@@ -106,15 +106,15 @@ function onAdvertsAndRespondentIdentified(response) {
       // NOTE: This does not fire until the mouse moves, if we need perfect accuracy
       //     we would need to do our own visibility tracking.
       var data = elementToDataObj(pageImage);
-      recordInteractionInfo(pageImage, data, false);
+      recordInteractionInfo(pageImage, data, false, event);
     });
     jPageImage.mouseenter(function(event) {
       var data = elementToDataObj(pageImage);
-      recordInteractionInfo(pageImage, data, true);
+      recordInteractionInfo(pageImage, data, true, event);
     });
     jPageImage.click(function(event) {
       var data = elementToDataObj(pageImage);
-      recordClickInfo(pageImage, data);
+      recordClickInfo(pageImage, data, event);
     });
   });
   
@@ -486,12 +486,12 @@ function recordVisibilityInfo(element, data, isVisible) {
 }
 
 /** Record mouse movement in/out of element. */
-function recordInteractionInfo(element, data, isOver) {
+function recordInteractionInfo(element, data, isOver, event) {
   if (!recordInteractions) return;
   
   var type = isOver ? 'mouse_enter' : 'mouse_leave';
   
-  record(type, data);
+  record(type, data, event);
 }
 
 /** Record whether element is in viewport at all or not (binary). */
@@ -500,29 +500,32 @@ function recordImpressionInfo(element, data, isVisible) {
   
   var type = isVisible ? 'viewport_enter' : 'viewport_leave';
   
-  record(type, data);
+  record(type, data, {});
 }
 
-function recordClickInfo(element, data) {
-  record("click", data);
+function recordClickInfo(element, data, event) {
+  record("click", data, event);
 }
 
-function record(type, data) {
+function record(type, data, event) {
   var timestamp = (new Date()).getTime();
   var event = {
     type: type,
     timestamp: timestamp,
     source: data.source,
     attribute: data.attr,
-    respondent: respondent
+    respondent: respondent,
+    // take these with pinch of salt. if in iframe, is relative to that.
+    xCoord: event.clientX,
+    yCoord: event.clientY
   };
   
   trackEvent(event);
-  
-  console.log('WST:Advert event: ' + JSON.stringify(event));
 }
 
 function trackEvent(event) {
+  console.log('WST:Advert event: ' + JSON.stringify(event));
+  
   var payload = {
     action: 'track_event',
     event: event
