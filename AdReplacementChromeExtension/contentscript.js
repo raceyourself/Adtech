@@ -235,6 +235,7 @@ _augment: function(el, callback) {
 
 // Add an info card to |newPic| that appears on hover.
 _addInfoCardTo: function(newPic, placement) {
+  if (true) return; // No overlay
   if (newPic.infoCard)
     return;
   // We use a direct sendRequest onmouseenter to avoid modifying
