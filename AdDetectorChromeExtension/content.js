@@ -3,7 +3,8 @@
 var RESOURCE_TAGS_UNWRAPPED = [
   'IMG',
   'IMAGE',
-  'VIDEO'
+  'VIDEO',
+  'OBJECT'
 ];
 var RESOURCE_TAGS_WRAPPED = [
   //'OBJECT'
@@ -355,8 +356,10 @@ function elementToDataObj(element) {
       data.attr = 'image/@src';
     }
   }
-  else if (element.nodeName === 'DIV') { // wrapped flash (/oldschool video?)
-    var unwrappedElement = $(element).children()[0];
+  //else if (element.nodeName === 'DIV') { // wrapped flash (/oldschool video?)
+    //var unwrappedElement = element;//$(element).children()[0];
+  else if (element.nodeName === 'OBJECT') { // flash
+    var unwrappedElement = element;
     
     data.source = unwrappedElement.data;
     data.attr = 'object/@data';
