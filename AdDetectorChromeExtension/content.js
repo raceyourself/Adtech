@@ -33,7 +33,7 @@ var respondent;
 
 var INJECTABLE_ADS = [{
   min_width: 100,
-  min_height: 100,
+  min_height: 50,
   width: 600,
   height: 600,
   ar_flex: 0.2,
@@ -42,13 +42,83 @@ var INJECTABLE_ADS = [{
   url: 'http://www.houseofcaress.com/'
 }, {
   min_width: 100,
-  min_height: 100,
+  min_height: 50,
   width: 600,
   height: 600,
   ar_flex: 0.2,
   tag: 'img',
   src: 'images/pink_rose_wall.jpg',
   url: 'http://www.houseofcaress.com/'
+}, {
+  min_width: 100,
+  min_height: 50,
+  width: 600,
+  height: 600,
+  ar_flex: 0.2,
+  tag: 'img',
+  src: 'images/CaressCouple_Technology_Facebook.jpg',
+  url: 'http://www.houseofcaress.com/',
+  location: /facebook.com/i
+}, {
+  min_width: 100,
+  min_height: 50,
+  width: 600,
+  height: 600,
+  ar_flex: 0.2,
+  tag: 'img',
+  src: 'images/Caress_DebussyMarch_FingerTouch_FB.jpg',
+  url: 'http://www.houseofcaress.com/',
+  location: /facebook.com/i
+}, {
+  min_width: 100,
+  min_height: 50,
+  width: 320,
+  height: 180,
+  ar_flex: 0.2,
+  tag: 'img',
+  src: 'images/Caress_Movingstill_1_Armpetals.gif',
+  url: 'http://www.houseofcaress.com/',
+  location: /facebook.com/i
+}, {
+  min_width: 100,
+  min_height: 50,
+  width: 320,
+  height: 199,
+  ar_flex: 0.2,
+  tag: 'img',
+  src: 'images/Caress_Movingstill_2_Bloom.gif',
+  url: 'http://www.houseofcaress.com/',
+  location: /facebook.com/i
+}, {
+  min_width: 100,
+  min_height: 50,
+  width: 320,
+  height: 172,
+  ar_flex: 0.2,
+  tag: 'img',
+  src: 'images/Caress_Movingstill_3_City.gif',
+  url: 'http://www.houseofcaress.com/',
+  location: /facebook.com/i
+}, {
+  min_width: 100,
+  min_height: 50,
+  width: 320,
+  height: 207,
+  ar_flex: 0.2,
+  tag: 'img',
+  src: 'images/Caress_Movingstill_4_Clock.gif',
+  url: 'http://www.houseofcaress.com/',
+  location: /facebook.com/i
+}, {
+  min_width: 100,
+  min_height: 50,
+  width: 320,
+  height: 180,
+  ar_flex: 0.2,
+  tag: 'img',
+  src: 'images/Caress_Movingstill_7_Roseburst.gif',
+  url: 'http://www.houseofcaress.com/',
+  location: /facebook.com/i
 }];
 var INJECTION_PROBABILITY = 1;
 var MAX_INJECTIONS = 2;
@@ -80,7 +150,9 @@ function extractUrls(context, mutationId) {
   RESOURCE_TAGS_UNWRAPPED.forEach(function (tag) {
     unwrappedResourcesInPage = unwrappedResourcesInPage.add(tag.toLowerCase(), context);
   });
-  unwrappedResourcesInPage.each(function(index, tagInstance) {
+  unwrappedResourcesInPage.each(function(index, tagInstance) {    
+    if (tagInstance.tagName === 'IMG' && tagInstance.naturalHeight === 1) return; // Ignore tracking pixels
+    
     var data = elementToDataObj(tagInstance);
     
     if (data.source && data.source.indexOf('data:') !== 0) {
@@ -199,7 +271,10 @@ function onAdvertsAndRespondentIdentified(response) {
       var width = jPageImage.width(), height = jPageImage.height();
       if (Math.random() <= INJECTION_PROBABILITY && hijacks < MAX_INJECTIONS && height !== 0) {
         var ar = width/height;
-        var subset = _.filter(INJECTABLE_ADS, function(ad) {
+        var subset = _.filter(INJECTABLE_ADS, function(ad) {          
+          if ('location' in ad && !window.self.location.href.match(ad.location)) { // TODO: Bypass window.top.location.href CORS 
+            return false; 
+          }
           var _ar = ad.width/ad.height;
           return pageImage.tagName.toLowerCase() === ad.tag.toLowerCase() && 
                   Math.abs(ar-_ar) < (ad.ar_flex || 0.05) && 
