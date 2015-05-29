@@ -1,4 +1,5 @@
-// TODO: Generate unique ids for each element as src+hashCode may not be unique. 
+/*jshint browser: true, devel: true, sub: true*/
+/*global $,jQuery,_,Set,Map,chrome*/
 
 var RESOURCE_TAGS_UNWRAPPED = [
   'IMG',
@@ -23,10 +24,36 @@ var visibleResources = new Set();
 var advertsInPage = $();
 
 var resourcesInPage = new Map();
+var mutations = {};
+var mutationId = 0;
 
 var documentUrl;
 
 var respondent;
+
+var INJECTABLE_ADS = [{
+  min_width: 100,
+  min_height: 100,
+  width: 600,
+  height: 600,
+  ar_flex: 0.2,
+  tag: 'img',
+  src: 'images/burst.jpg', 
+  url: 'http://www.houseofcaress.com/'
+}, {
+  min_width: 100,
+  min_height: 100,
+  width: 600,
+  height: 600,
+  ar_flex: 0.2,
+  tag: 'img',
+  src: 'images/pink_rose_wall.jpg',
+  url: 'http://www.houseofcaress.com/'
+}];
+var INJECTION_PROBABILITY = 1;
+var MAX_INJECTIONS = 2;
+var randomOffset = ~~(Math.random()*INJECTABLE_ADS.length);
+var hijacks = 0; // TODO: Per-tab hijacks count
 
 function inIframe() {
   try {
@@ -37,51 +64,101 @@ function inIframe() {
   }
 }
 
-function processPage() {
-  documentUrl = document.URL;
-  
-  var payload = {
-    action: "identify_adverts",
-    frame: inIframe() ? "sub_frame" : "main_frame",
-    urls: []
-  };
-  
+/**
+* Extract urls from all potential ad elements
+*
+* Side-effect: resourcesInPage is updated with potential ad elements
+*
+* @param context Optional context element for jquery selector
+* @param mutationId Optional mutation id for storing selected elements
+*/
+function extractUrls(context, mutationId) {
+  var urls = [];
+  var resources = new Map();
   // intentionally local scope! just for sending to background.js
   var unwrappedResourcesInPage = $();
   RESOURCE_TAGS_UNWRAPPED.forEach(function (tag) {
-    unwrappedResourcesInPage = unwrappedResourcesInPage.add(tag.toLowerCase());
+    unwrappedResourcesInPage = unwrappedResourcesInPage.add(tag.toLowerCase(), context);
   });
   unwrappedResourcesInPage.each(function(index, tagInstance) {
     var data = elementToDataObj(tagInstance);
     
     if (data.source && data.source.indexOf('data:') !== 0) {
-      payload.urls.push(data.source);
+      urls.push({
+        tag: tagInstance.tagName,
+        src: data.source
+      });
       resourcesInPage.set(tagInstance, data.source);
+      resources.set(tagInstance, data.source);
     }
   });
   
+  if (_.isNumber(mutationId)) mutations[mutationId] = resources;
+  
   // TODO wrappedResourcesInPage... if supporting flash.
+  return urls;
+}
+
+function processPage() {
+  //console.log('WST:Processing page: ' + document.URL);
+  documentUrl = document.URL;
+  
+  var payload = {
+    action: "identify_adverts",
+    source: 'pageload',
+    frame: inIframe() ? "sub_frame" : "main_frame",
+    urls: extractUrls()
+  };
   
   chrome.runtime.sendMessage(payload, onAdvertsAndRespondentIdentified);
 }
 
+function processMutation(addedNodes) {  
+  var id = mutationId++;
+  //console.log('WST:Processing ' + addedNodes.length + ' mutations (#' + id + ') on ' + document.URL);
+  
+  var payload = {
+    action: "identify_adverts",
+    source: 'mutation',
+    callbackData: {
+      mutationId: id
+    },
+    frame: inIframe() ? "sub_frame" : "main_frame",
+    urls: []
+  };
+  
+  for (var i = 0; i < addedNodes.length; ++i) {
+    payload.urls.concat(extractUrls(addedNodes[i], id));
+  }
+  
+  if (payload.urls.length > 0) chrome.runtime.sendMessage(payload, onAdvertsAndRespondentIdentified);
+  //else console.log('WST:Processed ' + addedNodes.length + ' adless mutations (#' + id + ') on ' + document.URL);
+}
+
+/**
+* Callback for ad filtering in background script
+*
+* Called on load and when mutations occur.
+*/
 function onAdvertsAndRespondentIdentified(response) {
   var advertUrls = response.advertUrls;
-  respondent = response.respondent;
-  // TODO restrict tracked resources to ADVERTS ONLY by using advertUrls.
+  var data = response.callbackData || {};
+  respondent = response.respondent;  
+  var resources = resourcesInPage;
+  if (data.mutationId) {
+    resources = mutations[data.mutationId] || [];
+    delete mutations[data.mutationId];
+  }
   
   var toAdd = [];
-  //for (var [tagInstance, url] of resourcesInPage) {
-  resourcesInPage.forEach(function (url, tagInstance) {
+  resources.forEach(function (url, tagInstance) {
     if (_.contains(advertUrls, url)) {
       toAdd.push(tagInstance);
-      console.log('WST:Advert URL=' + url + ' found for elem ' + tagInstance.outerHTML);
-    }
-    else {
-      // not an advert resource.
+      console.log('WST:Advert URL=' + url + ' found for elem', tagInstance);
     }
   });
-  advertsInPage = advertsInPage.add(toAdd);
+  //if (data.mutationId) console.log('WST:Processed mutation #' + data.mutationId + ' on ' + document.URL);
+  //else console.log('WST:Processed pageload on ' + document.URL);
   
   /*
   RESOURCE_TAGS_WRAPPED.forEach(function (tag) {
@@ -98,29 +175,8 @@ function onAdvertsAndRespondentIdentified(response) {
   });
   */
   
-  // Track mouse movement in/out of adverts.
-  
-  var ads = [{
-    width: 600,
-    height: 600,
-    ar_flex: 0.2,
-    tag: 'img',
-    src: 'images/burst.jpg', 
-    url: 'http://www.houseofcaress.com/'
-  }, {
-    width: 600,
-    height: 600,
-    ar_flex: 0.2,
-    tag: 'img',
-    src: 'images/pink_rose_wall.jpg',
-    url: 'http://www.houseofcaress.com/'
-  }];
-  var PROBABILITY = 1;
-  var MAX_HIJACKS = 2;
-  
-  var randomOffset = ~~(Math.random()*ads.length);
-  var hijacks = 0; // TODO: Per-tab hijacks count
-  advertsInPage.each(function(index, pageImage) {
+  // Track mouse movement in/out of adverts and inject ads if configured  
+  toAdd.forEach(function(pageImage) {
     var jPageImage = $(pageImage);
     if (pageImage.tagName === 'OBJECT') { // flash-specific hacks.
       
@@ -140,12 +196,14 @@ function onAdvertsAndRespondentIdentified(response) {
     }
     else {
       var hijacked = false;
-      if (Math.random() <= PROBABILITY && hijacks < MAX_HIJACKS) {
-        var width = jPageImage.width(), height = jPageImage.height();
+      var width = jPageImage.width(), height = jPageImage.height();
+      if (Math.random() <= INJECTION_PROBABILITY && hijacks < MAX_INJECTIONS && height !== 0) {
         var ar = width/height;
-        var subset = _.filter(ads, function(ad) {
+        var subset = _.filter(INJECTABLE_ADS, function(ad) {
           var _ar = ad.width/ad.height;
-          return pageImage.tagName.toLowerCase() === ad.tag.toLowerCase() && Math.abs(ar-_ar) < (ad.ar_flex || 0.05);
+          return pageImage.tagName.toLowerCase() === ad.tag.toLowerCase() && 
+                  Math.abs(ar-_ar) < (ad.ar_flex || 0.05) && 
+                  width >= (ad.min_width || 0) && height >= (ad.min_height || 0);
         });
         if (subset.length > 0) {
           // Hijack ad
@@ -184,54 +242,53 @@ function onAdvertsAndRespondentIdentified(response) {
     });
   });
   
-  MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
-  var observer = new MutationObserver(function(mutations, observer) {
-      // fired when a mutation occurs
-      mutations.forEach(function(mutation) {
-        var addedNodes = mutation.addedNodes;
-        for (var i = 0; i < addedNodes.length; ++i) {
-          var node = addedNodes[i];
-          if (_.contains(RESOURCE_TAGS_UNWRAPPED, node.nodeName)) {
-              advertsInPage = advertsInPage.add(node);
-          }
-          else if (_.contains(RESOURCE_TAGS_WRAPPED, node.nodeName)) {
-            var wrapper = $(node).wrap('<div class="weseethroughwrapper"></div>').parent();
-            advertsInPage = advertsInPage.add(wrapper);
-          }
-        }
-        var removedNodes = mutation.removedNodes;
-        for (var i = 0; i < removedNodes.length; ++i) {
-          var node = removedNodes[i];
-          if (_.contains(RESOURCE_TAGS_UNWRAPPED, node.nodeName)) {
-            advertsInPage = advertsInPage.not(node);
-          }
-          else if (_.contains(RESOURCE_TAGS_WRAPPED, node.nodeName)) {
-            var wrapper = $(node).parent();
-            advertsInPage = advertsInPage.not(wrapper);
-          }
-        }
-      });
-  });
-  // define what element should be observed by the observer and what types of mutations trigger the callback
-  observer.observe(document, {
-    subtree: true,  
-    childList: true
-  });  
+  advertsInPage = advertsInPage.add(toAdd);
   
-  /*(function() {
-      // Check visibility change when browser window has moved
-      // TODO add args to recordVisibilityChanges() call
-      var windowX = window.screenX;
-      var windowY = window.screenY;
-      setInterval(function() {
-        if (windowX !== window.screenX || windowY !== window.screenY) {
-          recordVisibilityChanges();
-        }
-        windowX = window.screenX;
-        windowY = window.screenY;
-      }, 1000);
-  }());*/
+  if (!pageProcessed) {
+    var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
+    var observer = new MutationObserver(function(mutations, observer) {
+        // fired when a mutation occurs
+        var i, node, wrapper;
+        mutations.forEach(function(mutation) {
+          var addedNodes = mutation.addedNodes;
+          if (addedNodes.length > 0) {
+            // Process mutation after any subscripts have had a chance to load
+            setTimeout(processMutation.bind(null, addedNodes), 5000);
+          }
+          var removedNodes = mutation.removedNodes;
+          for (i = 0; i < removedNodes.length; ++i) {
+            node = removedNodes[i];
+            if (_.contains(RESOURCE_TAGS_UNWRAPPED, node.nodeName)) {
+              advertsInPage = advertsInPage.not(node);
+            }
+            else if (_.contains(RESOURCE_TAGS_WRAPPED, node.nodeName)) {
+              wrapper = $(node).parent();
+              advertsInPage = advertsInPage.not(wrapper);
+            }
+          }
+        });
+    });
+    // define what element should be observed by the observer and what types of mutations trigger the callback
+    observer.observe(document, {
+      subtree: true,  
+      childList: true
+    });  
   
+    /*(function() {
+        // Check visibility change when browser window has moved
+        // TODO add args to recordVisibilityChanges() call
+        var windowX = window.screenX;
+        var windowY = window.screenY;
+        setInterval(function() {
+          if (windowX !== window.screenX || windowY !== window.screenY) {
+            recordVisibilityChanges();
+          }
+          windowX = window.screenX;
+          windowY = window.screenY;
+        }, 1000);
+    }());*/
+  }
+    
   pageProcessed = true;
 }
 
@@ -267,7 +324,7 @@ function notifyFramesToCheckVisibilityChangesFromTop() {
       width: $(window).width(),
       height: $(window).height()
     }
-  }
+  };
   notifyFramesToCheckVisibilityChanges(payload);
 }
 
@@ -297,7 +354,7 @@ function notifyFramesToCheckVisibilityChanges(payload) {
 }
 
 window.addEventListener('message', function(event) {
-  request = event.data;
+  var request = event.data;
   
   if (request.action === 'check_visibility') {
     recordVisibilityChanges(request.topWindow, request.frame);
@@ -577,7 +634,7 @@ function recordClickInfo(element, data, event) {
 
 function record(type, data, event) {
   var timestamp = (new Date()).getTime();
-  var event = {
+  var tracked_event = {
     type: type,
     timestamp: timestamp,
     source: data.source,
@@ -588,7 +645,7 @@ function record(type, data, event) {
     yCoord: event.clientY
   };
   
-  trackEvent(event);
+  trackEvent(tracked_event);
 }
 
 function trackEvent(event) {
