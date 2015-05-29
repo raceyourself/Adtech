@@ -1,6 +1,5 @@
 // TODO: Generate unique ids for each element as src+hashCode may not be unique. 
 
-var DEFAULT_SEND_DELAY = 1000; // milliseconds
 var RESOURCE_TAGS_UNWRAPPED = [
   'IMG',
   'IMAGE',
@@ -10,11 +9,6 @@ var RESOURCE_TAGS_WRAPPED = [
   //'OBJECT'
 ];
 var RESOURCE_TAGS = RESOURCE_TAGS_UNWRAPPED.concat(RESOURCE_TAGS_WRAPPED);
-
-var eventQueue = [];
-var sendDelay = DEFAULT_SEND_DELAY;
-var sendTimeout = false; // setTimeout reference
-var eventUrl = "http://insight-staging.glassinsight.co.uk/advert_events";
 
 var pageProcessed = false;
 
@@ -80,7 +74,7 @@ function onAdvertsAndRespondentIdentified(response) {
   resourcesInPage.forEach(function (url, tagInstance) {
     if (_.contains(advertUrls, url)) {
       toAdd.push(tagInstance);
-      console.log('Advert URL=' + url + ' found for elem ' + tagInstance.outerHTML);
+      console.log('WST:Advert URL=' + url + ' found for elem ' + tagInstance.outerHTML);
     }
     else {
       // not an advert resource.
@@ -172,7 +166,7 @@ function onAdvertsAndRespondentIdentified(response) {
 }
 
 if (inIframe()) {
-  console.log('Prepping frame.');
+  console.log('WST:Prepping frame.');
   
   $(document).ready(function() {
     setTimeout(processPage, 5000);
@@ -180,7 +174,7 @@ if (inIframe()) {
   //$(document).load();
 }
 else { // main frame
-  console.log('Prepping main page.');
+  console.log('WST:Prepping main page.');
   
   $(document).ready(processPage);
 
@@ -192,13 +186,6 @@ else { // main frame
   
   $(window).unload(function() {
     clearVisible();
-    if (eventQueue.length > 0) {
-      // TODO: Move to background.js?
-      if (sendTimeout) {
-        clearTimeout(sendTimeout);
-      }
-      sendEvents();
-    }
   });
 }
 
@@ -260,7 +247,7 @@ function clearVisible() {
 }
 
 function recordVisibilityChanges(topWindow, frame) {
-  //console.log("recordVisibilityChanges - document.URL=" + document.URL + (!inIframe() ? " (top)" : " (frame)"));
+  //console.log("WST:recordVisibilityChanges - document.URL=" + document.URL + (!inIframe() ? " (top)" : " (frame)"));
   
   advertsInPage.each(function(index, image) {
     var data = elementToDataObj(image);
@@ -317,7 +304,7 @@ function checkVisible(el, topWindow, frame) {
   
   var visible = (topVisible || bottomVisible) && (leftVisible || rightVisible);
 
-  console.log('checkVisible() for doc=' + document.URL + ' ;visible=' + visible + ';rectJ=' + JSON.stringify(rectJ) + ';frame=' + JSON.stringify(frame) + ';rectInViewport=' + JSON.stringify(rectInViewport) + ';el=' + el.outerHTML);
+  //console.log('WST:checkVisible() for doc=' + document.URL + ' ;visible=' + visible + ';rectJ=' + JSON.stringify(rectJ) + ';frame=' + JSON.stringify(frame) + ';rectInViewport=' + JSON.stringify(rectInViewport) + ';el=' + el.outerHTML);
   
   if (frame.top === 0 && frame.bottom === 0 && frame.left === 0 && frame.right === 0) {
     // values all go to zero when it's off screen.
@@ -524,39 +511,13 @@ function record(type, data) {
   
   trackEvent(event);
   
-  console.log('Advert event: ' + JSON.stringify(event));
+  console.log('WST:Advert event: ' + JSON.stringify(event));
 }
 
 function trackEvent(event) {
-  eventQueue.push(event);
-  if (!sendTimeout) setTimeout(sendEvents, sendDelay);
-}
-
-/** Sends queue of events to API. */
-function sendEvents() {
-  if (eventQueue.length === 0)
-    return;
-  
-  var queue = eventQueue;
-  eventQueue = [];
-  
   var payload = {
-    events: queue
+    action: 'track_event',
+    event: event
   };
-  
-  $.ajax({
-    type: 'POST',
-    url:  eventUrl,
-    data: JSON.stringify(payload),
-    contentType: 'application/json',
-    processData: false
-  }).done(function() {
-    console.log("Sent " + queue.length + " events");    
-    sendDelay = DEFAULT_SEND_DELAY;
-    sendTimeout = false;
-  }).fail(function() {
-    eventQueue.concat(queue);
-    sendDelay *= 4;
-    sendTimeout = setTimeout(sendEvents, sendDelay);
-  });
+  chrome.runtime.sendMessage(payload);
 }

@@ -1,6 +1,15 @@
 var KILL_SWITCH_URL = 'https://demo.haystackplatform.com/workspaces/demo/_kill_';
 var KILL_SWITCH_POLL_INTERVAL = 10 * 60 * 1000; // every .5 minutes.
 
+var EVENT_URL = "http://insight-staging.glassinsight.co.uk/advert_events";
+
+var DEFAULT_SEND_DELAY = 1000; // milliseconds
+
+var sendDelay = DEFAULT_SEND_DELAY;
+var sendTimeout = false; // setTimeout reference
+
+var eventQueue = [];
+
 var respondent;
 
 ////////////// INITIAL SETUP //////////////
@@ -15,29 +24,67 @@ if (!localStorage['first_launch']) {
 
 ////////////// COMMS WITH CONTENT SCRIPT //////////////
 
+function identifyAdverts(frameUrl, frameType, urls) {
+  var frameDomain = frameUrl ? parseUri(frameUrl).hostname : '';
+
+  var elType = ElementTypes.fromOnBeforeRequestType(frameType);
+
+  var payload = {};
+  payload.respondent = respondent;
+  payload.advertUrls = [];
+  urls.forEach(function(url) {
+    try {
+      var blacklisted = _myfilters.blocking.matches(url, elType, frameDomain);
+
+      if (blacklisted) {
+        payload.advertUrls.push(url);
+      }
+    } catch (e) {
+      console.log('WST:Error checking blacklist for url=' + url + ' ; elType=' + elType + ' ; frameDomain=' + frameDomain + ': ' + e);
+    }
+  });
+  return payload;
+}
+
+function sendEvents() {
+  var payload = {
+    events: eventQueue
+  };
+  eventQueue = [];
+  
+  $.ajax({
+    type: 'POST',
+    url:  EVENT_URL,
+    data: JSON.stringify(payload),
+    contentType: 'application/json',
+    processData: false
+  }).done(function() {
+    console.log("WST:Sent " + payload.events.length + " events");    
+    sendDelay = DEFAULT_SEND_DELAY;
+    sendTimeout = false;
+  }).fail(function(msg) {
+    console.log("WST:Failed to send " + payload.events.length + " events: " + msg);    
+    eventQueue.concat(payload.events);
+    sendDelay *= 4;
+    sendTimeout = setTimeout(sendEvents, sendDelay);
+  });
+}
+
+function trackEvent(event) {
+  eventQueue.push(event);
+  if (!sendTimeout) {
+    sendTimeout = setTimeout(sendEvents, sendDelay);
+  }
+}
+
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   if (request.action === 'identify_adverts') {
-    
-    var frameDomain = sender.url ? parseUri(sender.url).hostname : '';
-    
-    var elType = ElementTypes.fromOnBeforeRequestType(request.frame);
-    
-    var payload = {};
-    payload.respondent = respondent;
-    payload.advertUrls = [];
-    request.urls.forEach(function(url) {
-      try {
-        var blacklisted = _myfilters.blocking.matches(url, elType, frameDomain);
-
-        if (blacklisted) {
-          payload.advertUrls.push(url);
-        }
-      } catch (e) {
-        console.log('Error checking blacklist for url=' + url + ' ; elType=' + elType + ' ; frameDomain=' + frameDomain + ': ' + e);
-      }
-    });
-    
-    sendResponse(payload);
+    sendResponse(identifyAdverts(sender.url, request.frame, request.urls));
+  }
+  else if (request.action === 'track_event') {
+    // best if it's in background script because it's an HTTP request, and content scripts in pages served via HTTPS can't POST
+    // via HTTP. Also allows for retries after page has been left.
+    trackEvent(request.event);
   }
 });
 
