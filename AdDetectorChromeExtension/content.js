@@ -100,6 +100,26 @@ function onAdvertsAndRespondentIdentified(response) {
   
   // Track mouse movement in/out of adverts.
   
+  var ads = [{
+    width: 600,
+    height: 600,
+    ar_flex: 0.2,
+    tag: 'img',
+    src: 'images/burst.jpg', 
+    url: 'http://www.houseofcaress.com/'
+  }, {
+    width: 600,
+    height: 600,
+    ar_flex: 0.2,
+    tag: 'img',
+    src: 'images/pink_rose_wall.jpg',
+    url: 'http://www.houseofcaress.com/'
+  }];
+  var PROBABILITY = 1;
+  var MAX_HIJACKS = 2;
+  
+  var randomOffset = ~~(Math.random()*ads.length);
+  var hijacks = 0; // TODO: Per-tab hijacks count
   advertsInPage.each(function(index, pageImage) {
     var jPageImage = $(pageImage);
     if (pageImage.tagName === 'OBJECT') { // flash-specific hacks.
@@ -119,9 +139,36 @@ function onAdvertsAndRespondentIdentified(response) {
       });
     }
     else {
+      var hijacked = false;
+      if (Math.random() <= PROBABILITY && hijacks < MAX_HIJACKS) {
+        var width = jPageImage.width(), height = jPageImage.height();
+        var ar = width/height;
+        var subset = _.filter(ads, function(ad) {
+          var _ar = ad.width/ad.height;
+          return pageImage.tagName.toLowerCase() === ad.tag.toLowerCase() && Math.abs(ar-_ar) < (ad.ar_flex || 0.05);
+        });
+        if (subset.length > 0) {
+          // Hijack ad
+          var ad = subset[(randomOffset+hijacks)%subset.length];
+          pageImage.src = chrome.extension.getURL(ad.src);
+          jPageImage.mousedown(function(event) {
+            window.open(ad.url, '_blank');
+            event.stopPropagation();
+            event.preventDefault();
+          });
+          pageImage.style['max-width'] = width;
+          pageImage.style['max-height'] = height;
+          hijacked = true;
+          hijacks++;
+        }
+      }
       jPageImage.click(function(event) {
         var data = elementToDataObj(pageImage);
         recordClickInfo(pageImage, data, event);
+        if (hijacked) {
+          event.stopPropagation();
+          event.preventDefault();
+        }
       });
     }
     

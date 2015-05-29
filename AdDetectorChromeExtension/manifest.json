@@ -21,6 +21,10 @@
     "48":  "icons/icon48.png",
     "128": "icons/icon128.png"
   },
+  "web_accessible_resources": [
+    "images/burst.jpg",
+    "images/pink_rose_wall.jpg"
+  ],
   
   "background": {
     "scripts": [
