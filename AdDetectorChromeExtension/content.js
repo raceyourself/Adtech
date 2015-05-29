@@ -58,7 +58,9 @@ var INJECTABLE_ADS = [{
   tag: 'img',
   src: 'images/CaressCouple_Technology_Facebook.jpg',
   url: 'http://www.houseofcaress.com/',
-  location: /facebook.com/i
+  location: /facebook.com/i,
+  title: 'Forever Collection',
+  description: "The world's first body wash with fragrance touch technology"
 }, {
   min_width: 100,
   min_height: 50,
@@ -68,7 +70,9 @@ var INJECTABLE_ADS = [{
   tag: 'img',
   src: 'images/Caress_DebussyMarch_FingerTouch_FB.jpg',
   url: 'http://www.houseofcaress.com/',
-  location: /facebook.com/i
+  location: /facebook.com/i,
+  title: 'Forever Collection',
+  description: "The world's first body wash with fragrance touch technology"
 }, {
   min_width: 100,
   min_height: 50,
@@ -78,7 +82,9 @@ var INJECTABLE_ADS = [{
   tag: 'img',
   src: 'images/Caress_Movingstill_1_Armpetals.gif',
   url: 'http://www.houseofcaress.com/',
-  location: /facebook.com/i
+  location: /facebook.com/i,
+  title: 'Forever Collection',
+  description: "The world's first body wash with fragrance touch technology"
 }, {
   min_width: 100,
   min_height: 50,
@@ -88,7 +94,9 @@ var INJECTABLE_ADS = [{
   tag: 'img',
   src: 'images/Caress_Movingstill_2_Bloom.gif',
   url: 'http://www.houseofcaress.com/',
-  location: /facebook.com/i
+  location: /facebook.com/i,
+  title: 'Forever Collection',
+  description: "The world's first body wash with fragrance touch technology"
 }, {
   min_width: 100,
   min_height: 50,
@@ -98,7 +106,9 @@ var INJECTABLE_ADS = [{
   tag: 'img',
   src: 'images/Caress_Movingstill_3_City.gif',
   url: 'http://www.houseofcaress.com/',
-  location: /facebook.com/i
+  location: /facebook.com/i,
+  title: 'Forever Collection',
+  description: "The world's first body wash with fragrance touch technology"
 }, {
   min_width: 100,
   min_height: 50,
@@ -108,7 +118,9 @@ var INJECTABLE_ADS = [{
   tag: 'img',
   src: 'images/Caress_Movingstill_4_Clock.gif',
   url: 'http://www.houseofcaress.com/',
-  location: /facebook.com/i
+  location: /facebook.com/i,
+  title: 'Forever Collection',
+  description: "The world's first body wash with fragrance touch technology"
 }, {
   min_width: 100,
   min_height: 50,
@@ -118,7 +130,9 @@ var INJECTABLE_ADS = [{
   tag: 'img',
   src: 'images/Caress_Movingstill_7_Roseburst.gif',
   url: 'http://www.houseofcaress.com/',
-  location: /facebook.com/i
+  location: /facebook.com/i,
+  title: 'Forever Collection',
+  description: "The world's first body wash with fragrance touch technology"
 }];
 var INJECTION_PROBABILITY = 1;
 var MAX_INJECTIONS = 2;
@@ -262,6 +276,7 @@ function onAdvertsAndRespondentIdentified(response) {
       }
       // click listener not fired on Flash.
       jPageImage.mousedown(function(event) {
+        if (event.which !== 1) return;
         var data = elementToDataObj(pageImage);
         recordClickInfo(pageImage, data, event);
       });
@@ -285,10 +300,34 @@ function onAdvertsAndRespondentIdentified(response) {
           var ad = subset[(randomOffset+hijacks)%subset.length];
           pageImage.src = chrome.extension.getURL(ad.src);
           jPageImage.mousedown(function(event) {
+            if (event.which !== 1) return;
             window.open(ad.url, '_blank');
             event.stopPropagation();
             event.preventDefault();
           });
+          // Custom Facebook rewrite
+          if ('location' in ad && 'www.facebook.com'.match(ad.location)) {
+            var emu = jPageImage.closest('.fbEmuImage');
+            if (emu.length !== 0) {
+              var parent = emu.parent().parent();
+              parent.find('div').contents().filter(function() { return this.nodeType == Node.TEXT_NODE; }).remove();
+              var caption = parent.find('[title]');
+              caption.attr('title', ad.title || ad.url);
+              caption.find('strong').text(ad.title || ad.url);
+              parent.find('span').text(ad.description || '');
+              var anchor = parent.parent();
+              var url = ad.url;
+              if (url.indexOf('?') === -1) url = url + '?fbhack';
+              anchor.attr('href', url);
+              anchor.removeAttr('onmousedown');
+              anchor.mousedown(function() {
+                if (event.which !== 1) return;
+                window.open(ad.url, '_blank');
+                event.stopPropagation();
+                event.preventDefault();
+              });
+            }
+          }
           pageImage.style['max-width'] = width;
           pageImage.style['max-height'] = height;
           hijacked = true;
