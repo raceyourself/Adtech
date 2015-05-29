@@ -1,6 +1,8 @@
 // Saves options to chrome.storage
 function save_options() {
-  var respondent = document.getElementById('respondent').value;
+  var respondentSelect = document.getElementById('respondent');
+  var respondent = respondentSelect.options[respondentSelect.selectedIndex].value;
+  
   chrome.storage.sync.set({
     respondent: respondent
   }, function() {
