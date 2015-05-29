@@ -39,7 +39,7 @@ function identifyAdverts(frameUrl, urls, callbackData) {
     try {
       var elType = ElementTypes.fromOnBeforeRequestType(url.tag.toLowerCase()) || ElementTypes.image;
 
-      var blacklisted = _myfilters.blocking.matches(url.src, elType, frameDomain);
+      var blacklisted = _myfilters.blocking.matches(url.src, elType, frameDomain) || _myfilters.blocking.matches(url.src, ElementTypes.other, frameDomain);
 
       if (blacklisted) {
         payload.advertUrls.push(url.src);
