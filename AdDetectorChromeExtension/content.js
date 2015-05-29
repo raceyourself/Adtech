@@ -102,12 +102,27 @@ function onAdvertsAndRespondentIdentified(response) {
   
   advertsInPage.each(function(index, pageImage) {
     var jPageImage = $(pageImage);
-    if (pageImage.tagName === 'OBJECT') {
-      jPageImage = jPageImage.parent(); // attach mouse listeners to parent.
-      jPageImage.css({
-        'z-index': 99999,
-        'position': 'relative'
-      }); // put wrapping element in front of child
+    if (pageImage.tagName === 'OBJECT') { // flash-specific hacks.
+      
+      // attach mouse listeners to parent. wrapping new div around the object crashes Flash in Chrome.
+      jPageImage = jPageImage.parent();
+      if (_.contains(['DIV', 'SPAN'], jPageImage[0].tagName)) {
+        jPageImage.css({
+          'z-index': 99999,
+          'position': 'relative'
+        }); // put wrapping element in front of child
+      }
+      // click listener not fired on Flash.
+      jPageImage.mousedown(function(event) {
+        var data = elementToDataObj(pageImage);
+        recordClickInfo(pageImage, data, event);
+      });
+    }
+    else {
+      jPageImage.click(function(event) {
+        var data = elementToDataObj(pageImage);
+        recordClickInfo(pageImage, data, event);
+      });
     }
     
     jPageImage.mouseleave(function(event) {
@@ -119,10 +134,6 @@ function onAdvertsAndRespondentIdentified(response) {
     jPageImage.mouseenter(function(event) {
       var data = elementToDataObj(pageImage);
       recordInteractionInfo(pageImage, data, true, event);
-    });
-    jPageImage.click(function(event) {
-      var data = elementToDataObj(pageImage);
-      recordClickInfo(pageImage, data, event);
     });
   });
   
