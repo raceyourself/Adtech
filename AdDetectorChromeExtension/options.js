@@ -19,7 +19,7 @@ function save_options() {
 // stored in chrome.storage.
 function restore_options() {
   chrome.storage.sync.get('respondent', function(items) {
-    document.getElementById('respondent').value = items.respondent;
+    document.getElementById('respondent').value = items.respondent || '';
   });
 }
 document.addEventListener('DOMContentLoaded', restore_options);
