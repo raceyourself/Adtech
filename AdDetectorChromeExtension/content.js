@@ -6,10 +6,7 @@ var RESOURCE_TAGS_UNWRAPPED = [
   'VIDEO',
   'OBJECT'
 ];
-var RESOURCE_TAGS_WRAPPED = [
-  //'OBJECT'
-];
-var RESOURCE_TAGS = RESOURCE_TAGS_UNWRAPPED.concat(RESOURCE_TAGS_WRAPPED);
+var RESOURCE_TAGS = RESOURCE_TAGS_UNWRAPPED;
 
 var pageProcessed = false;
 
@@ -60,8 +57,6 @@ function processPage() {
     }
   });
   
-  // TODO wrappedResourcesInPage... if supporting flash.
-  
   chrome.runtime.sendMessage(payload, onAdvertsAndRespondentIdentified);
 }
 
@@ -82,21 +77,6 @@ function onAdvertsAndRespondentIdentified(response) {
     }
   });
   advertsInPage = advertsInPage.add(toAdd);
-  
-  /*
-  RESOURCE_TAGS_WRAPPED.forEach(function (tag) {
-    // we wrap tags like Flash objects because they can't have mouse listeners on them directly.
-    var tagInstances = $(tag.toLowerCase());
-    
-    var wrappedTagInstances = $();
-    tagInstances.each(function(index, tagInstance) {
-      var wrapped = $(tagInstance).wrap('<div></div>');
-      wrappedTagInstances = wrappedTagInstances.add(wrapped);
-    });
-    
-    resourcesInPage = resourcesInPage.add(wrappedTagInstances);
-  });
-  */
   
   // Track mouse movement in/out of adverts.
   
@@ -145,11 +125,7 @@ function onAdvertsAndRespondentIdentified(response) {
         for (var i = 0; i < addedNodes.length; ++i) {
           var node = addedNodes[i];
           if (_.contains(RESOURCE_TAGS_UNWRAPPED, node.nodeName)) {
-              advertsInPage = advertsInPage.add(node);
-          }
-          else if (_.contains(RESOURCE_TAGS_WRAPPED, node.nodeName)) {
-            var wrapper = $(node).wrap('<div class="weseethroughwrapper"></div>').parent();
-            advertsInPage = advertsInPage.add(wrapper);
+              advertsInPage = advertsInPage.add(node); // FIXME need to run through check to see if it's an advert or not.
           }
         }
         var removedNodes = mutation.removedNodes;
@@ -157,10 +133,6 @@ function onAdvertsAndRespondentIdentified(response) {
           var node = removedNodes[i];
           if (_.contains(RESOURCE_TAGS_UNWRAPPED, node.nodeName)) {
             advertsInPage = advertsInPage.not(node);
-          }
-          else if (_.contains(RESOURCE_TAGS_WRAPPED, node.nodeName)) {
-            var wrapper = $(node).parent();
-            advertsInPage = advertsInPage.not(wrapper);
           }
         }
       });
@@ -374,8 +346,6 @@ function elementToDataObj(element) {
       data.attr = 'image/@src';
     }
   }
-  //else if (element.nodeName === 'DIV') { // wrapped flash (/oldschool video?)
-    //var unwrappedElement = element;//$(element).children()[0];
   else if (element.nodeName === 'OBJECT') { // flash
     var unwrappedElement = element;
     
