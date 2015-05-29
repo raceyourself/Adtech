@@ -162,12 +162,13 @@ function handleABPLinkClicks() {
 //   stopPurger: function to stop watch for elemenst to remove, called in case
 //               AdBlock should not be running.
 //   success?: function called at the end if AdBlock should run on the page.
-function adblock_begin(inputs) {
-    
+function adblock_begin(inputs) {  
+  /* 
   if (document.location.href === 'about:blank') // Safari does this
     return;
   if (!(document.documentElement instanceof HTMLElement))
     return; // Only run on HTML pages
+  */  
     
   if (typeof before_ready_bandaids === "function") {
         before_ready_bandaids("new"); 

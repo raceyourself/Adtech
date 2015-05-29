@@ -10,7 +10,8 @@
       "all_frames": true,
       "js": [ "port.js", "functions.js", "contentscript.js" ],
       "matches": [ "http://*/*", "https://*/*" ],
-      "run_at": "document_start"
+      "run_at": "document_start",
+      "match_about_blank": true
    } ],
    "default_locale": "en",
    "description": "__MSG_catblock_description1__",

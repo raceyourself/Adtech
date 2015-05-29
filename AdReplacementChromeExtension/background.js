@@ -63,7 +63,7 @@ if (!SAFARI) {
   // match ads on the page.
   chrome.extension.onRequestExternal.addListener(
     function(request, sender, sendResponse) {
-      if (!DEBUG_ADBLOCK && sender.id !== "nbepkkfciddnnegemijhfmkjhjmngmpd")
+      if (!DEBUG_ADBLOCK && sender.id !== "mnleeggifmgjocglmnpfhgdfallnmooo")
         return;
       chrome.tabs.sendRequest(request.tabId, request);
     }

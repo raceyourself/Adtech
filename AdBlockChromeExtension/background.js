@@ -287,6 +287,10 @@
         blockCounts.recordOneAdBlocked(tabId);
         updateBadge(tabId);
       }
+      
+      // Catblock: show all ads
+      blocked = false;
+            
       log("[DEBUG]", "Block result", blocked, details.type, frameDomain, details.url.substring(0, 100));
       if (blocked && elType === ElementTypes.image) {
         // 1x1 px transparant image.

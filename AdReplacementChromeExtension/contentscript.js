@@ -235,6 +235,7 @@ _augment: function(el, callback) {
 
 // Add an info card to |newPic| that appears on hover.
 _addInfoCardTo: function(newPic, placement) {
+  if (true) return; // No overlay
   if (newPic.infoCard)
     return;
   // We use a direct sendRequest onmouseenter to avoid modifying
@@ -545,8 +546,8 @@ enabled: (function() {
 
 if (!SAFARI) {
   chrome.extension.onRequest.addListener(function(request, sender, sendResponse) {
-    if (request.command !== "purge-elements"
-        || request.frameUrl !== document.location.href)
+    if (request.command !== "purge-elements" /*
+        || request.frameUrl !== document.location.href*/)
       return;
 
     var ads = document.querySelectorAll(request.selector);
