@@ -1,7 +1,7 @@
 var elementPurger = {
   onPurgeRequest: function(request, sender, sendResponse) {
-    if (request.command === 'purge-elements' &&
-        request.frameUrl === document.location.href.replace(/#.*$/, ""))
+    if (request.command === 'purge-elements' /*&&
+        request.frameUrl === document.location.href.replace(/#.*$/, "")*/)
       elementPurger._purgeElements(request);
 
     sendResponse({});
@@ -12,7 +12,7 @@ var elementPurger = {
   _purgeElements: function(request, lastTry) {
     var elType = request.elType;
     var url = request.url;
-
+        
     log("[DEBUG]", "Purging:", lastTry, elType, url);
 
     var tags = {};
@@ -38,7 +38,7 @@ var elementPurger = {
             for (var j=0; j < results.length; j++) {
               destroyElement(results[j], elType);
             }
-            var externalId = "ffabfmjkgipjchmgoijenfpmboojalmi"; // Set to Advert Replacer Chrome extension ID
+            var externalId = "lidmihhepghlcnaoenffldhcgdfaikdb"; // Set to Advert Replacer Chrome extension ID
             request.selector = selector;
             chrome.extension.sendRequest(externalId, request);
             

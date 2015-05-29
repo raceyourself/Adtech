@@ -545,8 +545,8 @@ enabled: (function() {
 
 if (!SAFARI) {
   chrome.extension.onRequest.addListener(function(request, sender, sendResponse) {
-    if (request.command !== "purge-elements"
-        || request.frameUrl !== document.location.href)
+    if (request.command !== "purge-elements" /*
+        || request.frameUrl !== document.location.href*/)
       return;
 
     var ads = document.querySelectorAll(request.selector);
