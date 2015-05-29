@@ -112,6 +112,10 @@ function onAdvertsAndRespondentIdentified(response) {
       var data = elementToDataObj(pageImage);
       recordInteractionInfo(pageImage, data, true);
     });
+    jPageImage.click(function(event) {
+      var data = elementToDataObj(pageImage);
+      recordClickInfo(pageImage, data);
+    });
   });
   
   MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
@@ -497,6 +501,10 @@ function recordImpressionInfo(element, data, isVisible) {
   var type = isVisible ? 'viewport_enter' : 'viewport_leave';
   
   record(type, data);
+}
+
+function recordClickInfo(element, data) {
+  record("click", data);
 }
 
 function record(type, data) {
