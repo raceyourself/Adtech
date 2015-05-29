@@ -102,6 +102,13 @@ function onAdvertsAndRespondentIdentified(response) {
   
   advertsInPage.each(function(index, pageImage) {
     var jPageImage = $(pageImage);
+    if (pageImage.tagName === 'OBJECT') {
+      jPageImage = jPageImage.parent(); // attach mouse listeners to parent.
+      jPageImage.css({
+        'z-index': 99999,
+        'position': 'relative'
+      }); // put wrapping element in front of child
+    }
     
     jPageImage.mouseleave(function(event) {
       // NOTE: This does not fire until the mouse moves, if we need perfect accuracy
