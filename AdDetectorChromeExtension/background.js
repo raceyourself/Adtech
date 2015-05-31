@@ -1,3 +1,6 @@
+/*jshint browser: true, devel: true, sub: true*/
+/*global $,chrome,parseUri,ElementTypes,_myfilters*/
+
 var KILL_SWITCH_URL = 'https://demo.haystackplatform.com/workspaces/demo/_kill_';
 var KILL_SWITCH_POLL_INTERVAL = 10 * 60 * 1000; // every .5 minutes.
 
@@ -24,28 +27,32 @@ if (!localStorage['first_launch']) {
 
 ////////////// COMMS WITH CONTENT SCRIPT //////////////
 
-function identifyAdverts(frameUrl, frameType, urls) {
+function identifyAdverts(frameUrl, urls, callbackData) {
   var frameDomain = frameUrl ? parseUri(frameUrl).hostname : '';
-
-  var elType = ElementTypes.fromOnBeforeRequestType(frameType);
 
   var payload = {};
   payload.respondent = respondent;
   payload.advertUrls = [];
+  payload.callbackData = callbackData || {};
+  //console.log('WST:Checking ' + urls.length + ' urls against blacklist; frameDomain=' + frameDomain);
   urls.forEach(function(url) {
     try {
-      var blacklisted = _myfilters.blocking.matches(url, elType, frameDomain);
+      var elType = ElementTypes.fromOnBeforeRequestType(url.tag.toLowerCase()) || ElementTypes.image;
+
+      var blacklisted = _myfilters.blocking.matches(url.src, elType, frameDomain) || _myfilters.blocking.matches(url.src, ElementTypes.other, frameDomain);
 
       if (blacklisted) {
-        payload.advertUrls.push(url);
+        payload.advertUrls.push(url.src);
       }
     } catch (e) {
-      console.log('WST:Error checking blacklist for url=' + url + ' ; elType=' + elType + ' ; frameDomain=' + frameDomain + ': ' + e);
+      console.log('WST:Error checking blacklist for url=' + url.src + ' ; elType=' + elType + ' ; frameDomain=' + frameDomain + ': ' + e);
     }
   });
   return payload;
 }
 
+/** best if it's in background script because it's an HTTP request, and content scripts in pages served via HTTPS can't POST
+ * via HTTP. Also allows for retries after page has been left. */
 function sendEvents() {
   var payload = {
     events: eventQueue
@@ -79,11 +86,9 @@ function trackEvent(event) {
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   if (request.action === 'identify_adverts') {
-    sendResponse(identifyAdverts(sender.url, request.frame, request.urls));
+    sendResponse(identifyAdverts(sender.url, request.urls, request.callbackData));
   }
   else if (request.action === 'track_event') {
-    // best if it's in background script because it's an HTTP request, and content scripts in pages served via HTTPS can't POST
-    // via HTTP. Also allows for retries after page has been left.
     trackEvent(request.event);
   }
 });

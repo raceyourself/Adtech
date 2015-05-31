@@ -1,4 +1,5 @@
-// TODO: Generate unique ids for each element as src+hashCode may not be unique. 
+/*jshint browser: true, devel: true, sub: true*/
+/*global $,jQuery,_,Set,Map,chrome*/
 
 var RESOURCE_TAGS_UNWRAPPED = [
   'IMG',
@@ -20,10 +21,120 @@ var visibleResources = new Set();
 var advertsInPage = $();
 
 var resourcesInPage = new Map();
+var mutations = {};
+var mutationId = 0;
 
 var documentUrl;
 
 var respondent;
+
+var INJECTABLE_ADS = [{
+  min_width: 100,
+  min_height: 50,
+  width: 600,
+  height: 600,
+  ar_flex: 0.2,
+  tag: 'img',
+  src: 'images/burst.jpg', 
+  url: 'http://www.houseofcaress.com/'
+}, {
+  min_width: 100,
+  min_height: 50,
+  width: 600,
+  height: 600,
+  ar_flex: 0.2,
+  tag: 'img',
+  src: 'images/pink_rose_wall.jpg',
+  url: 'http://www.houseofcaress.com/'
+}, {
+  min_width: 100,
+  min_height: 50,
+  width: 600,
+  height: 600,
+  ar_flex: 0.2,
+  tag: 'img',
+  src: 'images/CaressCouple_Technology_Facebook.jpg',
+  url: 'http://www.houseofcaress.com/',
+  location: /facebook.com/i,
+  title: 'Forever Collection',
+  description: "The world's first body wash with fragrance touch technology"
+}, {
+  min_width: 100,
+  min_height: 50,
+  width: 600,
+  height: 600,
+  ar_flex: 0.2,
+  tag: 'img',
+  src: 'images/Caress_DebussyMarch_FingerTouch_FB.jpg',
+  url: 'http://www.houseofcaress.com/',
+  location: /facebook.com/i,
+  title: 'Forever Collection',
+  description: "The world's first body wash with fragrance touch technology"
+}, {
+  min_width: 100,
+  min_height: 50,
+  width: 320,
+  height: 180,
+  ar_flex: 0.2,
+  tag: 'img',
+  src: 'images/Caress_Movingstill_1_Armpetals.gif',
+  url: 'http://www.houseofcaress.com/',
+  location: /facebook.com/i,
+  title: 'Forever Collection',
+  description: "The world's first body wash with fragrance touch technology"
+}, {
+  min_width: 100,
+  min_height: 50,
+  width: 320,
+  height: 199,
+  ar_flex: 0.2,
+  tag: 'img',
+  src: 'images/Caress_Movingstill_2_Bloom.gif',
+  url: 'http://www.houseofcaress.com/',
+  location: /facebook.com/i,
+  title: 'Forever Collection',
+  description: "The world's first body wash with fragrance touch technology"
+}, {
+  min_width: 100,
+  min_height: 50,
+  width: 320,
+  height: 172,
+  ar_flex: 0.2,
+  tag: 'img',
+  src: 'images/Caress_Movingstill_3_City.gif',
+  url: 'http://www.houseofcaress.com/',
+  location: /facebook.com/i,
+  title: 'Forever Collection',
+  description: "The world's first body wash with fragrance touch technology"
+}, {
+  min_width: 100,
+  min_height: 50,
+  width: 320,
+  height: 207,
+  ar_flex: 0.2,
+  tag: 'img',
+  src: 'images/Caress_Movingstill_4_Clock.gif',
+  url: 'http://www.houseofcaress.com/',
+  location: /facebook.com/i,
+  title: 'Forever Collection',
+  description: "The world's first body wash with fragrance touch technology"
+}, {
+  min_width: 100,
+  min_height: 50,
+  width: 320,
+  height: 180,
+  ar_flex: 0.2,
+  tag: 'img',
+  src: 'images/Caress_Movingstill_7_Roseburst.gif',
+  url: 'http://www.houseofcaress.com/',
+  location: /facebook.com/i,
+  title: 'Forever Collection',
+  description: "The world's first body wash with fragrance touch technology"
+}];
+var INJECTION_PROBABILITY = 1;
+var MAX_INJECTIONS = 2;
+var randomOffset = ~~(Math.random()*INJECTABLE_ADS.length);
+var hijacks = 0; // TODO: Per-tab hijacks count
 
 function inIframe() {
   try {
@@ -34,117 +145,179 @@ function inIframe() {
   }
 }
 
+/**
+* Extract urls from all potential ad elements
+*
+* Side-effect: resourcesInPage is updated with potential ad elements
+*
+* @param context Optional context element for jquery selector
+* @param mutationId Optional mutation id for storing selected elements
+*/
+function extractUrls(context, mutationId) {
+  var urls = [];
+  var resources = new Map();
+  // intentionally local scope! just for sending to background.js
+  var unwrappedResourcesInPage = $();
+  RESOURCE_TAGS_UNWRAPPED.forEach(function (tag) {
+    unwrappedResourcesInPage = unwrappedResourcesInPage.add(tag.toLowerCase(), context);
+  });
+  unwrappedResourcesInPage.each(function(index, tagInstance) {    
+    if (tagInstance.tagName === 'IMG' && tagInstance.naturalHeight === 1) return; // Ignore tracking pixels
+    
+    var data = elementToDataObj(tagInstance);
+    
+    if (data.source && data.source.indexOf('data:') !== 0) {
+      urls.push({
+        tag: tagInstance.tagName,
+        src: data.source
+      });
+      resourcesInPage.set(tagInstance, data.source);
+      resources.set(tagInstance, data.source);
+    }
+  });
+  
+  if (_.isNumber(mutationId)) mutations[mutationId] = resources;
+  
+  return urls;
+}
+
 function processPage() {
+  //console.log('WST:Processing page: ' + document.URL);
   documentUrl = document.URL;
   
   var payload = {
     action: "identify_adverts",
+    source: 'pageload',
+    frame: inIframe() ? "sub_frame" : "main_frame",
+    urls: extractUrls()
+  };
+  chrome.runtime.sendMessage(payload, onAdvertsAndRespondentIdentified);
+}
+
+function processMutation(addedNodes) {  
+  var id = mutationId++;
+  //console.log('WST:Processing ' + addedNodes.length + ' mutations (#' + id + ') on ' + document.URL);
+  
+  var payload = {
+    action: "identify_adverts",
+    source: 'mutation',
+    callbackData: {
+      mutationId: id
+    },
     frame: inIframe() ? "sub_frame" : "main_frame",
     urls: []
   };
   
-  // intentionally local scope! just for sending to background.js
-  var unwrappedResourcesInPage = $();
-  RESOURCE_TAGS_UNWRAPPED.forEach(function (tag) {
-    unwrappedResourcesInPage = unwrappedResourcesInPage.add(tag.toLowerCase());
-  });
-  unwrappedResourcesInPage.each(function(index, tagInstance) {
-    var data = elementToDataObj(tagInstance);
-    
-    if (data.source && data.source.indexOf('data:') !== 0) {
-      payload.urls.push(data.source);
-      resourcesInPage.set(tagInstance, data.source);
-    }
-  });
+  for (var i = 0; i < addedNodes.length; ++i) {
+    payload.urls.concat(extractUrls(addedNodes[i], id));
+  }
   
-  chrome.runtime.sendMessage(payload, onAdvertsAndRespondentIdentified);
+  if (payload.urls.length > 0) chrome.runtime.sendMessage(payload, onAdvertsAndRespondentIdentified);
+  //else console.log('WST:Processed ' + addedNodes.length + ' adless mutations (#' + id + ') on ' + document.URL);
 }
 
+/**
+* Callback for ad filtering in background script
+*
+* Called on load and when mutations occur.
+*/
 function onAdvertsAndRespondentIdentified(response) {
   var advertUrls = response.advertUrls;
-  respondent = response.respondent;
-  // TODO restrict tracked resources to ADVERTS ONLY by using advertUrls.
+  var data = response.callbackData || {};
+  respondent = response.respondent;  
+  var resources = resourcesInPage;
+  if (data.mutationId) {
+    resources = mutations[data.mutationId] || [];
+    delete mutations[data.mutationId];
+  }
   
   var toAdd = [];
-  //for (var [tagInstance, url] of resourcesInPage) {
-  resourcesInPage.forEach(function (url, tagInstance) {
+  resources.forEach(function (url, tagInstance) {
     if (_.contains(advertUrls, url)) {
       toAdd.push(tagInstance);
-      console.log('WST:Advert URL=' + url + ' found for elem ' + tagInstance.outerHTML);
-    }
-    else {
-      // not an advert resource.
+      console.log('WST:Advert URL=' + url + ' found for elem', tagInstance);
     }
   });
-  advertsInPage = advertsInPage.add(toAdd);
+  //if (data.mutationId) console.log('WST:Processed mutation #' + data.mutationId + ' on ' + document.URL);
+  //else console.log('WST:Processed pageload on ' + document.URL);
   
-  // Track mouse movement in/out of adverts.
-  
-  var ads = [{
-    width: 600,
-    height: 600,
-    ar_flex: 0.2,
-    tag: 'img',
-    src: 'images/burst.jpg', 
-    url: 'http://www.houseofcaress.com/'
-  }, {
-    width: 600,
-    height: 600,
-    ar_flex: 0.2,
-    tag: 'img',
-    src: 'images/pink_rose_wall.jpg',
-    url: 'http://www.houseofcaress.com/'
-  }];
-  var PROBABILITY = 1;
-  var MAX_HIJACKS = 2;
-  
-  var randomOffset = ~~(Math.random()*ads.length);
-  var hijacks = 0; // TODO: Per-tab hijacks count
-  advertsInPage.each(function(index, pageImage) {
-    var jPageImage = $(pageImage);
-    if (pageImage.tagName === 'OBJECT') { // flash-specific hacks.
+  // Track mouse movement in/out of adverts and inject ads if configured  
+  toAdd.forEach(function(advert) {
+    var jAdvert = $(advert);
+    if (advert.tagName === 'OBJECT') { // flash-specific hacks.
       
       // attach mouse listeners to parent. wrapping new div around the object crashes Flash in Chrome.
-      jPageImage = jPageImage.parent();
-      if (_.contains(['DIV', 'SPAN'], jPageImage[0].tagName)) {
-        jPageImage.css({
+      jAdvert = jAdvert.parent();
+      if (_.contains(['DIV', 'SPAN', 'BODY'], jAdvert[0].tagName)) {
+        // put wrapping element in front of child
+        jAdvert.css({
           'z-index': 99999,
           'position': 'relative'
-        }); // put wrapping element in front of child
+        });
       }
       // click listener not fired on Flash.
-      jPageImage.mousedown(function(event) {
-        var data = elementToDataObj(pageImage);
-        recordClickInfo(pageImage, data, event);
+      jAdvert.mousedown(function(event) {
+        if (event.which !== 1) return;
+        var data = elementToDataObj(advert);
+        recordClickInfo(advert, data, event);
       });
     }
     else {
       var hijacked = false;
-      if (Math.random() <= PROBABILITY && hijacks < MAX_HIJACKS) {
-        var width = jPageImage.width(), height = jPageImage.height();
+      var width = jAdvert.width(), height = jAdvert.height();
+      if (Math.random() <= INJECTION_PROBABILITY && hijacks < MAX_INJECTIONS && height !== 0) {
         var ar = width/height;
-        var subset = _.filter(ads, function(ad) {
+        var subset = _.filter(INJECTABLE_ADS, function(ad) {          
+          if ('location' in ad && !window.self.location.href.match(ad.location)) { // TODO: Bypass window.top.location.href CORS 
+            return false; 
+          }
           var _ar = ad.width/ad.height;
-          return pageImage.tagName.toLowerCase() === ad.tag.toLowerCase() && Math.abs(ar-_ar) < (ad.ar_flex || 0.05);
+          return advert.tagName.toLowerCase() === ad.tag.toLowerCase() && 
+                  Math.abs(ar-_ar) < (ad.ar_flex || 0.05) && 
+                  width >= (ad.min_width || 0) && height >= (ad.min_height || 0);
         });
         if (subset.length > 0) {
           // Hijack ad
           var ad = subset[(randomOffset+hijacks)%subset.length];
-          pageImage.src = chrome.extension.getURL(ad.src);
-          jPageImage.mousedown(function(event) {
+          advert.src = chrome.extension.getURL(ad.src);
+          jAdvert.mousedown(function(event) {
+            if (event.which !== 1) return;
             window.open(ad.url, '_blank');
             event.stopPropagation();
             event.preventDefault();
           });
-          pageImage.style['max-width'] = width;
-          pageImage.style['max-height'] = height;
+          // Custom Facebook rewrite
+          if ('location' in ad && 'www.facebook.com'.match(ad.location)) {
+            var emu = jAdvert.closest('.fbEmuImage');
+            if (emu.length !== 0) {
+              var parent = emu.parent().parent();
+              parent.find('div').contents().filter(function() { return this.nodeType == Node.TEXT_NODE; }).remove();
+              var caption = parent.find('[title]');
+              caption.attr('title', ad.title || ad.url);
+              caption.find('strong').text(ad.title || ad.url);
+              parent.find('span').text(ad.description || '');
+              var anchor = parent.parent();
+              var url = ad.url;
+              if (url.indexOf('?') === -1) url = url + '?fbhack';
+              anchor.attr('href', url);
+              anchor.removeAttr('onmousedown');
+              anchor.mousedown(function() {
+                if (event.which !== 1) return;
+                window.open(ad.url, '_blank');
+                event.stopPropagation();
+                event.preventDefault();
+              });
+            }
+          }
+          advert.style['max-width'] = width;
+          advert.style['max-height'] = height;
           hijacked = true;
           hijacks++;
         }
       }
-      jPageImage.click(function(event) {
-        var data = elementToDataObj(pageImage);
-        recordClickInfo(pageImage, data, event);
+      jAdvert.click(function(event) {
+        var data = elementToDataObj(advert);
+        recordClickInfo(advert, data, event);
         if (hijacked) {
           event.stopPropagation();
           event.preventDefault();
@@ -152,58 +325,61 @@ function onAdvertsAndRespondentIdentified(response) {
       });
     }
     
-    jPageImage.mouseleave(function(event) {
+    jAdvert.mouseleave(function(event) {
       // NOTE: This does not fire until the mouse moves, if we need perfect accuracy
       //     we would need to do our own visibility tracking.
-      var data = elementToDataObj(pageImage);
-      recordInteractionInfo(pageImage, data, false, event);
+      var data = elementToDataObj(advert);
+      recordInteractionInfo(advert, data, false, event);
     });
-    jPageImage.mouseenter(function(event) {
-      var data = elementToDataObj(pageImage);
-      recordInteractionInfo(pageImage, data, true, event);
+    jAdvert.mouseenter(function(event) {
+      var data = elementToDataObj(advert);
+      recordInteractionInfo(advert, data, true, event);
     });
   });
   
-  MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
-  var observer = new MutationObserver(function(mutations, observer) {
-      // fired when a mutation occurs
-      mutations.forEach(function(mutation) {
-        var addedNodes = mutation.addedNodes;
-        for (var i = 0; i < addedNodes.length; ++i) {
-          var node = addedNodes[i];
-          if (_.contains(RESOURCE_TAGS_UNWRAPPED, node.nodeName)) {
-              advertsInPage = advertsInPage.add(node); // FIXME need to run through check to see if it's an advert or not.
-          }
-        }
-        var removedNodes = mutation.removedNodes;
-        for (var i = 0; i < removedNodes.length; ++i) {
-          var node = removedNodes[i];
-          if (_.contains(RESOURCE_TAGS_UNWRAPPED, node.nodeName)) {
-            advertsInPage = advertsInPage.not(node);
-          }
-        }
-      });
-  });
-  // define what element should be observed by the observer and what types of mutations trigger the callback
-  observer.observe(document, {
-    subtree: true,  
-    childList: true
-  });  
+  advertsInPage = advertsInPage.add(toAdd);
   
-  /*(function() {
-      // Check visibility change when browser window has moved
-      // TODO add args to recordVisibilityChanges() call
-      var windowX = window.screenX;
-      var windowY = window.screenY;
-      setInterval(function() {
-        if (windowX !== window.screenX || windowY !== window.screenY) {
-          recordVisibilityChanges();
-        }
-        windowX = window.screenX;
-        windowY = window.screenY;
-      }, 1000);
-  }());*/
+  if (!pageProcessed) {
+    var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
+    var observer = new MutationObserver(function(mutations, observer) {
+        // fired when a mutation occurs
+        var i, node, wrapper;
+        mutations.forEach(function(mutation) {
+          var addedNodes = mutation.addedNodes;
+          if (addedNodes.length > 0) {
+            // Process mutation after any subscripts have had a chance to load
+            setTimeout(processMutation.bind(null, addedNodes), 5000);
+          }
+          var removedNodes = mutation.removedNodes;
+          for (i = 0; i < removedNodes.length; ++i) {
+            node = removedNodes[i];
+            if (_.contains(RESOURCE_TAGS_UNWRAPPED, node.nodeName)) {
+              advertsInPage = advertsInPage.not(node);
+            }
+          }
+        });
+    });
+    // define what element should be observed by the observer and what types of mutations trigger the callback
+    observer.observe(document, {
+      subtree: true,  
+      childList: true
+    });  
   
+    /*(function() {
+        // Check visibility change when browser window has moved
+        // TODO add args to recordVisibilityChanges() call
+        var windowX = window.screenX;
+        var windowY = window.screenY;
+        setInterval(function() {
+          if (windowX !== window.screenX || windowY !== window.screenY) {
+            recordVisibilityChanges();
+          }
+          windowX = window.screenX;
+          windowY = window.screenY;
+        }, 1000);
+    }());*/
+  }
+    
   pageProcessed = true;
 }
 
@@ -239,7 +415,7 @@ function notifyFramesToCheckVisibilityChangesFromTop() {
       width: $(window).width(),
       height: $(window).height()
     }
-  }
+  };
   notifyFramesToCheckVisibilityChanges(payload);
 }
 
@@ -269,7 +445,7 @@ function notifyFramesToCheckVisibilityChanges(payload) {
 }
 
 window.addEventListener('message', function(event) {
-  request = event.data;
+  var request = event.data;
   
   if (request.action === 'check_visibility') {
     recordVisibilityChanges(request.topWindow, request.frame);
@@ -324,25 +500,25 @@ function checkVisible(el, topWindow, frame) {
 
   var rect = el.getBoundingClientRect();
   var rectJ = {
-    top: rect.top,
+    top:    rect.top,
     bottom: rect.bottom,
-    left: rect.left,
-    right: rect.right,
+    left:   rect.left,
+    right:  rect.right,
     height: rect.height,
-    width: rect.width
+    width:  rect.width
   };
   
   var rectInViewport = {
-    top: rect.top       + frame.top,
+    top:    rect.top    + frame.top,
     bottom: rect.bottom + frame.top,
-    left: rect.left     + frame.left,
-    right: rect.right   + frame.left
+    left:   rect.left   + frame.left,
+    right:  rect.right  + frame.left
   };
   
-  var topVisible = rectInViewport.top >= 0       && rectInViewport.top <= topWindow.height;
+  var topVisible    = rectInViewport.top    >= 0 && rectInViewport.top    <= topWindow.height;
   var bottomVisible = rectInViewport.bottom >= 0 && rectInViewport.bottom <= topWindow.height;
-  var leftVisible = rectInViewport.left >= 0     && rectInViewport.right <= topWindow.width;
-  var rightVisible = rectInViewport.right >= 0   && rectInViewport.right <= topWindow.width;
+  var leftVisible   = rectInViewport.left   >= 0 && rectInViewport.left   <= topWindow.width;
+  var rightVisible  = rectInViewport.right  >= 0 && rectInViewport.right  <= topWindow.width;
   
   var visible = (topVisible || bottomVisible) && (leftVisible || rightVisible);
 
@@ -547,7 +723,7 @@ function recordClickInfo(element, data, event) {
 
 function record(type, data, event) {
   var timestamp = (new Date()).getTime();
-  var event = {
+  var tracked_event = {
     type: type,
     timestamp: timestamp,
     source: data.source,
@@ -558,7 +734,7 @@ function record(type, data, event) {
     yCoord: event.clientY
   };
   
-  trackEvent(event);
+  trackEvent(tracked_event);
 }
 
 function trackEvent(event) {

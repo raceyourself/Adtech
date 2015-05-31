@@ -63,7 +63,7 @@ app.post('/advert_events', function(request, response) {
     multi.lpush("caress_advert_events", JSON.stringify(event));
   });
   
-  var urls = _.uniq(_.map(request.body.events, function(event) {return event.source}));
+  var urls = _.uniq(_.pluck(request.body.events, 'source'));
   
   urls.forEach(function (url) {
     multi.hsetnx("caress_advert_urls", url, '');
