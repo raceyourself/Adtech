@@ -181,7 +181,7 @@ function extractUrls(context, mutationId) {
 }
 
 function processPage() {
-  //console.log('WST:Processing page: ' + document.URL);
+  console.log('WST:Processing ' + (inIframe() ? 'frame: ' + document.URL : "main page"));
   documentUrl = document.URL;
   
   var payload = {
@@ -383,16 +383,12 @@ function onAdvertsAndRespondentIdentified(response) {
 }
 
 if (inIframe()) {
-  console.log('WST:Prepping frame.');
-  
   $(document).ready(function() {
     setTimeout(processPage, 5000);
   });
   //$(document).load();
 }
 else { // main frame
-  console.log('WST:Prepping main page.');
-  
   $(document).ready(processPage);
 
   // TODO consider cases where child frames are scrollable
@@ -468,6 +464,7 @@ function recordVisibilityChanges(topWindow, frame) {
   
   advertsInPage.each(function(index, image) {
     var data = elementToDataObj(image);
+    //console.log('WST:Checking visibility of ' + data.source);
     
     if (visibleResources.has(image)) {
       if (checkVisible(image, topWindow, frame)) { // image still in viewport
@@ -721,7 +718,7 @@ function recordClickInfo(element, data, event) {
 }
 
 function record(type, data, event) {
-  var timestamp = (new Date()).getTime();
+  var timestamp = moment().format();
   var trackedEvent = {
     type: type,
     timestamp: timestamp,
