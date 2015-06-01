@@ -54,7 +54,7 @@ var INJECTABLE_ADS = [{
   tag: 'img',
   src: 'images/CaressCouple_Technology_Facebook.jpg',
   url: 'http://www.houseofcaress.com/',
-  //location: /facebook.com/i,
+  location: /(?!facebook.com)/i,
   title: 'Forever Collection',
   description: "The world's first body wash with fragrance touch technology"
 }, {
@@ -66,7 +66,7 @@ var INJECTABLE_ADS = [{
   tag: 'img',
   src: 'images/Caress_DebussyMarch_FingerTouch_FB.jpg',
   url: 'http://www.houseofcaress.com/',
-  //location: /facebook.com/i,
+  location: /(?!facebook.com)/i,
   title: 'Forever Collection',
   description: "The world's first body wash with fragrance touch technology"
 }, {
@@ -78,7 +78,7 @@ var INJECTABLE_ADS = [{
   tag: 'img',
   src: 'images/Caress_Movingstill_1_Armpetals.gif',
   url: 'http://www.houseofcaress.com/',
-  //location: /facebook.com/i,
+  location: /(?!facebook.com)/i,
   title: 'Forever Collection',
   description: "The world's first body wash with fragrance touch technology"
 }, {
@@ -90,7 +90,7 @@ var INJECTABLE_ADS = [{
   tag: 'img',
   src: 'images/Caress_Movingstill_2_Bloom.gif',
   url: 'http://www.houseofcaress.com/',
-  //location: /facebook.com/i,
+  location: /(?!facebook.com)/i,
   title: 'Forever Collection',
   description: "The world's first body wash with fragrance touch technology"
 }, {
@@ -102,7 +102,7 @@ var INJECTABLE_ADS = [{
   tag: 'img',
   src: 'images/Caress_Movingstill_3_City.gif',
   url: 'http://www.houseofcaress.com/',
-  //location: /facebook.com/i,
+  location: /(?!facebook.com)/i,
   title: 'Forever Collection',
   description: "The world's first body wash with fragrance touch technology"
 }, {
@@ -114,7 +114,7 @@ var INJECTABLE_ADS = [{
   tag: 'img',
   src: 'images/Caress_Movingstill_4_Clock.gif',
   url: 'http://www.houseofcaress.com/',
-  //location: /facebook.com/i,
+  location: /(?!facebook.com)/i,
   title: 'Forever Collection',
   description: "The world's first body wash with fragrance touch technology"
 }, {
@@ -126,11 +126,11 @@ var INJECTABLE_ADS = [{
   tag: 'img',
   src: 'images/Caress_Movingstill_7_Roseburst.gif',
   url: 'http://www.houseofcaress.com/',
-  //location: /facebook.com/i,
+  location: /(?!facebook.com)/i,
   title: 'Forever Collection',
   description: "The world's first body wash with fragrance touch technology"
 }];
-var INJECTION_PROBABILITY = 0.2;
+var INJECTION_PROBABILITY = 1;
 var MAX_INJECTIONS = 1;
 var randomOffset = ~~(Math.random()*INJECTABLE_ADS.length);
 var hijacks = 0; // TODO: Per-tab hijacks count
@@ -267,7 +267,7 @@ function onAdvertsAndRespondentIdentified(response) {
       var random = Math.random();
       if (random <= INJECTION_PROBABILITY && hijacks < MAX_INJECTIONS && height !== 0) {
         var ar = width/height;
-        var subset = _.filter(INJECTABLE_ADS, function(ad) {          
+        var subset = _.filter(INJECTABLE_ADS, function(ad) {
           if ('location' in ad && !window.self.location.href.match(ad.location)) { // TODO: Bypass window.top.location.href CORS 
             return false; 
           }
