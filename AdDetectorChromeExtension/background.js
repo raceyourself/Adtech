@@ -44,6 +44,9 @@ function identifyAdverts(frameUrl, urls, callbackData) {
       if (blacklisted) {
         payload.advertUrls.push(url.src);
       }
+      
+      console.log((blacklisted ? 'Is blacklisted' : 'Not blacklisted') + ': ' + url.src);
+      
     } catch (e) {
       console.log('WST:Error checking blacklist for url=' + url.src + ' ; elType=' + elType + ' ; frameDomain=' + frameDomain + ': ' + e);
     }
@@ -54,7 +57,7 @@ function identifyAdverts(frameUrl, urls, callbackData) {
 function onCustomBlacklist(url) {
   // TODO reuse AdBlock code for this
   // For Facebook ads.
-  return url.indexOf('safe_image.php') !== -1;
+  return url.indexOf('//tpc.googlesyndication.com/simgad/') !== -1; //url.indexOf('safe_image.php') !== -1;
 }
 
 /** best if it's in background script because it's an HTTP request, and content scripts in pages served via HTTPS can't POST
@@ -116,3 +119,7 @@ function performChecks() {
 
 performChecks();
 setInterval(performChecks, KILL_SWITCH_POLL_INTERVAL);
+
+chrome.runtime.onUpdateAvailable.addListener(function() {
+  chrome.runtime.reload(); // force refresh of this extension when available
+});

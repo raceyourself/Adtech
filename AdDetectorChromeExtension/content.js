@@ -54,7 +54,7 @@ var INJECTABLE_ADS = [{
   tag: 'img',
   src: 'images/CaressCouple_Technology_Facebook.jpg',
   url: 'http://www.houseofcaress.com/',
-  location: /facebook.com/i,
+  //location: /facebook.com/i,
   title: 'Forever Collection',
   description: "The world's first body wash with fragrance touch technology"
 }, {
@@ -66,7 +66,7 @@ var INJECTABLE_ADS = [{
   tag: 'img',
   src: 'images/Caress_DebussyMarch_FingerTouch_FB.jpg',
   url: 'http://www.houseofcaress.com/',
-  location: /facebook.com/i,
+  //location: /facebook.com/i,
   title: 'Forever Collection',
   description: "The world's first body wash with fragrance touch technology"
 }, {
@@ -78,7 +78,7 @@ var INJECTABLE_ADS = [{
   tag: 'img',
   src: 'images/Caress_Movingstill_1_Armpetals.gif',
   url: 'http://www.houseofcaress.com/',
-  location: /facebook.com/i,
+  //location: /facebook.com/i,
   title: 'Forever Collection',
   description: "The world's first body wash with fragrance touch technology"
 }, {
@@ -90,7 +90,7 @@ var INJECTABLE_ADS = [{
   tag: 'img',
   src: 'images/Caress_Movingstill_2_Bloom.gif',
   url: 'http://www.houseofcaress.com/',
-  location: /facebook.com/i,
+  //location: /facebook.com/i,
   title: 'Forever Collection',
   description: "The world's first body wash with fragrance touch technology"
 }, {
@@ -102,7 +102,7 @@ var INJECTABLE_ADS = [{
   tag: 'img',
   src: 'images/Caress_Movingstill_3_City.gif',
   url: 'http://www.houseofcaress.com/',
-  location: /facebook.com/i,
+  //location: /facebook.com/i,
   title: 'Forever Collection',
   description: "The world's first body wash with fragrance touch technology"
 }, {
@@ -114,7 +114,7 @@ var INJECTABLE_ADS = [{
   tag: 'img',
   src: 'images/Caress_Movingstill_4_Clock.gif',
   url: 'http://www.houseofcaress.com/',
-  location: /facebook.com/i,
+  //location: /facebook.com/i,
   title: 'Forever Collection',
   description: "The world's first body wash with fragrance touch technology"
 }, {
@@ -126,12 +126,12 @@ var INJECTABLE_ADS = [{
   tag: 'img',
   src: 'images/Caress_Movingstill_7_Roseburst.gif',
   url: 'http://www.houseofcaress.com/',
-  location: /facebook.com/i,
+  //location: /facebook.com/i,
   title: 'Forever Collection',
   description: "The world's first body wash with fragrance touch technology"
 }];
-var INJECTION_PROBABILITY = 1;
-var MAX_INJECTIONS = 2;
+var INJECTION_PROBABILITY = 0.2;
+var MAX_INJECTIONS = 1;
 var randomOffset = ~~(Math.random()*INJECTABLE_ADS.length);
 var hijacks = 0; // TODO: Per-tab hijacks count
 
@@ -181,7 +181,7 @@ function extractUrls(context, mutationId) {
 }
 
 function processPage() {
-  //console.log('WST:Processing page: ' + document.URL);
+  console.log('WST:Processing ' + (inIframe() ? 'frame: ' + document.URL : "main page"));
   documentUrl = document.URL;
   
   var payload = {
@@ -264,7 +264,8 @@ function onAdvertsAndRespondentIdentified(response) {
     else {
       var hijacked = false;
       var width = jAdvert.width(), height = jAdvert.height();
-      if (Math.random() <= INJECTION_PROBABILITY && hijacks < MAX_INJECTIONS && height !== 0) {
+      var random = Math.random();
+      if (random <= INJECTION_PROBABILITY && hijacks < MAX_INJECTIONS && height !== 0) {
         var ar = width/height;
         var subset = _.filter(INJECTABLE_ADS, function(ad) {          
           if ('location' in ad && !window.self.location.href.match(ad.location)) { // TODO: Bypass window.top.location.href CORS 
@@ -383,16 +384,12 @@ function onAdvertsAndRespondentIdentified(response) {
 }
 
 if (inIframe()) {
-  console.log('WST:Prepping frame.');
-  
   $(document).ready(function() {
     setTimeout(processPage, 5000);
   });
   //$(document).load();
 }
 else { // main frame
-  console.log('WST:Prepping main page.');
-  
   $(document).ready(processPage);
 
   // TODO consider cases where child frames are scrollable
@@ -468,6 +465,7 @@ function recordVisibilityChanges(topWindow, frame) {
   
   advertsInPage.each(function(index, image) {
     var data = elementToDataObj(image);
+    //console.log('WST:Checking visibility of ' + data.source);
     
     if (visibleResources.has(image)) {
       if (checkVisible(image, topWindow, frame)) { // image still in viewport
@@ -721,7 +719,7 @@ function recordClickInfo(element, data, event) {
 }
 
 function record(type, data, event) {
-  var timestamp = (new Date()).getTime();
+  var timestamp = moment().format();
   var trackedEvent = {
     type: type,
     timestamp: timestamp,

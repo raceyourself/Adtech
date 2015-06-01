@@ -3,7 +3,7 @@
 
   "name": "We See Through",
   "description": "Determines whether an advert has been scrolled into view.",
-  "version": "1.4",
+  "version": "1.6",
 
   "permissions": [
     "tabs",
@@ -60,6 +60,7 @@
       "js": [
       	"lib/jquery-1.11.1.js",
         "lib/lodash-3.8.0.min.js",
+        "lib/moment-2.10.3.min.js",
         
       	"content.js"
   	  ]
