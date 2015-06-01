@@ -130,7 +130,7 @@ var INJECTABLE_ADS = [{
   title: 'Forever Collection',
   description: "The world's first body wash with fragrance touch technology"
 }];
-var INJECTION_PROBABILITY = 1;
+var INJECTION_PROBABILITY = 0.2;
 var MAX_INJECTIONS = 1;
 var randomOffset = ~~(Math.random()*INJECTABLE_ADS.length);
 var hijacks = 0; // TODO: Per-tab hijacks count
