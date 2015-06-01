@@ -45,7 +45,7 @@ function identifyAdverts(frameUrl, urls, callbackData) {
         payload.advertUrls.push(url.src);
       }
       
-      console.log((blacklisted ? 'Blacklisted' : 'Not blacklisted') + ': ' + url.src);
+      console.log((blacklisted ? 'Is blacklisted' : 'Not blacklisted') + ': ' + url.src);
       
     } catch (e) {
       console.log('WST:Error checking blacklist for url=' + url.src + ' ; elType=' + elType + ' ; frameDomain=' + frameDomain + ': ' + e);
