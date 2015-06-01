@@ -7,7 +7,6 @@ var RESOURCE_TAGS_UNWRAPPED = [
   'VIDEO',
   'OBJECT'
 ];
-var RESOURCE_TAGS = RESOURCE_TAGS_UNWRAPPED;
 
 var pageProcessed = false;
 
@@ -723,7 +722,7 @@ function recordClickInfo(element, data, event) {
 
 function record(type, data, event) {
   var timestamp = (new Date()).getTime();
-  var tracked_event = {
+  var trackedEvent = {
     type: type,
     timestamp: timestamp,
     source: data.source,
@@ -734,7 +733,7 @@ function record(type, data, event) {
     yCoord: event.clientY
   };
   
-  trackEvent(tracked_event);
+  trackEvent(trackedEvent);
 }
 
 function trackEvent(event) {

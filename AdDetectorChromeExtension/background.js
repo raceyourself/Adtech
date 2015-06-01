@@ -39,7 +39,7 @@ function identifyAdverts(frameUrl, urls, callbackData) {
     try {
       var elType = ElementTypes.fromOnBeforeRequestType(url.tag.toLowerCase()) || ElementTypes.image;
 
-      var blacklisted = _myfilters.blocking.matches(url.src, elType, frameDomain) || _myfilters.blocking.matches(url.src, ElementTypes.other, frameDomain);
+      var blacklisted = _myfilters.blocking.matches(url.src, elType, frameDomain) || _myfilters.blocking.matches(url.src, ElementTypes.other, frameDomain) || onCustomBlacklist(url.src);
 
       if (blacklisted) {
         payload.advertUrls.push(url.src);
@@ -49,6 +49,12 @@ function identifyAdverts(frameUrl, urls, callbackData) {
     }
   });
   return payload;
+}
+
+function onCustomBlacklist(url) {
+  // TODO reuse AdBlock code for this
+  // For Facebook ads.
+  return url.indexOf('safe_image.php') !== -1;
 }
 
 /** best if it's in background script because it's an HTTP request, and content scripts in pages served via HTTPS can't POST
