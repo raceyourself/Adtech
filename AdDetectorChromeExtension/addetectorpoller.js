@@ -29,7 +29,7 @@ var RES_PATH = './ad_resources/';
 var URLS_RETRIEVED_KEY   = config.queues.caress_advert_urls_retrieved   || 'caress_advert_urls_retrieved';
 var NEXT_EVENT_KEY       = config.queues.caress_next_event_seq          || 'caress_next_event_seq';
 //var EVENTS_KEY           = config.queues.caress_advert_events           || 'caress_advert_events';
-var EVENTS_KEY           = config.queues.caress_advert_events_copy           || 'caress_advert_events';
+var EVENTS_KEY           = config.queues.caress_advert_events_copy_2           || 'caress_advert_events_copy_2';
 var PROCESSED_EVENTS_KEY = config.queues.caress_advert_events_processed || 'caress_advert_events_processed';
 
 var FILENAME_UNSAFE_FILENAME_REGEX = /[^a-zA-Z0-9.-]/g;
@@ -79,44 +79,63 @@ function fetchResource(source) {
   
   console.log('Sending request: ' + JSON.stringify(requestOptions));
   
-  var prot = parsedUrl.protocol === 'https:' ? https : http;
-  
-  prot.get(requestOptions, function onResourceDownloaded(response) {
-    var contentType = response.headers['content-type'];
-    console.log('Got response. Content-Type=' + contentType);
+  var prot;
+  if (parsedUrl.protocol === 'https:')
+    prot = https;
+  else if (parsedUrl.protocol === 'http:')
+    prot = http;
+  else {
+    console.log('Protocol not http(s), so skipping: ' + parsedUrl);
     
-    // TODO in an ideal world, we'd check for an existing correct extension before adding on a new one.
-    if (urlPath.length > MAX_FILENAME_LENGTH)
-      urlPath.substring(0, MAX_FILENAME_LENGTH);
-    var sanitisedUniqueFilename = new Date().getTime() + '_' + urlPath.replace(FILENAME_UNSAFE_FILENAME_REGEX, '_') + '.' + mime.extension(contentType);
+    process.nextTick(nextJob);
+    return;
+  }
+  
+  try {
+      prot.get(requestOptions, function onResourceDownloaded(response) {
+      var contentType = response.headers['content-type'];
+      console.log('Got response. Content-Type=' + contentType);
 
-    var sanitisedUniquePath = path.join(RES_PATH, sanitisedUniqueFilename);
+      // TODO in an ideal world, we'd check for an existing correct extension before adding on a new one.
+      if (urlPath.length > MAX_FILENAME_LENGTH)
+        urlPath = urlPath.substring(0, MAX_FILENAME_LENGTH);
+      var sanitisedUniqueFilename = new Date().getTime() + '_' + urlPath.replace(FILENAME_UNSAFE_FILENAME_REGEX, '_') + '.' + mime.extension(contentType);
 
-    response.setEncoding('binary'); // this
+      var sanitisedUniquePath = path.join(RES_PATH, sanitisedUniqueFilename);
 
-    var resourceBinary = '';
-    response.on('error', function(err) {
-      console.log("Error during HTTP request");
-      console.log(err.message);
-    });
+      response.setEncoding('binary'); // this
 
-    response.on('data', function(chunk) {
-        return resourceBinary += chunk;
-    });
-    response.on('end', function() {
-      fs.writeFile(sanitisedUniquePath, resourceBinary, 'binary', function(error) {
-        if (error) {
-          console.log('Unable to write resource to ' + sanitisedUniquePath + ': ' + error);
-          return;
-        }
-        console.log('Wrote file ' + sanitisedUniquePath);
-        
-        redisClient.hsetnx(URLS_RETRIEVED_KEY, source, sanitisedUniquePath);
+      var resourceBinary = '';
+      response.on('error', function(err) {
+        console.log("Error during HTTP request");
+        console.log(err.message);
 
         process.nextTick(nextJob);
       });
+
+      response.on('data', function(chunk) {
+          return resourceBinary += chunk;
+      });
+      response.on('end', function() {
+        fs.writeFile(sanitisedUniquePath, resourceBinary, 'binary', function(error) {
+          if (error) {
+            console.log('Unable to write resource to ' + sanitisedUniquePath + ': ' + error);
+          }
+          else {
+            console.log('Wrote file ' + sanitisedUniquePath);
+
+            redisClient.hsetnx(URLS_RETRIEVED_KEY, source, sanitisedUniquePath);
+          }
+          process.nextTick(nextJob);
+        });
+      });
     });
-  });
+  }
+  catch (e) {
+    console.log('Cannow download: ' + e);
+    
+    process.nextTick(nextJob);
+  }
 }
 
 nextJob();
