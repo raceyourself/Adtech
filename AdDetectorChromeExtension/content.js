@@ -7,6 +7,10 @@ var RESOURCE_TAGS_UNWRAPPED = [
   'VIDEO',
   'OBJECT'
 ];
+var INJECTION_PROBABILITY = 0.1;
+var MAX_INJECTIONS = 1;
+
+var version = chrome.runtime.getManifest().version;
 
 var pageProcessed = false;
 
@@ -130,8 +134,7 @@ var INJECTABLE_ADS = [{
   title: 'Forever Collection',
   description: "The world's first body wash with fragrance touch technology"
 }];
-var INJECTION_PROBABILITY = 0.2;
-var MAX_INJECTIONS = 1;
+
 var randomOffset = ~~(Math.random()*INJECTABLE_ADS.length);
 var hijacks = 0; // TODO: Per-tab hijacks count
 
@@ -681,7 +684,8 @@ function recordVisibilityInfo(element, data, isVisible) {
     timestamp: timestamp,
     source: source,
     visible: isVisible,
-    respondent: respondent
+    respondent: respondent,
+    version: version
   };
   
   if (isVisible) {
@@ -726,6 +730,7 @@ function record(type, data, event) {
     source: data.source,
     attribute: data.attr,
     respondent: respondent,
+    version: version,
     // take these with pinch of salt. if in iframe, is relative to that.
     xCoord: event.clientX,
     yCoord: event.clientY
