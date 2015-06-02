@@ -56,6 +56,8 @@ function processEvent(eventStr) {
   redisClient.hexists(URLS_RETRIEVED_KEY, source, function(error, exists) {
     if (exists) {
       console.log('Source already fetched: ' + source);
+      
+      process.nextTick(nextJob);
     }
     else {
       fetchResource(source);
@@ -82,7 +84,8 @@ function fetchResource(source) {
   prot.get(requestOptions, function onResourceDownloaded(response) {
     var contentType = response.headers['content-type'];
     console.log('Got response. Content-Type=' + contentType);
-
+    
+    // TODO in an ideal world, we'd check for an existing correct extension before adding on a new one.
     if (urlPath.length > MAX_FILENAME_LENGTH)
       urlPath.substring(0, MAX_FILENAME_LENGTH);
     var sanitisedUniqueFilename = new Date().getTime() + '_' + urlPath.replace(FILENAME_UNSAFE_FILENAME_REGEX, '_') + '.' + mime.extension(contentType);
@@ -108,7 +111,7 @@ function fetchResource(source) {
         }
         console.log('Wrote file ' + sanitisedUniquePath);
         
-        redisClient.hsetnx(URLS_RETRIEVED_KEY, url, sanitisedUniquePath);
+        redisClient.hsetnx(URLS_RETRIEVED_KEY, source, sanitisedUniquePath);
 
         process.nextTick(nextJob);
       });
