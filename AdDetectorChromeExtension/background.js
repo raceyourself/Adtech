@@ -27,10 +27,11 @@ if (!localStorage['first_launch']) {
 
 ////////////// COMMS WITH CONTENT SCRIPT //////////////
 
-function identifyAdverts(frameUrl, urls, callbackData) {
+function identifyAdverts(frameId, frameUrl, urls, callbackData) {
   var frameDomain = frameUrl ? parseUri(frameUrl).hostname : '';
 
   var payload = {};
+  payload.frameId = frameId;
   payload.respondent = respondent;
   payload.advertUrls = [];
   payload.callbackData = callbackData || {};
@@ -95,7 +96,7 @@ function trackEvent(event) {
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   if (request.action === 'identify_adverts') {
-    sendResponse(identifyAdverts(sender.url, request.urls, request.callbackData));
+    sendResponse(identifyAdverts(sender.frameId, sender.url, request.urls, request.callbackData));
   }
   else if (request.action === 'track_event') {
     trackEvent(request.event);
