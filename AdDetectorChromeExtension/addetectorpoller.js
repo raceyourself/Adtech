@@ -29,7 +29,7 @@ var RES_PATH = './ad_resources/';
 var URLS_RETRIEVED_KEY   = config.queues.caress_advert_urls_retrieved   || 'caress_advert_urls_retrieved';
 var NEXT_EVENT_KEY       = config.queues.caress_next_event_seq          || 'caress_next_event_seq';
 //var EVENTS_KEY           = config.queues.caress_advert_events           || 'caress_advert_events';
-var EVENTS_KEY           = config.queues.caress_advert_events_copy_2           || 'caress_advert_events_copy_2';
+var EVENTS_KEY           = config.queues.caress_advert_events           || 'caress_advert_events_copy_3';
 var PROCESSED_EVENTS_KEY = config.queues.caress_advert_events_processed || 'caress_advert_events_processed';
 
 var FILENAME_UNSAFE_FILENAME_REGEX = /[^a-zA-Z0-9.-]/g;
@@ -37,6 +37,8 @@ var FILENAME_UNSAFE_FILENAME_REGEX = /[^a-zA-Z0-9.-]/g;
 var MAX_EVENTS_PER_POLL = 10;
 
 var MAX_FILENAME_LENGTH = 100;
+
+var REQUEST_TIMEOUT = 1000 * 60; // 90 seconds
 
 function nextJob() {
   redisClient.brpoplpush(EVENTS_KEY, PROCESSED_EVENTS_KEY, 0, function(error, event) {
@@ -80,62 +82,74 @@ function fetchResource(source) {
   console.log('Sending request: ' + JSON.stringify(requestOptions));
   
   var prot;
-  if (parsedUrl.protocol === 'https:')
+  if (parsedUrl.protocol === 'https:') {
     prot = https;
-  else if (parsedUrl.protocol === 'http:')
+  }
+  else if (parsedUrl.protocol === 'http:') {
     prot = http;
+  }
+  else if (parsedUrl.protocol === 'chrome:') {
+    // Injected image from extension.
+    redisClient.hsetnx(URLS_RETRIEVED_KEY, source, urlPath);
+  }
   else {
-    console.log('Protocol not http(s), so skipping: ' + parsedUrl);
+    console.log('Protocol not http(s), so skipping: ' + parsedUrl.protocol);
     
     process.nextTick(nextJob);
     return;
   }
   
-  try {
-      prot.get(requestOptions, function onResourceDownloaded(response) {
-      var contentType = response.headers['content-type'];
-      console.log('Got response. Content-Type=' + contentType);
+  prot.get(requestOptions, function onResourceDownloaded(response) {
+    var contentType = response.headers['content-type'];
+    console.log('Got response. Content-Type=' + contentType);
 
-      // TODO in an ideal world, we'd check for an existing correct extension before adding on a new one.
-      if (urlPath.length > MAX_FILENAME_LENGTH)
-        urlPath = urlPath.substring(0, MAX_FILENAME_LENGTH);
-      var sanitisedUniqueFilename = new Date().getTime() + '_' + urlPath.replace(FILENAME_UNSAFE_FILENAME_REGEX, '_') + '.' + mime.extension(contentType);
+    // TODO in an ideal world, we'd check for an existing correct extension before adding on a new one.
+    if (urlPath.length > MAX_FILENAME_LENGTH) {
+      urlPath = urlPath.substring(0, MAX_FILENAME_LENGTH);
+    }
+    var extension = mime.extension(contentType);
+    if (extension) {
+      extension = '.' + extension;
+    }
+    else {
+      console.log('Unrecognised content type: ' + contentType);
+      extension = '';
+    }
+    var sanitisedUniqueFilename = new Date().getTime() + '_' + urlPath.replace(FILENAME_UNSAFE_FILENAME_REGEX, '_') + extension;
 
-      var sanitisedUniquePath = path.join(RES_PATH, sanitisedUniqueFilename);
+    var sanitisedUniquePath = path.join(RES_PATH, sanitisedUniqueFilename);
 
-      response.setEncoding('binary'); // this
+    response.setEncoding('binary'); // this
 
-      var resourceBinary = '';
-      response.on('error', function(err) {
-        console.log("Error during HTTP request");
-        console.log(err.message);
+    var resourceBinary = '';
+    response.on('error', function(err) {
+      console.log("Error during HTTP request");
+      console.log(err.message);
 
+      process.nextTick(nextJob);
+    });
+
+    response.on('data', function(chunk) {
+        return resourceBinary += chunk;
+    });
+    response.on('end', function() {
+      fs.writeFile(sanitisedUniquePath, resourceBinary, 'binary', function(error) {
+        if (error) {
+          console.log('Unable to write resource to ' + sanitisedUniquePath + ': ' + error);
+        }
+        else {
+          console.log('Wrote file ' + sanitisedUniquePath);
+
+          redisClient.hsetnx(URLS_RETRIEVED_KEY, source, sanitisedUniquePath);
+        }
         process.nextTick(nextJob);
       });
-
-      response.on('data', function(chunk) {
-          return resourceBinary += chunk;
-      });
-      response.on('end', function() {
-        fs.writeFile(sanitisedUniquePath, resourceBinary, 'binary', function(error) {
-          if (error) {
-            console.log('Unable to write resource to ' + sanitisedUniquePath + ': ' + error);
-          }
-          else {
-            console.log('Wrote file ' + sanitisedUniquePath);
-
-            redisClient.hsetnx(URLS_RETRIEVED_KEY, source, sanitisedUniquePath);
-          }
-          process.nextTick(nextJob);
-        });
-      });
     });
-  }
-  catch (e) {
-    console.log('Cannow download: ' + e);
+  }).setTimeout(REQUEST_TIMEOUT, function() {
+    console.log('Connection timed out. Moving on to the next.');
     
     process.nextTick(nextJob);
-  }
+  });
 }
 
 nextJob();
