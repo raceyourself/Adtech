@@ -1,10 +1,8 @@
 {
   "manifest_version": 2,
-
   "name": "We See Through",
   "description": "Determines whether an advert has been scrolled into view.",
   "version": "1.9",
-
   "permissions": [
     "tabs",
     "http://*/*",
@@ -12,9 +10,7 @@
     "idle",
     "storage"
   ],
-  
   "options_page": "options.html",
-  
   "icons": {
     "16":  "icons/icon16.png",
     "32":  "icons/icon32.png",
@@ -22,17 +18,11 @@
     "128": "icons/icon128.png"
   },
   "web_accessible_resources": [
-    "images/burst.jpg",
-    "images/pink_rose_wall.jpg",
-    "images/Caress_DebussyMarch_FingerTouch_FB.jpg",
-    "images/CaressCouple_Technology_Facebook.jpg",
-    "images/Caress_Movingstill_1_Armpetals.gif",
-    "images/Caress_Movingstill_2_Bloom.gif",
-    "images/Caress_Movingstill_3_City.gif",
-    "images/Caress_Movingstill_4_Clock.gif",
-    "images/Caress_Movingstill_7_Roseburst.gif"
+    "images/160x600.png",
+    "images/300x250.png",
+    "images/728x90.png",
+    "images/970x250.png"
   ],
-  
   "background": {
     "scripts": [
       "lib/jquery-1.7.1.min.js",

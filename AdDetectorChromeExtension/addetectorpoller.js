@@ -2,9 +2,12 @@
 'use strict';
 var fs = require('fs');
 var path = require('path');
-var child_process = require('child_process');
 var redis = require('redis');
 var util = require('util');
+var url = require('url');
+var http = require('http');
+var https = require('https');
+var mime = require('mime-types');
 
 var config = {};
 try {
@@ -15,40 +18,138 @@ try {
 }
 
 config.redis = config.redis || {};
-var client = redis.createClient(config.redis.port || 6379,
+var redisClient = redis.createClient(config.redis.port || 6379,
                                 config.redis.host || '127.0.0.01',
                                 config.redis.options || {});
 
 config.queues = config.queues || {};
 
+var RES_PATH = './ad_resources/';
+
+var URLS_RETRIEVED_KEY   = config.queues.caress_advert_urls_retrieved   || 'caress_advert_urls_retrieved';
+var NEXT_EVENT_KEY       = config.queues.caress_next_event_seq          || 'caress_next_event_seq';
+//var EVENTS_KEY           = config.queues.caress_advert_events           || 'caress_advert_events';
+var EVENTS_KEY           = config.queues.caress_advert_events           || 'caress_advert_events_copy_3';
+var PROCESSED_EVENTS_KEY = config.queues.caress_advert_events_processed || 'caress_advert_events_processed';
+
+var FILENAME_UNSAFE_FILENAME_REGEX = /[^a-zA-Z0-9.-]/g;
+
+var MAX_EVENTS_PER_POLL = 10;
+
+var MAX_FILENAME_LENGTH = 100;
+
+var REQUEST_TIMEOUT = 1000 * 60; // 90 seconds
+
 function nextJob() {
-  // TODO find URLs in keys of caress_advert_urls that don't have a value set. Download the URL and update the value with the path.
-  /*
-  client.blpop(config.queues.transcoder || 'transcoder_queue', 0, function(err, data) {
-    var job = JSON.parse(data[1]);
-    if (TRANSCODE_SCRIPT[job.preset]) {
-      console.log('Transcoding ' + job.filename + ' to ' + job.preset + ' quality');
-      var target = job.filename.substr(0, job.filename.length-('.mp4'.length))+'_'+job.preset+'.mp4';
-      var child = child_process.execFile(
-        TRANSCODE_SCRIPT[job.preset].filename, [job.filename, target, __dirname, config.videostore.url],
-        {},
-        function callback(error, stdout, stderr) {
-          console.log('Transcoded ' + job.filename + ' to ' + job.preset + ' quality');
-          if (error) {
-            console.error(error);
-            console.log(stdout);
-            console.log(stderr);
-            slack.send({channel: '#_uploads', username: 'transcoder.js', text: 'Error transcoding <' + config.videostore.url + job.filename + '|' + job.filename + '> to ' + job.preset + ' quality!'});
-          } else {
-            slack.send({channel: '#_uploads', username: 'transcoder.js', text: 'Transcoded <' + config.videostore.url + job.filename + '|' + job.filename + '> to <' + config.videostore.url + target + '|' + job.preset + '> quality'});
-          }
-          process.nextTick(nextJob);
-        }
-      );
-    } else {
-      console.error('Unknown job: ' + util.inspect(job));
+  redisClient.brpoplpush(EVENTS_KEY, PROCESSED_EVENTS_KEY, 0, function(error, event) {
+  //redisClient.brpop(EVENTS_KEY, 0, function(error, event) {event = event[1];
+    if (error) {
+      console.log('Failed to pop element from ' + EVENTS_KEY + 'and move to ' + PROCESSED_EVENTS_KEY);
+      return;
+    }
+    processEvent(event);
+  });
+}
+
+function processEvent(eventStr) {
+  var event = JSON.parse(eventStr);
+  var source = event.source;
+  
+  redisClient.hexists(URLS_RETRIEVED_KEY, source, function(error, exists) {
+    if (exists) {
+      console.log('Source already fetched: ' + source);
+      
+      process.nextTick(nextJob);
+    }
+    else {
+      fetchResource(source);
     }
   });
-  */
 }
+
+function fetchResource(source) {
+  var parsedUrl = url.parse(source);
+  var urlPath = parsedUrl.path;
+
+  var requestOptions = {};
+  requestOptions.host = parsedUrl.host;
+  requestOptions.port = parsedUrl.port;
+  requestOptions.path = parsedUrl.path;
+  if (parsedUrl.search) {
+    requestOptions.path += parsedUrl.search;
+  }
+  
+  console.log('Sending request: ' + JSON.stringify(requestOptions));
+  
+  var prot;
+  if (parsedUrl.protocol === 'https:') {
+    prot = https;
+  }
+  else if (parsedUrl.protocol === 'http:') {
+    prot = http;
+  }
+  else if (parsedUrl.protocol === 'chrome:') {
+    // Injected image from extension.
+    redisClient.hsetnx(URLS_RETRIEVED_KEY, source, urlPath);
+  }
+  else {
+    console.log('Protocol not http(s), so skipping: ' + parsedUrl.protocol);
+    
+    process.nextTick(nextJob);
+    return;
+  }
+  
+  prot.get(requestOptions, function onResourceDownloaded(response) {
+    var contentType = response.headers['content-type'];
+    console.log('Got response. Content-Type=' + contentType);
+
+    // TODO in an ideal world, we'd check for an existing correct extension before adding on a new one.
+    if (urlPath.length > MAX_FILENAME_LENGTH) {
+      urlPath = urlPath.substring(0, MAX_FILENAME_LENGTH);
+    }
+    var extension = mime.extension(contentType);
+    if (extension) {
+      extension = '.' + extension;
+    }
+    else {
+      console.log('Unrecognised content type: ' + contentType);
+      extension = '';
+    }
+    var sanitisedUniqueFilename = new Date().getTime() + '_' + urlPath.replace(FILENAME_UNSAFE_FILENAME_REGEX, '_') + extension;
+
+    var sanitisedUniquePath = path.join(RES_PATH, sanitisedUniqueFilename);
+
+    response.setEncoding('binary'); // this
+
+    var resourceBinary = '';
+    response.on('error', function(err) {
+      console.log("Error during HTTP request");
+      console.log(err.message);
+
+      process.nextTick(nextJob);
+    });
+
+    response.on('data', function(chunk) {
+        return resourceBinary += chunk;
+    });
+    response.on('end', function() {
+      fs.writeFile(sanitisedUniquePath, resourceBinary, 'binary', function(error) {
+        if (error) {
+          console.log('Unable to write resource to ' + sanitisedUniquePath + ': ' + error);
+        }
+        else {
+          console.log('Wrote file ' + sanitisedUniquePath);
+
+          redisClient.hsetnx(URLS_RETRIEVED_KEY, source, sanitisedUniquePath);
+        }
+        process.nextTick(nextJob);
+      });
+    });
+  }).setTimeout(REQUEST_TIMEOUT, function() {
+    console.log('Connection timed out. Moving on to the next.');
+    
+    process.nextTick(nextJob);
+  });
+}
+
 nextJob();
