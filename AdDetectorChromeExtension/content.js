@@ -7,9 +7,6 @@ var RESOURCE_TAGS_UNWRAPPED = [
   'VIDEO',
   'OBJECT'
 ];
-var INJECTION_PROBABILITY = 0.1;
-var MAX_INJECTIONS = 1;
-
 var version = chrome.runtime.getManifest().version;
 
 var pageProcessed = false;
@@ -34,104 +31,53 @@ var frameId;
 
 var respondent;
 
+var INJECTION_PROBABILITY = 0.1;
+var MAX_INJECTIONS = 1; // per page
+
 var INJECTABLE_ADS = [{
-  min_width: 100,
-  min_height: 50,
-  width: 600,
+  min_width: 120,
+  min_height: 450,
+  width: 160,
   height: 600,
   ar_flex: 0.2,
   tag: 'img',
-  src: 'images/burst.jpg', 
-  url: 'http://www.houseofcaress.com/'
-}, {
-  min_width: 100,
-  min_height: 50,
-  width: 600,
-  height: 600,
-  ar_flex: 0.2,
-  tag: 'img',
-  src: 'images/pink_rose_wall.jpg',
-  url: 'http://www.houseofcaress.com/'
-}, {
-  min_width: 100,
-  min_height: 50,
-  width: 600,
-  height: 600,
-  ar_flex: 0.2,
-  tag: 'img',
-  src: 'images/CaressCouple_Technology_Facebook.jpg',
+  src: 'images/160x600.png',
   url: 'http://www.houseofcaress.com/',
   location: /^((?!facebook.com).)*$/i,
   title: 'Forever Collection',
   description: "The world's first body wash with fragrance touch technology"
 }, {
-  min_width: 100,
-  min_height: 50,
-  width: 600,
-  height: 600,
+  min_width: 225,
+  min_height: 188,
+  width: 300,
+  height: 250,
   ar_flex: 0.2,
   tag: 'img',
-  src: 'images/Caress_DebussyMarch_FingerTouch_FB.jpg',
+  src: 'images/300x250.png',
   url: 'http://www.houseofcaress.com/',
   location: /^((?!facebook.com).)*$/i,
   title: 'Forever Collection',
   description: "The world's first body wash with fragrance touch technology"
 }, {
-  min_width: 100,
-  min_height: 50,
-  width: 320,
-  height: 180,
+  min_width: 546,
+  min_height: 68,
+  width: 728,
+  height: 90,
   ar_flex: 0.2,
   tag: 'img',
-  src: 'images/Caress_Movingstill_1_Armpetals.gif',
+  src: 'images/728x90.png',
   url: 'http://www.houseofcaress.com/',
   location: /^((?!facebook.com).)*$/i,
   title: 'Forever Collection',
   description: "The world's first body wash with fragrance touch technology"
 }, {
-  min_width: 100,
-  min_height: 50,
-  width: 320,
-  height: 199,
+  min_width: 728,
+  min_height: 188,
+  width: 970,
+  height: 250,
   ar_flex: 0.2,
   tag: 'img',
-  src: 'images/Caress_Movingstill_2_Bloom.gif',
-  url: 'http://www.houseofcaress.com/',
-  location: /^((?!facebook.com).)*$/i,
-  title: 'Forever Collection',
-  description: "The world's first body wash with fragrance touch technology"
-}, {
-  min_width: 100,
-  min_height: 50,
-  width: 320,
-  height: 172,
-  ar_flex: 0.2,
-  tag: 'img',
-  src: 'images/Caress_Movingstill_3_City.gif',
-  url: 'http://www.houseofcaress.com/',
-  location: /^((?!facebook.com).)*$/i,
-  title: 'Forever Collection',
-  description: "The world's first body wash with fragrance touch technology"
-}, {
-  min_width: 100,
-  min_height: 50,
-  width: 320,
-  height: 207,
-  ar_flex: 0.2,
-  tag: 'img',
-  src: 'images/Caress_Movingstill_4_Clock.gif',
-  url: 'http://www.houseofcaress.com/',
-  location: /^((?!facebook.com).)*$/i,
-  title: 'Forever Collection',
-  description: "The world's first body wash with fragrance touch technology"
-}, {
-  min_width: 100,
-  min_height: 50,
-  width: 320,
-  height: 180,
-  ar_flex: 0.2,
-  tag: 'img',
-  src: 'images/Caress_Movingstill_7_Roseburst.gif',
+  src: 'images/970x250.png',
   url: 'http://www.houseofcaress.com/',
   location: /^((?!facebook.com).)*$/i,
   title: 'Forever Collection',
