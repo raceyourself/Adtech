@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "We See Through",
-  "description": "Determines whether an advert has been scrolled into view.",
+  "description": "Replaces adverts specific to this advertising research study, and then sends analytics data to our server about interactions with these and other adverts (displayed, hovered over or clicked on).",
   "version": "1.10",
   "permissions": [
     "tabs",

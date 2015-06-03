@@ -1,5 +1,7 @@
 /*jshint browser: true, devel: true, sub: true*/
-/*global $,jQuery,_,Set,Map,chrome*/
+/*global $,jQuery,_,Set,Map,chrome,moment*/
+
+/* Primary content script. Replaces adverts and sends analytic events about adverts displayed/hovered over/clicked on via the background script. */
 
 var RESOURCE_TAGS_UNWRAPPED = [
   'IMG',
@@ -31,7 +33,7 @@ var frameId;
 
 var respondent;
 
-var INJECTION_PROBABILITY = 1;
+var INJECTION_PROBABILITY = 0.08;
 var MAX_INJECTIONS = 1; // per page
 
 var INJECTABLE_ADS = [{
@@ -290,9 +292,9 @@ function onAdvertsAndRespondentIdentified(response) {
     });
   });
   
-  console.log('AIP.onidentify: length=' + advertsInPage.length + ' before adding ' + toAdd.length + '; frameId=' + frameId);
+  //console.log('AIP.onidentify: length=' + advertsInPage.length + ' before adding ' + toAdd.length + '; frameId=' + frameId);
   advertsInPage = advertsInPage.add(toAdd);
-  console.log('AIP.onidentify: length=' + advertsInPage.length + ' after adding ' + toAdd.length + '; frameId=' + frameId);
+  //console.log('AIP.onidentify: length=' + advertsInPage.length + ' after adding ' + toAdd.length + '; frameId=' + frameId);
   
   if (!pageProcessed) {
     var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
@@ -309,9 +311,9 @@ function onAdvertsAndRespondentIdentified(response) {
           for (i = 0; i < removedNodes.length; ++i) {
             node = removedNodes[i];
             if (_.contains(RESOURCE_TAGS_UNWRAPPED, node.nodeName)) {
-              console.log('AIP.mutate: length=' + advertsInPage.length + ' before removing an elem; frameId=' + frameId);
+              //console.log('AIP.mutate: length=' + advertsInPage.length + ' before removing an elem; frameId=' + frameId);
               advertsInPage = advertsInPage.not(node);
-              console.log('AIP.mutate: length=' + advertsInPage.length + ' after removing an elem; frameId=' + frameId);
+              //console.log('AIP.mutate: length=' + advertsInPage.length + ' after removing an elem; frameId=' + frameId);
             }
           }
         });
@@ -419,7 +421,7 @@ function clearVisible() {
 
 function recordVisibilityChanges(topWindow, frame) {
   //console.log("WST:recordVisibilityChanges - document.URL=" + document.URL + (!inIframe() ? " (top)" : " (frame)"));
-  console.log('recordVisibilityChanges for frameId=' + frameId);
+  //console.log('recordVisibilityChanges for frameId=' + frameId);
   advertsInPage.each(function(index, image) {
     var data = elementToDataObj(image);
     //console.log('WST:Checking visibility of ' + data.source);
