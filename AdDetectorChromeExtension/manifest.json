@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "We See Through",
   "description": "Determines whether an advert has been scrolled into view.",
-  "version": "1.9",
+  "version": "1.10",
   "permissions": [
     "tabs",
     "http://*/*",
@@ -25,7 +25,7 @@
   ],
   "background": {
     "scripts": [
-      "lib/jquery-1.7.1.min.js",
+      "lib/jquery-1.7.1.js",
       
       "adblock/port.js",
       "adblock/functions.js",
@@ -49,8 +49,8 @@
       "match_about_blank": true,
       "js": [
       	"lib/jquery-1.11.1.js",
-        "lib/lodash-3.8.0.min.js",
-        "lib/moment-2.10.3.min.js",
+        "lib/lodash-3.8.0.js",
+        "lib/moment-2.10.3.js",
         
       	"content.js"
   	  ]

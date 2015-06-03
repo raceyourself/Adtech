@@ -31,7 +31,7 @@ var frameId;
 
 var respondent;
 
-var INJECTION_PROBABILITY = 0.1;
+var INJECTION_PROBABILITY = 1;
 var MAX_INJECTIONS = 1; // per page
 
 var INJECTABLE_ADS = [{
