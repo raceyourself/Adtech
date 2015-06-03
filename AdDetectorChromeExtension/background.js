@@ -1,22 +1,31 @@
 /*jshint browser: true, devel: true, sub: true*/
 /*global $,chrome,parseUri,ElementTypes,_myfilters*/
 
-var KILL_SWITCH_URL = 'https://demo.haystackplatform.com/workspaces/demo/_kill_';
-var KILL_SWITCH_POLL_INTERVAL = 10 * 60 * 1000; // every .5 minutes.
+/* Background script. Primary function: interfaces with AdBlock to identify advertising and sends advert analytic events to our server. */
 
+/** If this URL is fetched successfully, the extension will uninstall itself. This will occur once the study completes. */
+var KILL_SWITCH_URL = 'https://demo.haystackplatform.com/workspaces/demo/_kill_';
+/** How often to check KILL_SWITCH_URL. */
+var POLL_INTERVAL = 10 * 60 * 1000; // every .5 minutes.
+
+/** URL of REST service to send advert analytics data to (glassinsight.co.uk domain is owned by We See Through). */
 var EVENT_URL = "http://insight-staging.glassinsight.co.uk/advert_events";
 
+/** Pause before sending analytics data, to reduce the number of requests. */
 var DEFAULT_SEND_DELAY = 1000; // milliseconds
 
 var sendDelay = DEFAULT_SEND_DELAY;
 var sendTimeout = false; // setTimeout reference
 
+/** Unsent events. */
 var eventQueue = [];
 
+/** Name of respondent - set in options.html. */
 var respondent;
 
 ////////////// INITIAL SETUP //////////////
 
+/** Open options.html on first launch, so respondent can select their name. */
 var firstRun = false;
 if (!localStorage['first_launch']) {
   firstRun = true;
@@ -27,6 +36,7 @@ if (!localStorage['first_launch']) {
 
 ////////////// COMMS WITH CONTENT SCRIPT //////////////
 
+/** Uses AdBlock code to determine whether a given image, video or Flash object is an advert or not. */
 function identifyAdverts(frameId, frameUrl, urls, callbackData) {
   var frameDomain = frameUrl ? parseUri(frameUrl).hostname : '';
 
@@ -55,14 +65,18 @@ function identifyAdverts(frameId, frameUrl, urls, callbackData) {
   return payload;
 }
 
+/** Extra custom blacklisting not covered by AdBlock subscriptions. */
 function onCustomBlacklist(url) {
   // TODO reuse AdBlock code for this
-  // For Facebook ads.
   return url.indexOf('//tpc.googlesyndication.com/simgad/') !== -1; //url.indexOf('safe_image.php') !== -1;
 }
 
-/** best if it's in background script because it's an HTTP request, and content scripts in pages served via HTTPS can't POST
- * via HTTP. Also allows for retries after page has been left. */
+/**
+ * Send advert analytics event to We See Through (glassinsight.co.uk domain is owned by We See Through).
+ *
+ * Best if it's in background script because it's an HTTP request, and content scripts in pages served via HTTPS can't POST
+ * via HTTP. Also allows for retries after page has been left.
+ */
 function sendEvents() {
   var payload = {
     events: eventQueue
@@ -87,6 +101,7 @@ function sendEvents() {
   });
 }
 
+/** Adds an advert analytics event to the queue, and enqueues a send. */
 function trackEvent(event) {
   eventQueue.push(event);
   if (!sendTimeout) {
@@ -94,6 +109,7 @@ function trackEvent(event) {
   }
 }
 
+/** Listen to requests from content scripts. */
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   if (request.action === 'identify_adverts') {
     sendResponse(identifyAdverts(sender.frameId, sender.url, request.urls, request.callbackData));
@@ -103,13 +119,19 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   }
 });
 
+/** Checks performed at regular intervals (POLL_INTERVAL). */
 function performChecks() {
+  checkRespondentName();
+  checkKillSwitch();
+}
+
+function checkRespondentName() {
   chrome.storage.sync.get('respondent', function(items) {
     respondent = items.respondent;
   });
-  
-  ////////////// KILL SWITCH //////////////
-  
+}
+
+function checkKillSwitch() {
   $.get(KILL_SWITCH_URL, function success(data) {
     console.log('Kill switch on.');
     chrome.management.uninstallSelf(); // will not prompt user.
@@ -119,8 +141,8 @@ function performChecks() {
 }
 
 performChecks();
-setInterval(performChecks, KILL_SWITCH_POLL_INTERVAL);
+setInterval(performChecks, POLL_INTERVAL);
 
 chrome.runtime.onUpdateAvailable.addListener(function() {
-  chrome.runtime.reload(); // force refresh of this extension when available
+  chrome.runtime.reload(); // force refresh of this extension when available (rather than on browser restart)
 });
