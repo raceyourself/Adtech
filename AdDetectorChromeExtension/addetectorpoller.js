@@ -27,10 +27,9 @@ config.queues = config.queues || {};
 var RES_PATH = './ad_resources/';
 
 var URLS_RETRIEVED_KEY   = config.queues.caress_advert_urls_retrieved   || 'caress_advert_urls_retrieved';
-var NEXT_EVENT_KEY       = config.queues.caress_next_event_seq          || 'caress_next_event_seq';
-//var EVENTS_KEY           = config.queues.caress_advert_events           || 'caress_advert_events';
-var EVENTS_KEY           = config.queues.caress_advert_events           || 'caress_advert_events_copy_3';
-var PROCESSED_EVENTS_KEY = config.queues.caress_advert_events_processed || 'caress_advert_events_processed';
+var EVENTS_KEY           = config.queues.caress_advert_events           || 'caress_advert_events';
+//var EVENTS_KEY           = config.queues.caress_advert_events           || 'caress_advert_events_copy_3';
+var PROCESSED_EVENTS_KEY = config.queues.caress_advert_events_processed || 'caress_advert_events_resource_fetched';
 
 var FILENAME_UNSAFE_FILENAME_REGEX = /[^a-zA-Z0-9.-]/g;
 
@@ -88,9 +87,12 @@ function fetchResource(source) {
   else if (parsedUrl.protocol === 'http:') {
     prot = http;
   }
-  else if (parsedUrl.protocol === 'chrome:') {
+  else if (parsedUrl.protocol === 'chrome-extension:') {
     // Injected image from extension.
     redisClient.hsetnx(URLS_RETRIEVED_KEY, source, urlPath);
+    
+    process.nextTick(nextJob);
+    return;
   }
   else {
     console.log('Protocol not http(s), so skipping: ' + parsedUrl.protocol);
@@ -145,7 +147,7 @@ function fetchResource(source) {
         process.nextTick(nextJob);
       });
     });
-  }).setTimeout(REQUEST_TIMEOUT, function() {
+  }).on('error', function(err) {
     console.log('Connection timed out. Moving on to the next.');
     
     process.nextTick(nextJob);
