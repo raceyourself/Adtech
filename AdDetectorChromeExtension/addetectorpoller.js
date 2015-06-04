@@ -8,6 +8,7 @@ var url = require('url');
 var http = require('http');
 var https = require('https');
 var mime = require('mime-types');
+var querystring = require('querystring');
 
 var config = {};
 try {
@@ -27,9 +28,11 @@ config.queues = config.queues || {};
 var RES_PATH = './ad_resources/';
 
 var URLS_RETRIEVED_KEY   = config.queues.caress_advert_urls_retrieved   || 'caress_advert_urls_retrieved';
-var EVENTS_KEY           = config.queues.caress_advert_events           || 'caress_advert_events';
-//var EVENTS_KEY           = config.queues.caress_advert_events           || 'caress_advert_events_copy_3';
-var PROCESSED_EVENTS_KEY = config.queues.caress_advert_events_processed || 'caress_advert_events_resource_fetched';
+//var EVENTS_KEY           = config.queues.caress_advert_events           || 'caress_advert_events';
+//var PROCESSED_EVENTS_KEY = config.queues.caress_advert_events_processed || 'caress_advert_events_resource_fetched';
+
+var EVENTS_KEY           = config.queues.caress_advert_events           || 'caress_advert_events_test';
+var PROCESSED_EVENTS_KEY = config.queues.caress_advert_events_processed || 'caress_advert_events_resource_fetched_test';
 
 var FILENAME_UNSAFE_FILENAME_REGEX = /[^a-zA-Z0-9.-]/g;
 
@@ -38,10 +41,15 @@ var MAX_EVENTS_PER_POLL = 10;
 var MAX_FILENAME_LENGTH = 100;
 
 var REQUEST_TIMEOUT = 1000 * 60; // 90 seconds
+  
+var INSERT_GSHEET_ROW_TARGET = {
+  protocol: 'https:',
+  host: 'script.google.com',
+  path: '/macros/s/AKfycbzMwgg2_0ZlUL3bOd3aNPx2SPAV7yt-39aTHLr4TyTqHYJkLak/exec'
+}
 
 function nextJob() {
   redisClient.brpoplpush(EVENTS_KEY, PROCESSED_EVENTS_KEY, 0, function(error, event) {
-  //redisClient.brpop(EVENTS_KEY, 0, function(error, event) {event = event[1];
     if (error) {
       console.log('Failed to pop element from ' + EVENTS_KEY + 'and move to ' + PROCESSED_EVENTS_KEY);
       return;
@@ -56,7 +64,7 @@ function processEvent(eventStr) {
   
   redisClient.hexists(URLS_RETRIEVED_KEY, source, function(error, exists) {
     if (exists) {
-      console.log('Source already fetched: ' + source);
+      console.error('Source already fetched: ' + source);
       
       process.nextTick(nextJob);
     }
@@ -64,6 +72,32 @@ function processEvent(eventStr) {
       fetchResource(source);
     }
   });
+  addEventInGoogleSheets(event);
+}
+
+function addEventInGoogleSheets(event) {
+  var eventData = querystring.stringify(event);
+  console.log('data:    ' + eventData);
+  
+  var requestOptions = {
+    method: 'POST',
+    protocol: INSERT_GSHEET_ROW_TARGET.protocol,
+    host: INSERT_GSHEET_ROW_TARGET.host,
+    port: INSERT_GSHEET_ROW_TARGET.port,
+    path: INSERT_GSHEET_ROW_TARGET.path,
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Content-Length': eventData.length
+    }
+  };
+  
+  var request = https.request(requestOptions, function onResourceDownloaded(response) {
+    console.log('Added to Google Sheets: ' + event.source);
+  }).on('error', function(err) {
+    console.error('Failed to add to Google Sheets: ' + event.source + ' - cause: ' + err);
+  });
+  request.write(eventData);
+  request.end();
 }
 
 function fetchResource(source) {
@@ -95,7 +129,7 @@ function fetchResource(source) {
     return;
   }
   else {
-    console.log('Protocol not http(s), so skipping: ' + parsedUrl.protocol);
+    console.error('Protocol not http(s), so skipping: ' + parsedUrl.protocol);
     
     process.nextTick(nextJob);
     return;
