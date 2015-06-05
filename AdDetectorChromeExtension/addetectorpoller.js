@@ -46,7 +46,7 @@ var INSERT_GSHEET_ROW_TARGET = {
   protocol: 'https:',
   host: 'script.google.com',
   path: '/macros/s/AKfycbzMwgg2_0ZlUL3bOd3aNPx2SPAV7yt-39aTHLr4TyTqHYJkLak/exec'
-}
+};
 
 function nextJob() {
   redisClient.brpoplpush(EVENTS_KEY, PROCESSED_EVENTS_KEY, 0, function(error, event) {
@@ -64,43 +64,17 @@ function processEvent(eventStr) {
   
   redisClient.hexists(URLS_RETRIEVED_KEY, source, function(error, exists) {
     if (exists) {
-      console.error('Source already fetched: ' + source);
       
-      process.nextTick(nextJob);
+      keepCalmAndEatACupcake(event, false, 'Source already fetched: ' + source);
     }
     else {
-      fetchResource(source);
+      fetchResource(event);
     }
   });
-  addEventInGoogleSheets(event);
 }
 
-function addEventInGoogleSheets(event) {
-  var eventData = querystring.stringify(event);
-  console.log('data:    ' + eventData);
-  
-  var requestOptions = {
-    method: 'POST',
-    protocol: INSERT_GSHEET_ROW_TARGET.protocol,
-    host: INSERT_GSHEET_ROW_TARGET.host,
-    port: INSERT_GSHEET_ROW_TARGET.port,
-    path: INSERT_GSHEET_ROW_TARGET.path,
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Content-Length': eventData.length
-    }
-  };
-  
-  var request = https.request(requestOptions, function onResourceDownloaded(response) {
-    console.log('Added to Google Sheets: ' + event.source);
-  }).on('error', function(err) {
-    console.error('Failed to add to Google Sheets: ' + event.source + ' - cause: ' + err);
-  });
-  request.write(eventData);
-  request.end();
-}
-
-function fetchResource(source) {
+function fetchResource(event) {
+  var source = event.source;
   var parsedUrl = url.parse(source);
   var urlPath = parsedUrl.path;
 
@@ -129,9 +103,7 @@ function fetchResource(source) {
     return;
   }
   else {
-    console.error('Protocol not http(s), so skipping: ' + parsedUrl.protocol);
-    
-    process.nextTick(nextJob);
+    keepCalmAndEatACupcake(event, true, 'Protocol not http(s), so skipping: ' + parsedUrl.protocol);
     return;
   }
   
@@ -139,22 +111,8 @@ function fetchResource(source) {
     var contentType = response.headers['content-type'];
     console.log('Got response. Content-Type=' + contentType);
 
-    // TODO in an ideal world, we'd check for an existing correct extension before adding on a new one.
-    if (urlPath.length > MAX_FILENAME_LENGTH) {
-      urlPath = urlPath.substring(0, MAX_FILENAME_LENGTH);
-    }
-    var extension = mime.extension(contentType);
-    if (extension) {
-      extension = '.' + extension;
-    }
-    else {
-      console.log('Unrecognised content type: ' + contentType);
-      extension = '';
-    }
-    var sanitisedUniqueFilename = new Date().getTime() + '_' + urlPath.replace(FILENAME_UNSAFE_FILENAME_REGEX, '_') + extension;
-
-    var sanitisedUniquePath = path.join(RES_PATH, sanitisedUniqueFilename);
-
+    addPath(event, contentType);
+    
     response.setEncoding('binary'); // this
 
     var resourceBinary = '';
@@ -169,23 +127,79 @@ function fetchResource(source) {
         return resourceBinary += chunk;
     });
     response.on('end', function() {
-      fs.writeFile(sanitisedUniquePath, resourceBinary, 'binary', function(error) {
+      fs.writeFile(event.path, resourceBinary, 'binary', function(error) {
         if (error) {
-          console.log('Unable to write resource to ' + sanitisedUniquePath + ': ' + error);
+          console.error('Unable to write resource to ' + event.path + ': ' + error);
         }
         else {
-          console.log('Wrote file ' + sanitisedUniquePath);
+          console.log('Wrote file ' + event.path);
 
-          redisClient.hsetnx(URLS_RETRIEVED_KEY, source, sanitisedUniquePath);
+          redisClient.hsetnx(URLS_RETRIEVED_KEY, source, event.path);
         }
-        process.nextTick(nextJob);
+        addEventInGoogleSheets(event);
       });
     });
   }).on('error', function(err) {
-    console.log('Connection timed out. Moving on to the next.');
-    
-    process.nextTick(nextJob);
+    keepCalmAndEatACupcake(event, true, 'Connection timed out. Moving on to the next.');
   });
+}
+
+function keepCalmAndEatACupcake(event, err, msg) {
+  if (err)
+    console.error(msg);
+  else
+    console.log(msg);
+  addEventInGoogleSheets(event);
+}
+
+function addPath(event, contentType) {
+  var source = event.source;
+  var parsedUrl = url.parse(source);
+  var urlPath = parsedUrl.path;
+  
+  // TODO in an ideal world, we'd check for an existing correct extension before adding on a new one.
+  if (urlPath.length > MAX_FILENAME_LENGTH) {
+    urlPath = urlPath.substring(0, MAX_FILENAME_LENGTH);
+  }
+  var extension = mime.extension(contentType);
+  if (extension) {
+    extension = '.' + extension;
+  }
+  else {
+    console.log('Unrecognised content type: ' + contentType);
+    extension = '';
+  }
+  var sanitisedUniqueFilename = new Date().getTime() + '_' + urlPath.replace(FILENAME_UNSAFE_FILENAME_REGEX, '_') + extension;
+
+  event.path = path.join(RES_PATH, sanitisedUniqueFilename);
+}
+
+var googleSheetsEventQueue = [];
+
+function addEventInGoogleSheets(event) {
+  var eventData = querystring.stringify(event);
+  console.log('data:    ' + eventData);
+  
+  var requestOptions = {
+    method: 'POST',
+    protocol: INSERT_GSHEET_ROW_TARGET.protocol,
+    host: INSERT_GSHEET_ROW_TARGET.host,
+    port: INSERT_GSHEET_ROW_TARGET.port,
+    path: INSERT_GSHEET_ROW_TARGET.path,
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Content-Length': eventData.length
+    }
+  };
+  
+  var request = https.request(requestOptions, function onResourceDownloaded(response) {
+    console.log('Added to Google Sheets: ' + event.source);
+    process.nextTick(nextJob);
+  }).on('error', function(err) {
+    console.error('Failed to add to Google Sheets: ' + event.source + ' - cause: ' + err);
+  });
+  request.write(eventData);
+  request.end();
 }
 
 nextJob();
