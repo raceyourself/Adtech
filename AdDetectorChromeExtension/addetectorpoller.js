@@ -9,6 +9,7 @@ var http = require('http');
 var https = require('https');
 var mime = require('mime-types');
 var querystring = require('querystring');
+var request = require('request');
 
 var config = {};
 try {
@@ -49,6 +50,7 @@ var INSERT_GSHEET_ROW_TARGET = {
 };
 
 function nextJob() {
+  console.log('nextJob');
   redisClient.brpoplpush(EVENTS_KEY, PROCESSED_EVENTS_KEY, 0, function(error, event) {
     if (error) {
       console.log('Failed to pop element from ' + EVENTS_KEY + 'and move to ' + PROCESSED_EVENTS_KEY);
@@ -191,15 +193,32 @@ function addEventInGoogleSheets(event) {
       'Content-Length': eventData.length
     }
   };
+  var prot = https;
   
-  var request = https.request(requestOptions, function onResourceDownloaded(response) {
-    console.log('Added to Google Sheets: ' + event.source);
+  requestOptions = {
+    method: 'GET',
+    protocol: 'http:',
+    host: 'jsonplaceholder.typicode.com',
+    port: 80,
+    path: '/posts/1'
+  };
+  prot = http;
+  
+  var requestOptions = {
+    url: 'https://script.google.com/macros/s/AKfycbzMwgg2_0ZlUL3bOd3aNPx2SPAV7yt-39aTHLr4TyTqHYJkLak/exec',
+    form: event
+  };
+
+  console.log('Requesting add to Google Sheets via request: ' + eventData);
+  request.post(requestOptions, function(err, httpResponse, body) {
+    if (err) {
+      console.error('Failed to add to Google Sheets: ' + eventData + ' - cause: ' + err);
+    }
+    else {
+      console.log('Added to Google Sheets: ' + eventData);
+    }
     process.nextTick(nextJob);
-  }).on('error', function(err) {
-    console.error('Failed to add to Google Sheets: ' + event.source + ' - cause: ' + err);
   });
-  request.write(eventData);
-  request.end();
 }
 
 nextJob();
