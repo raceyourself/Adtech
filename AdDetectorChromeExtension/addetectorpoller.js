@@ -32,8 +32,8 @@ var URLS_RETRIEVED_KEY   = config.queues.caress_advert_urls_retrieved   || 'care
 //var EVENTS_KEY           = config.queues.caress_advert_events           || 'caress_advert_events';
 //var PROCESSED_EVENTS_KEY = config.queues.caress_advert_events_processed || 'caress_advert_events_resource_fetched';
 
-var EVENTS_KEY           = config.queues.caress_advert_events           || 'caress_advert_events_test';
-var PROCESSED_EVENTS_KEY = config.queues.caress_advert_events_processed || 'caress_advert_events_resource_fetched_test';
+var EVENTS_KEY           = config.queues.caress_advert_events           || 'caress_advert_events_test_2';
+var PROCESSED_EVENTS_KEY = config.queues.caress_advert_events_processed || 'caress_advert_events_processed_test';
 
 var FILENAME_UNSAFE_FILENAME_REGEX = /[^a-zA-Z0-9.-]/g;
 
@@ -46,7 +46,7 @@ var REQUEST_TIMEOUT = 1000 * 60; // 90 seconds
 var INSERT_GSHEET_ROW_TARGET = {
   protocol: 'https:',
   host: 'script.google.com',
-  path: '/macros/s/AKfycbzMwgg2_0ZlUL3bOd3aNPx2SPAV7yt-39aTHLr4TyTqHYJkLak/exec'
+  path: '/macros/s/AKfycbzDBhztjGQOxmoaihPW77QcXoBap8PmNUm70ApZxP6JQ_-L6BuL/exec'
 };
 
 function nextJob() {
@@ -64,9 +64,9 @@ function processEvent(eventStr) {
   var event = JSON.parse(eventStr);
   var source = event.source;
   
-  redisClient.hexists(URLS_RETRIEVED_KEY, source, function(error, exists) {
-    if (exists) {
-      
+  redisClient.hget(URLS_RETRIEVED_KEY, source, function(error, value) {
+    if (value) {
+      event.path = value;
       keepCalmAndEatACupcake(event, false, 'Source already fetched: ' + source);
     }
     else {
@@ -183,29 +183,7 @@ function addEventInGoogleSheets(event) {
   console.log('data:    ' + eventData);
   
   var requestOptions = {
-    method: 'POST',
-    protocol: INSERT_GSHEET_ROW_TARGET.protocol,
-    host: INSERT_GSHEET_ROW_TARGET.host,
-    port: INSERT_GSHEET_ROW_TARGET.port,
-    path: INSERT_GSHEET_ROW_TARGET.path,
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Content-Length': eventData.length
-    }
-  };
-  var prot = https;
-  
-  requestOptions = {
-    method: 'GET',
-    protocol: 'http:',
-    host: 'jsonplaceholder.typicode.com',
-    port: 80,
-    path: '/posts/1'
-  };
-  prot = http;
-  
-  var requestOptions = {
-    url: 'https://script.google.com/macros/s/AKfycbzMwgg2_0ZlUL3bOd3aNPx2SPAV7yt-39aTHLr4TyTqHYJkLak/exec',
+    url: 'https://script.google.com/macros/s/AKfycbzDBhztjGQOxmoaihPW77QcXoBap8PmNUm70ApZxP6JQ_-L6BuL/exec',
     form: event
   };
 
@@ -215,7 +193,7 @@ function addEventInGoogleSheets(event) {
       console.error('Failed to add to Google Sheets: ' + eventData + ' - cause: ' + err);
     }
     else {
-      console.log('Added to Google Sheets: ' + eventData);
+      console.log('Added to Google Sheets: ' + eventData);// + '; httpResponse=' + JSON.stringify(httpResponse) + '; body=' + body);
     }
     process.nextTick(nextJob);
   });
