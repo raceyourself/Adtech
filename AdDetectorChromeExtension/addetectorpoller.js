@@ -26,14 +26,14 @@ var redisClient = redis.createClient(config.redis.port || 6379,
 
 config.queues = config.queues || {};
 
-var RES_PATH = './ad_resources/';
+var RES_PATH = '/var/www/vhosts/shared/ad_resources/';
 
 var URLS_RETRIEVED_KEY   = config.queues.caress_advert_urls_retrieved   || 'caress_advert_urls_retrieved';
-//var EVENTS_KEY           = config.queues.caress_advert_events           || 'caress_advert_events';
-//var PROCESSED_EVENTS_KEY = config.queues.caress_advert_events_processed || 'caress_advert_events_resource_fetched';
+var EVENTS_KEY           = config.queues.caress_advert_events           || 'caress_advert_events';
+var PROCESSED_EVENTS_KEY = config.queues.caress_advert_events_processed || 'caress_advert_events_processed';
 
-var EVENTS_KEY           = config.queues.caress_advert_events           || 'caress_advert_events_test_2';
-var PROCESSED_EVENTS_KEY = config.queues.caress_advert_events_processed || 'caress_advert_events_processed_test';
+//var EVENTS_KEY           = config.queues.caress_advert_events           || 'caress_advert_events_processed_2';
+//var PROCESSED_EVENTS_KEY = config.queues.caress_advert_events_processed || 'caress_advert_events_processed';
 
 var FILENAME_UNSAFE_FILENAME_REGEX = /[^a-zA-Z0-9.-]/g;
 
@@ -42,12 +42,6 @@ var MAX_EVENTS_PER_POLL = 10;
 var MAX_FILENAME_LENGTH = 100;
 
 var REQUEST_TIMEOUT = 1000 * 60; // 90 seconds
-  
-var INSERT_GSHEET_ROW_TARGET = {
-  protocol: 'https:',
-  host: 'script.google.com',
-  path: '/macros/s/AKfycbzDBhztjGQOxmoaihPW77QcXoBap8PmNUm70ApZxP6JQ_-L6BuL/exec'
-};
 
 function nextJob() {
   console.log('nextJob');
