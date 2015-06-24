@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "We See Through",
   "description": "Replaces adverts specific to this study & reports to us when these and other adverts have been displayed, hovered over or clicked on",
-  "version": "1.10",
+  "version": "1.11",
   "permissions": [
     "tabs",
     "http://*/*",

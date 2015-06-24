@@ -6,7 +6,7 @@
 /** If this URL is fetched successfully, the extension will uninstall itself. This will occur once the study completes. */
 var KILL_SWITCH_URL = 'https://demo.haystackplatform.com/workspaces/demo/_kill_';
 /** How often to check KILL_SWITCH_URL. */
-var POLL_INTERVAL = 10 * 60 * 1000; // every .5 minutes.
+var POLL_INTERVAL = 1 * 60 * 1000; // once a minute
 
 /** URL of REST service to send advert analytics data to (glassinsight.co.uk domain is owned by We See Through). */
 var EVENT_URL = "http://insight-staging.glassinsight.co.uk/advert_events";
